@@ -26,11 +26,11 @@ export default function BlogList({
 }: BlogListProps) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 relative overflow-hidden">
+      <Navbar />
       {/* Animated background */}
       <BackgroundAnimation />
 
-      {/* <Navbar /> */}
-      <div className="flex pt-20 relative z-10 min-h-screen">
+      <div className="flex relative z-10 min-h-screen">
         {/* Left Sidebar */}
         <div className="opacity-0 animate-slide-in-left hidden xl:block xl:w-64 flex-shrink-0">
           <LeftSidebar />

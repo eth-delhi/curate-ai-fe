@@ -31,13 +31,9 @@ export const MainContent = ({ blogPosts = [] }: MainContentProps) => {
   };
 
   return (
-    <main className="flex-1 px-4 sm:px-6 lg:px-8 py-8">
+    <main className="flex-1 px-4 sm:px-6 lg:px-8 lg:py-20 py-8">
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-6 flex items-center opacity-0 animate-slide-in">
-            <Zap className="h-7 w-7 text-blue-500 mr-2" />
-            Insights & Analysis
-          </h1>
           <Tabs
             defaultValue={activeTab}
             onValueChange={setActiveTab}
@@ -69,7 +65,7 @@ export const MainContent = ({ blogPosts = [] }: MainContentProps) => {
           </Tabs>
         </div>
 
-        <div className="space-y-0">
+        <div className="space-y-4">
           {blogPosts.length === 0 ? (
             <p className="text-gray-500 text-center py-12 opacity-0 animate-fade-in">
               No blog posts available.
