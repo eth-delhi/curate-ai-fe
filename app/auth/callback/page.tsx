@@ -1,80 +1,83 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { useMagic } from "@/hooks/MagicProvider";
-import { showToast } from "@/utils/showToast";
 import { useMagicState } from "@/context/magic.provider";
-import Spinner from "@/components/ui/Spinner";
 import { useLogin } from "@/hooks/api/auth";
+import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import { Brain, Loader2 } from "lucide-react";
 
-const AuthCallback = () => {
+export default function AuthCallbackPage() {
   const { magic } = useMagic();
-  const router = useRouter();
-
   const { setToken } = useMagicState();
-  let called = false;
-
   const { mutateAsync } = useLogin();
+  const router = useRouter();
 
   useEffect(() => {
     const handleCallback = async () => {
       try {
-        if (called) return;
-        called = true;
-
         const result = await magic?.oauth.getRedirectResult();
-        const token = result?.magic.idToken;
-        const metadata = result?.oauth.userInfo;
 
-        console.log("OAuth result:", result);
-        console.log("Token:", token);
-        console.log("Metadata:", metadata);
+        if (result) {
+          const metadata = await magic?.user.getInfo();
 
-        if (!token || !metadata?.email || !metadata?.sub) {
-          throw new Error("Google login failed");
+          await mutateAsync({
+            token: result.magic.idToken as string,
+            email: metadata?.email as string,
+            walletAddress: metadata?.publicAddress as string,
+          });
+
+          setToken(result.magic.idToken as string);
+          router.push("/home-revamp");
+        } else {
+          router.push("/auth");
         }
-
-        // Get the actual wallet address from Magic user info
-        const userInfo = await magic?.user.getInfo();
-        console.log("Magic user info:", userInfo);
-
-        if (!userInfo?.publicAddress) {
-          throw new Error("Failed to get wallet address");
-        }
-
-        setToken(token);
-
-        await mutateAsync({
-          email: metadata.email,
-          walletAddress: userInfo.publicAddress,
-          token,
-        });
-
-        showToast({
-          message: "Login successful",
-          type: "success",
-        });
-
-        router.push("/home");
-      } catch (e) {
-        console.error("Callback error from:", e);
-        showToast({
-          message: "Failed to complete Google login. Please try again.",
-          type: "error",
-        });
+      } catch (error) {
+        console.error("Callback error:", error);
         router.push("/auth");
       }
     };
 
     handleCallback();
-  }, []);
+  }, [magic, mutateAsync, setToken, router]);
 
   return (
-    <div className="mt-16">
-      <Spinner />
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex items-center justify-center">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5 }}
+        className="text-center"
+      >
+        <motion.div
+          className="w-16 h-16 rounded-full bg-gradient-to-br from-gray-800 to-black flex items-center justify-center mx-auto mb-4"
+          animate={{
+            rotate: 360,
+          }}
+          transition={{
+            duration: 2,
+            repeat: Infinity,
+            ease: "linear",
+          }}
+        >
+          <Brain className="w-8 h-8 text-white" />
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+        >
+          <Loader2 className="w-8 h-8 animate-spin text-gray-600 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            Completing Authentication
+          </h2>
+          <p className="text-gray-600">
+            Please wait while we verify your credentials...
+          </p>
+        </motion.div>
+      </motion.div>
     </div>
   );
-};
-
-export default AuthCallback;
+}

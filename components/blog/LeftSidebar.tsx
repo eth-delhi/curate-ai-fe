@@ -11,7 +11,7 @@ import {
 
 export const LeftSidebar = () => {
   return (
-    <aside className="w-56 fixed left-0 top-12 h-screen py-6 px-5 bg-white border-r border-gray-200 overflow-y-auto shadow-sm">
+    <aside className="w-90 fixed left-0 top-12 h-screen py-6 px-5 bg-white overflow-y-auto shadow-xs">
       <nav className="space-y-2 mb-8">
         <div className="hover:scale-105 transition-transform">
           <Link

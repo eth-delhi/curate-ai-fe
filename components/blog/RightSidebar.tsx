@@ -22,10 +22,10 @@ export const RightSidebar = () => {
   }, []);
 
   return (
-    <aside className="w-72 fixed right-0 top-12 h-screen py-8 px-6 bg-white border-l border-gray-200 overflow-y-auto shadow-sm">
+    <aside className="w-100 fixed right-0 top-12 h-screen py-8 px-6 bg-white overflow-y-auto">
       <div className="space-y-8">
         {/* Newsletter Section */}
-        <div className="bg-gradient-to-br from-blue-50 to-white rounded-xl p-5 border border-blue-100 shadow-sm hover:shadow-md transition-all duration-300 transform hover:-translate-y-1">
+        <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl p-5 border border-blue-100 shadow-sm hover:shadow-md transition-all duration-300 transform hover:-translate-y-1">
           <div className="flex items-center mb-2">
             <h3 className="font-bold text-lg text-gray-900">Stay Updated</h3>
             <div
@@ -43,7 +43,7 @@ export const RightSidebar = () => {
               placeholder="Your email address"
               className="w-full px-3.5 py-2.5 text-sm bg-white border border-blue-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-300 text-gray-900 placeholder-gray-500 transition-all"
             />
-            <button className="w-full py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-all duration-200 transform hover:scale-105">
+            <button className="w-full py-2.5 text-sm font-medium text-white bg-[#0077b6] hover:bg-blue-700 rounded-md transition-all duration-200 transform hover:scale-105">
               Subscribe
             </button>
           </div>

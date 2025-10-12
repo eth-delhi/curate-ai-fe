@@ -33,6 +33,7 @@ export interface PostResponseDto {
   aiRatingId?: number;
   internal_id?: number;
   transactionHash?: string;
+  thumbnail?: string | null; // Add thumbnail field
 }
 
 export interface CreatePostRequestDto {
@@ -131,6 +132,7 @@ export interface SinglePostResponseDto {
   author?: AuthorDto;
   aiRating?: AIPostRatingDto;
   comments?: CommentDto[];
+  thumbnail?: string | null; // Add thumbnail field
 }
 
 export type TxnParams = {

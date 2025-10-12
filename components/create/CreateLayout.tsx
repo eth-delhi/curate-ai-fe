@@ -2,7 +2,7 @@
 
 import React from "react";
 import { motion } from "framer-motion";
-import { Navbar } from "../ui/Navbar";
+import Navbar from "../ui/Navbar";
 
 interface CreateLayoutProps {
   children: React.ReactNode;

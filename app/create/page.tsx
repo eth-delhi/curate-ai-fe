@@ -14,13 +14,7 @@ import {
   useUpdatePost,
   useGetPostIdFromTransaction,
 } from "@/hooks/api/create";
-import {
-  useIPFSUpload,
-  useSynapseClient,
-  setupSynapsePayments,
-  downloadFromSynapse,
-  cleanupSynapseConnection,
-} from "@/hooks/ipfs/uploadToIpfs";
+import { useIPFSUpload } from "@/hooks/ipfs/uploadToIpfs";
 import { contract } from "@/constants/contract";
 
 // Import modular components
@@ -41,11 +35,6 @@ export default function CreatePostPage() {
   const [coverImage, setCoverImage] = useState("");
   const [markdownContent, setMarkdownContent] = useState("");
   const [transactionHash, setTransactionHash] = useState<string | null>(null);
-  const [isSynapseUploading, setIsSynapseUploading] = useState(false);
-  const [isSettingUpPayments, setIsSettingUpPayments] = useState(false);
-  const [synapsePieceCid, setSynapsePieceCid] = useState<string | null>(null);
-  const [isDownloading, setIsDownloading] = useState(false);
-  const [isCleaningUp, setIsCleaningUp] = useState(false);
 
   const router = useRouter();
   const { address: account } = useAccount();
@@ -71,119 +60,6 @@ export default function CreatePostPage() {
     setIsConfirmOpen(true);
   };
 
-  const handleSetupPayments = async () => {
-    setIsSettingUpPayments(true);
-    try {
-      console.log("🚀 Setting up Synapse payments...");
-
-      await setupSynapsePayments();
-
-      console.log("✅ Payment setup successful!");
-      alert("Payment setup completed! You can now upload to Synapse.");
-    } catch (error) {
-      console.error("❌ Payment setup failed:", error);
-      alert(
-        `Payment setup failed: ${
-          error instanceof Error ? error.message : String(error)
-        }`
-      );
-    } finally {
-      setIsSettingUpPayments(false);
-    }
-  };
-
-  const handleSynapseUpload = async () => {
-    if (!title.trim() || !markdownContent.trim()) {
-      alert("Please add a title and content before uploading to Synapse");
-      return;
-    }
-
-    setIsSynapseUploading(true);
-    try {
-      const data = {
-        title,
-        content: markdownContent,
-        userWalletAddress: account || "",
-        tags,
-        coverImage,
-      };
-
-      console.log("🚀 Starting Synapse upload...");
-      console.log("📝 Upload data:", data);
-
-      const result = await useSynapseClient(data);
-
-      console.log("✅ Synapse upload successful:", result);
-
-      // Store the pieceCid for later retrieval
-      if (result.pieceCidString) {
-        setSynapsePieceCid(result.pieceCidString);
-        console.log("💾 Stored PieceCID:", result.pieceCidString);
-      }
-    } catch (error) {
-      console.error("❌ Synapse upload failed:", error);
-      alert(
-        `Upload failed: ${
-          error instanceof Error ? error.message : String(error)
-        }`
-      );
-    } finally {
-      setIsSynapseUploading(false);
-    }
-  };
-
-  const handleDownload = async () => {
-    if (!synapsePieceCid) {
-      alert("No PieceCID available for download");
-      return;
-    }
-
-    setIsDownloading(true);
-    try {
-      console.log("📥 Starting download...");
-      const result = await downloadFromSynapse(synapsePieceCid);
-
-      console.log("✅ Download successful:", result);
-      alert(`Download successful! Data: ${result.data}`);
-    } catch (error) {
-      console.error("❌ Download failed:", error);
-      alert(
-        `Download failed: ${
-          error instanceof Error ? error.message : String(error)
-        }`
-      );
-    } finally {
-      setIsDownloading(false);
-    }
-  };
-
-  const handleCleanup = async () => {
-    setIsCleaningUp(true);
-    try {
-      console.log("🧹 Starting cleanup...");
-      await cleanupSynapseConnection();
-      console.log("✅ Cleanup completed!");
-      alert("Synapse connection cleaned up successfully!");
-    } catch (error) {
-      console.error("❌ Cleanup failed:", error);
-      alert(
-        `Cleanup failed: ${
-          error instanceof Error ? error.message : String(error)
-        }`
-      );
-    } finally {
-      setIsCleaningUp(false);
-    }
-  };
-
-  // Cleanup on component unmount
-  useEffect(() => {
-    return () => {
-      // Cleanup when component unmounts
-      cleanupSynapseConnection().catch(console.error);
-    };
-  }, []);
-
   // todo: post count might be wrong, because someone might post after it is fetched
   const { data: postCount } = useReadCurateAiPostsPostCounter({
     address: contract.post as `0x${string}`,
@@ -201,8 +77,8 @@ export default function CreatePostPage() {
         throw new Error("User wallet address not available");
       }
 
-      // Step 1: Upload to Synapse (same logic as Upload to Synapse button)
-      console.log("Step 1: Uploading to Synapse...");
+      // Step 1: Upload to IPFS using Pinata
+      console.log("Step 1: Uploading to IPFS...");
       const data = {
         title,
         content: markdownContent,
@@ -211,20 +87,14 @@ export default function CreatePostPage() {
         coverImage,
       };
 
-      console.log("🚀 Starting Synapse upload for publish...");
+      console.log("🚀 Starting IPFS upload for publish...");
       console.log("📝 Upload data:", data);
 
-      const synapseResult = await useSynapseClient(data);
-      console.log("✅ Synapse upload successful:", synapseResult);
+      const ipfsResult = await mutateAsync(data);
+      console.log("✅ IPFS upload successful:", ipfsResult);
 
-      // Store the pieceCid for later retrieval
-      if (synapseResult.pieceCidString) {
-        setSynapsePieceCid(synapseResult.pieceCidString);
-        console.log("💾 Stored PieceCID:", synapseResult.pieceCidString);
-      }
-
-      // Use the PieceCID as the IPFS hash for the blockchain transaction
-      const ipfsHash = synapseResult.pieceCidString;
+      // Use the IPFS hash for the blockchain transaction
+      const ipfsHash = ipfsResult.IpfsHash;
 
       // Step 2: Create post in database (without transaction hash)
       console.log("Step 2: Creating post in database...");
@@ -257,7 +127,7 @@ export default function CreatePostPage() {
         if (typeof result === "string") {
           txHash = result;
         } else if (result && typeof result === "object" && "hash" in result) {
-          txHash = result.hash;
+          txHash = (result as any).hash;
         } else {
           console.error("Unexpected transaction result format:", result);
           txHash = undefined;
@@ -303,7 +173,7 @@ export default function CreatePostPage() {
       return;
     }
 
-    // Proceed directly to contract write (which uses Synapse)
+    // Proceed directly to contract write (which uses IPFS)
     handleContractWrite();
   };
 
@@ -327,38 +197,6 @@ export default function CreatePostPage() {
 
   return (
     <CreateLayout>
-      {/* Synapse Payment Setup */}
-      <div className="mb-4 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-1">
-              Synapse Payment Setup
-            </h3>
-            <p className="text-sm text-gray-600">
-              Set up payments for Filecoin storage (one-time setup)
-            </p>
-          </div>
-          <button
-            onClick={handleSetupPayments}
-            disabled={isSettingUpPayments}
-            className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
-              isSettingUpPayments
-                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                : "bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-700 hover:to-emerald-700 shadow-lg hover:shadow-xl transform hover:scale-105"
-            }`}
-          >
-            {isSettingUpPayments ? (
-              <div className="flex items-center">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                Setting up...
-              </div>
-            ) : (
-              "Setup Payments"
-            )}
-          </button>
-        </div>
-      </div>
-
       <CreateHeader
         title={title}
         setTitle={setTitle}

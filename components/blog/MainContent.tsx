@@ -32,7 +32,7 @@ export const MainContent = ({ blogPosts = [] }: MainContentProps) => {
 
   return (
     <main className="flex-1 px-4 sm:px-6 lg:px-8 lg:py-20 py-8">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-2xl mx-auto">
         <div className="mb-8">
           <Tabs
             defaultValue={activeTab}

@@ -13,6 +13,7 @@ export default function HomePage() {
   const { data, isLoading, error, isError } = usePosts({
     page: currentPage,
     limit: pageSize,
+    sortOrder: "desc",
     // published: true
   });
 

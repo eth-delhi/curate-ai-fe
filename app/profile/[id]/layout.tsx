@@ -1,6 +1,6 @@
 import React from "react";
 import AuthGuard from "@/components/auth/AuthGuard";
-import { Navbar } from "@/components/ui/Navbar";
+import Navbar from "@/components/ui/Navbar";
 
 export default function ProfileLayout({
   children,

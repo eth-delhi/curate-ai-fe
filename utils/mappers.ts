@@ -11,15 +11,11 @@ const defaultImages = [
 
 // Map API post response to BlogPost format
 export const mapApiPostToBlogPost = (apiPost: PostResponseDto): BlogPost => {
-  // Generate a consistent image based on the post ID
-  const imageIndex = apiPost.uuid.charCodeAt(0) % defaultImages.length;
-  const defaultImage = defaultImages[imageIndex];
-
   return {
     id: apiPost.uuid,
     title: apiPost.title,
     content: apiPost.content || "",
-    imageUrl: defaultImage, // Use default image based on post ID
+    imageUrl: apiPost.thumbnail || null, // Use real thumbnail from API, null if not available
     contentHash: apiPost.ipfsHash, // Using ipfsHash as contentHash
     internal_id: apiPost.internal_id?.toString() || "",
     tags: [], // API doesn't provide tags, using empty array as default

@@ -55,6 +55,173 @@ interface ImageData {
   file: File;
 }
 
+// Floating Toolbar for Text Selection
+const FloatingToolbar = ({
+  editor,
+  position,
+}: {
+  editor: any;
+  position: { top: number; left: number };
+}) => {
+  if (!editor) return null;
+
+  return (
+    <div
+      className="floating-toolbar fixed z-50 bg-white border border-gray-200 rounded-lg shadow-lg p-1 flex items-center gap-1"
+      style={{
+        top: position.top,
+        left: position.left,
+      }}
+    >
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => editor.chain().focus().toggleBold().run()}
+        className={`h-8 w-8 p-0 ${
+          editor.isActive("bold")
+            ? "bg-gray-100 text-gray-800"
+            : "text-gray-600 hover:bg-gray-50"
+        }`}
+        title="Bold"
+      >
+        <Bold className="h-4 w-4" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => editor.chain().focus().toggleItalic().run()}
+        className={`h-8 w-8 p-0 ${
+          editor.isActive("italic")
+            ? "bg-gray-100 text-gray-800"
+            : "text-gray-600 hover:bg-gray-50"
+        }`}
+        title="Italic"
+      >
+        <Italic className="h-4 w-4" />
+      </Button>
+      <div className="w-px h-6 bg-gray-200 mx-1"></div>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => {
+          console.log("H1 clicked, editor:", editor);
+          console.log(
+            "Can toggle heading:",
+            editor.can().toggleHeading({ level: 1 })
+          );
+          editor.chain().focus().toggleHeading({ level: 1 }).run();
+        }}
+        className={`h-8 w-8 p-0 ${
+          editor.isActive("heading", { level: 1 })
+            ? "bg-gray-100 text-gray-800"
+            : "text-gray-600 hover:bg-gray-50"
+        }`}
+        title="Heading 1"
+      >
+        <Heading1 className="h-4 w-4" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => {
+          console.log("H2 clicked, editor:", editor);
+          console.log(
+            "Can toggle heading:",
+            editor.can().toggleHeading({ level: 2 })
+          );
+          editor.chain().focus().toggleHeading({ level: 2 }).run();
+        }}
+        className={`h-8 w-8 p-0 ${
+          editor.isActive("heading", { level: 2 })
+            ? "bg-gray-100 text-gray-800"
+            : "text-gray-600 hover:bg-gray-50"
+        }`}
+        title="Heading 2"
+      >
+        <Heading2 className="h-4 w-4" />
+      </Button>
+    </div>
+  );
+};
+
+// Image Upload Toolbar for Empty Line Clicks
+const ImageUploadToolbar = ({
+  editor,
+  position,
+  onImageDataUpdate,
+}: {
+  editor: any;
+  position: { top: number; left: number };
+  onImageDataUpdate: (data: ImageData) => void;
+}) => {
+  const [isImageUploading, setIsImageUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setIsImageUploading(true);
+      try {
+        const formData = new FormData();
+        formData.append("image", file);
+        const response = await API.post("/posts/image-upload", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+        const { url } = response.data;
+
+        editor.chain().focus().setImage({ src: url }).run();
+
+        // Update image data
+        onImageDataUpdate({
+          fileId: response.data.fileId || "",
+          url: url,
+          file: file,
+        });
+      } catch (error) {
+        console.error("Failed to upload image:", error);
+        alert("Failed to upload image. Please try again.");
+      } finally {
+        setIsImageUploading(false);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+      }
+    }
+  };
+
+  if (!editor) return null;
+
+  return (
+    <div
+      className="floating-toolbar fixed z-50 bg-gray-100 border border-gray-200 rounded-lg shadow-lg p-1"
+      style={{
+        top: position.top,
+        left: position.left,
+      }}
+    >
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => fileInputRef.current?.click()}
+        disabled={isImageUploading}
+        className="h-8 w-8 p-0 text-gray-500 hover:bg-gray-200"
+        title="Add Image"
+      >
+        {isImageUploading ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <ImageIcon className="h-4 w-4" />
+        )}
+      </Button>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleImageUpload}
+        className="hidden"
+      />
+    </div>
+  );
+};
+
 const MenuBar = ({
   editor,
   onImageDataUpdate,
@@ -121,6 +288,9 @@ const MenuBar = ({
   };
 
   if (!editor) return null;
+
+  // Hide the static toolbar - we're using floating toolbars now
+  return null;
 
   return (
     <div className="bg-white sticky top-0 z-10 border-b border-gray-100">
@@ -460,6 +630,16 @@ const AdvancedEditor = ({
   onImageDataUpdate,
 }: AdvancedEditorProps) => {
   const [activeTab, setActiveTab] = useState("edit");
+  const [floatingToolbarPosition, setFloatingToolbarPosition] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
+  const [imageToolbarPosition, setImageToolbarPosition] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
+  const [showFloatingToolbar, setShowFloatingToolbar] = useState(false);
+  const [showImageToolbar, setShowImageToolbar] = useState(false);
 
   const handleSelectionChange = useCallback(() => {
     if (!onTextSelection) return;
@@ -496,7 +676,9 @@ const AdvancedEditor = ({
         openOnClick: false,
       }),
       Placeholder.configure({
-        placeholder: "Write your post content here...",
+        placeholder: "Start writing your story...",
+        showOnlyWhenEditable: true,
+        showOnlyCurrent: true,
       }),
     ],
     content: initialContent || ``,
@@ -505,14 +687,44 @@ const AdvancedEditor = ({
         class:
           "prose prose-blue max-w-none focus:outline-none w-full h-full px-6 py-4",
       },
+      handleClick: (view, pos, event) => {
+        // Handle empty line clicks for image upload
+        const { from } = view.state.selection;
+        const $pos = view.state.doc.resolve(from);
+        const isEmpty = $pos.parent.textContent.trim() === "";
+
+        if (isEmpty) {
+          const coords = view.coordsAtPos(from);
+          setImageToolbarPosition({
+            top: coords.top - 10,
+            left: 145, // Position in the gap between left sidebar (125px) and canvas
+          });
+          setShowImageToolbar(true);
+          setShowFloatingToolbar(false);
+        } else {
+          setShowImageToolbar(false);
+        }
+      },
     },
     onSelectionUpdate: ({ editor }) => {
-      if (onTextSelection) {
-        const { from, to } = editor.state.selection;
-        const text = editor.state.doc.textBetween(from, to, " ");
-        if (text.trim()) {
-          onTextSelection(text);
-        }
+      const { from, to } = editor.state.selection;
+      const text = editor.state.doc.textBetween(from, to, " ");
+
+      if (onTextSelection && text.trim()) {
+        onTextSelection(text);
+      }
+
+      // Show floating toolbar for text selection
+      if (text.trim() && from !== to) {
+        const coords = editor.view.coordsAtPos(from);
+        setFloatingToolbarPosition({
+          top: coords.top - 60,
+          left: coords.left,
+        });
+        setShowFloatingToolbar(true);
+        setShowImageToolbar(false);
+      } else {
+        setShowFloatingToolbar(false);
       }
     },
     onUpdate: ({ editor }) => {
@@ -530,6 +742,25 @@ const AdvancedEditor = ({
     }
   }, [editor, initialContent, setMarkdownContent]);
 
+  // Hide toolbars when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (
+        !target.closest(".floating-toolbar") &&
+        !target.closest(".ProseMirror")
+      ) {
+        setShowFloatingToolbar(false);
+        setShowImageToolbar(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
   return (
     <div className="flex flex-col h-full">
       <Tabs
@@ -537,19 +768,19 @@ const AdvancedEditor = ({
         onValueChange={setActiveTab}
         className="w-full h-full flex flex-col"
       >
-        <div className="flex items-center justify-between px-4 py-2 bg-gray-50 border-b border-gray-100">
+        <div className="flex items-center justify-between px-4 py-2">
           <div className="flex items-center justify-between w-full">
             <TabsList className="bg-gray-100">
               <TabsTrigger
                 value="edit"
-                className="data-[state=active]:bg-blue-600 data-[state=active]:text-white"
+                className="data-[state=active]:bg-gray-600 data-[state=active]:text-white"
               >
                 <Edit className="h-4 w-4 mr-2" />
                 Edit
               </TabsTrigger>
               <TabsTrigger
                 value="preview"
-                className="data-[state=active]:bg-blue-600 data-[state=active]:text-white"
+                className="data-[state=active]:bg-gray-600 data-[state=active]:text-white"
               >
                 <Eye className="h-4 w-4 mr-2" />
                 Preview
@@ -599,10 +830,19 @@ const AdvancedEditor = ({
           </TabsContent>
         </div>
       </Tabs>
-      <div className="px-4 py-3 bg-gray-50 text-xs text-gray-500 flex items-center border-t border-gray-100">
-        <span className="mr-2">Tip:</span> Select text and click "Improve with
-        AI" to get AI suggestions for that specific section.
-      </div>
+
+      {/* Floating Toolbars */}
+      {showFloatingToolbar && floatingToolbarPosition && (
+        <FloatingToolbar editor={editor} position={floatingToolbarPosition} />
+      )}
+
+      {showImageToolbar && imageToolbarPosition && (
+        <ImageUploadToolbar
+          editor={editor}
+          position={imageToolbarPosition}
+          onImageDataUpdate={onImageDataUpdate}
+        />
+      )}
     </div>
   );
 };
