@@ -11,6 +11,7 @@ export const convertBlogPostToDisplayPost = (
 ): DisplayPost => {
   return {
     id: post.id,
+    uuid: post.id, // Add uuid for consistency
     title: post.title,
     content: stripHtmlTags(post.content), // Strip HTML tags from content
     imageUrl: post.imageUrl, // Use real thumbnail from API (can be null)
@@ -18,6 +19,8 @@ export const convertBlogPostToDisplayPost = (
     timeAgo: "Recently",
     authorAvatar: AUTHOR_AVATARS[index % AUTHOR_AVATARS.length],
     readTime: "5 min read",
+    clapCount: post.clapCount, // Pass clapCount from BlogPost
+    commentCount: post.commentCount, // Pass commentCount from BlogPost
   };
 };
 

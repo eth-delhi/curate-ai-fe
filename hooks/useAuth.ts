@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import API from "@/hooks/utils/axiosInstance";
 import { showToast } from "@/utils/showToast";
 import { useMagicState } from "@/context/magic.provider";
@@ -13,6 +13,19 @@ interface AuthState {
   token: string | null;
 }
 
+// Public routes that don't require authentication
+const PUBLIC_ROUTES = ["/auth", "/post-revamp", "/post/", "/home-revamp", "/"];
+
+// Check if current path is a public route
+const isPublicRoute = (pathname: string): boolean => {
+  return PUBLIC_ROUTES.some((route) => {
+    if (route.endsWith("/")) {
+      return pathname.startsWith(route);
+    }
+    return pathname === route || pathname.startsWith(route + "/");
+  });
+};
+
 export const useAuth = () => {
   const [authState, setAuthState] = useState<AuthState>({
     isAuthenticated: false,
@@ -22,6 +35,37 @@ export const useAuth = () => {
   const { setToken } = useMagicState();
   const { magic } = useMagic();
   const router = useRouter();
+  const pathname = usePathname();
+
+  const logout = useCallback(() => {
+    localStorage.removeItem("accessToken");
+    setAuthState({
+      isAuthenticated: false,
+      isLoading: false,
+      token: null,
+    });
+    setToken("");
+    router.push("/auth");
+  }, [router, setToken]);
+
+  const refreshToken = useCallback(async (): Promise<boolean> => {
+    try {
+      const res = await API.post("/auth/refresh", {});
+
+      const newAccessToken = res.data.access_token;
+      localStorage.setItem("accessToken", newAccessToken);
+      setAuthState((prev) => ({ ...prev, token: newAccessToken }));
+      console.log("Token refreshed successfully");
+      return true;
+    } catch (error) {
+      console.error("Error refreshing token:", error);
+      // Don't auto-logout on public routes
+      if (!isPublicRoute(pathname || "")) {
+        logout();
+      }
+      return false;
+    }
+  }, [logout, pathname]);
 
   const checkTokenValidity = useCallback(
     async (token: string): Promise<boolean> => {
@@ -41,38 +85,22 @@ export const useAuth = () => {
         return false;
       }
     },
-    []
+    [refreshToken]
   );
-
-  const refreshToken = useCallback(async (): Promise<boolean> => {
-    try {
-      const res = await API.post("/auth/refresh", {});
-
-      const newAccessToken = res.data.access_token;
-      localStorage.setItem("accessToken", newAccessToken);
-      setAuthState((prev) => ({ ...prev, token: newAccessToken }));
-      console.log("Token refreshed successfully");
-      return true;
-    } catch (error) {
-      console.error("Error refreshing token:", error);
-      logout();
-      return false;
-    }
-  }, []);
-
-  const logout = useCallback(() => {
-    localStorage.removeItem("accessToken");
-    setAuthState({
-      isAuthenticated: false,
-      isLoading: false,
-      token: null,
-    });
-    setToken("");
-    router.push("/auth");
-  }, [router]);
 
   const checkAuth = useCallback(async () => {
     try {
+      // Skip auth check for public routes
+      if (pathname && isPublicRoute(pathname)) {
+        const token = localStorage.getItem("accessToken");
+        setAuthState({
+          isAuthenticated: !!token,
+          isLoading: false,
+          token: token,
+        });
+        return;
+      }
+
       const token = localStorage.getItem("accessToken");
 
       if (!token) {
@@ -102,9 +130,18 @@ export const useAuth = () => {
       }
     } catch (error) {
       console.error("Authentication check failed:", error);
-      logout();
+      // Don't auto-logout on public routes
+      if (!isPublicRoute(pathname || "")) {
+        logout();
+      } else {
+        setAuthState({
+          isAuthenticated: false,
+          isLoading: false,
+          token: null,
+        });
+      }
     }
-  }, [checkTokenValidity, logout, router]);
+  }, [checkTokenValidity, logout, router, pathname]);
 
   const login = useCallback((token: string) => {
     localStorage.setItem("accessToken", token);

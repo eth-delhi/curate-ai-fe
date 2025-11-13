@@ -97,8 +97,8 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
     commentsData?.filter((comment) => !comment.parentCommentUuid) || [];
 
   return (
-    <div className="bg-white rounded-xl shadow-sm p-6 mb-8">
-      <h2 className="text-xl font-bold text-gray-900 mb-6">
+    <div className="bg-white p-6">
+      <h2 className="text-lg font-semibold text-gray-900 mb-6">
         Comments ({commentsData?.length || 0})
       </h2>
 
@@ -107,7 +107,7 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
         {isAuthenticated ? (
           <form onSubmit={handleCommentSubmit}>
             <div className="flex gap-3 mb-3">
-              <Avatar className="h-10 w-10">
+              <Avatar className="h-10 w-10 border border-gray-200">
                 <AvatarImage src="/placeholder.svg" alt="User" />
                 <AvatarFallback>
                   <User className="h-5 w-5" />
@@ -120,7 +120,10 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
                       ? formatWalletAddress(userAddress)
                       : "Anonymous User"}
                   </p>
-                  <Badge variant="secondary" className="text-xs">
+                  <Badge
+                    variant="secondary"
+                    className="text-xs bg-gray-100 text-gray-600"
+                  >
                     You
                   </Badge>
                 </div>
@@ -130,14 +133,14 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
                   }
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
-                  className="min-h-[100px] border-gray-200 focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                  className="min-h-[100px] border-gray-200 focus:border-gray-300 focus:ring focus:ring-gray-100 focus:ring-opacity-50 bg-gray-50"
                 />
               </div>
             </div>
 
             {replyingTo && (
               <div className="mb-3 ml-13">
-                <Badge variant="outline" className="text-xs">
+                <Badge variant="outline" className="text-xs border-gray-200">
                   Replying to comment
                 </Badge>
                 <button
@@ -154,7 +157,7 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
               <Button
                 type="submit"
                 disabled={!newComment.trim() || createCommentMutation.isPending}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
+                className="bg-gray-800 hover:bg-gray-900 text-white"
               >
                 {createCommentMutation.isPending ? (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -166,8 +169,8 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
             </div>
           </form>
         ) : (
-          <div className="p-4 bg-gray-50 rounded-lg">
-            <p className="text-gray-600 text-center">
+          <div className="p-4 bg-gray-50 rounded-lg border border-gray-100">
+            <p className="text-gray-600 text-center text-sm">
               Please log in to leave a comment.
             </p>
           </div>

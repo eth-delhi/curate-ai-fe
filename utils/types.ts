@@ -19,6 +19,8 @@ export type BlogPost = {
   aiRating: number;
   ipfsHash?: string;
   transactionHash?: string;
+  clapCount?: number; // Clap count from API
+  commentCount?: number; // Comment count from API
 };
 
 // API response types
@@ -34,6 +36,8 @@ export interface PostResponseDto {
   internal_id?: number;
   transactionHash?: string;
   thumbnail?: string | null; // Add thumbnail field
+  clapCount?: number; // Clap count from API
+  commentCount?: number; // Comment count from API
 }
 
 export interface CreatePostRequestDto {
@@ -101,6 +105,7 @@ export interface CommentDto {
 export interface AuthorDto {
   walletAddress: string;
   email: string;
+  uuid?: string; // User UUID if available
 }
 
 export interface AIPostRatingDto {
@@ -133,6 +138,7 @@ export interface SinglePostResponseDto {
   aiRating?: AIPostRatingDto;
   comments?: CommentDto[];
   thumbnail?: string | null; // Add thumbnail field
+  flagCount?: number; // Add flag count field
 }
 
 export type TxnParams = {

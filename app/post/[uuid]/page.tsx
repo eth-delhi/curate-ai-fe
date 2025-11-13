@@ -30,10 +30,10 @@ import { useSinglePost } from "@/hooks/api/posts";
 import { useAccount } from "wagmi";
 import { contract } from "@/constants/contract";
 import {
-  useReadCuratAiTokenBalanceOf,
   useWriteCurateAiVoteVote,
   useReadCurateAiPostsGetPostScore,
 } from "@/hooks/wagmi/contracts";
+import { useCatTokenBalance } from "@/hooks/wagmi/useCatTokenBalance";
 import { CommentsSection } from "@/components/comments/CommentsSection";
 import {
   useCreateScore,
@@ -67,10 +67,7 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
   } = useSinglePost(params.uuid);
 
   // Fetch user token balance
-  const { data: tokenBalance } = useReadCuratAiTokenBalanceOf({
-    address: contract.token as `0x${string}`,
-    args: [userAddress as `0x${string}`],
-  });
+  const { balance: tokenBalance } = useCatTokenBalance();
 
   // Fetch post score from blockchain
   const { data: postScore } = useReadCurateAiPostsGetPostScore({

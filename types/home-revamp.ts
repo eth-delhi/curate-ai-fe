@@ -1,5 +1,6 @@
 export interface DisplayPost {
   id: string;
+  uuid?: string;
   title: string;
   content: string;
   imageUrl: string;
@@ -7,6 +8,8 @@ export interface DisplayPost {
   timeAgo: string;
   authorAvatar: string;
   readTime?: string;
+  clapCount?: number;
+  commentCount?: number;
 }
 
 export interface User {

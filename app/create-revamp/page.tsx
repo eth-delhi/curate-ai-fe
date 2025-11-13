@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import axios from "axios";
 import { useAccount } from "wagmi";
 import { ConfirmActionModal } from "@/components/modal/confirmActionModal";
@@ -16,6 +16,8 @@ import {
 } from "@/hooks/api/create";
 import { useIPFSUpload } from "@/hooks/ipfs/uploadToIpfs";
 import { contract } from "@/constants/contract";
+import { useSaveDraft, useGetDraft } from "@/hooks/api/drafts";
+import MarkdownIt from "markdown-it";
 import AdvancedEditor from "@/components/advanced-editor";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -47,6 +49,13 @@ const DUMMY_TOPICS = [
   "Programming",
 ];
 
+// Markdown parser for converting markdown to HTML
+const md = new MarkdownIt({
+  html: true,
+  linkify: true,
+  typographer: true,
+});
+
 export default function CreateRevampPage() {
   const [title, setTitle] = useState("");
   const [tags, setTags] = useState<string[]>([]);
@@ -60,10 +69,20 @@ export default function CreateRevampPage() {
   const [coverImage, setCoverImage] = useState("");
   const [markdownContent, setMarkdownContent] = useState("");
   const [transactionHash, setTransactionHash] = useState<string | null>(null);
+  const [currentDraftUuid, setCurrentDraftUuid] = useState<string | undefined>(
+    undefined
+  );
 
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const draftUuidFromUrl = searchParams.get("draft");
   const { address: account } = useAccount();
   const tagInputRef = useRef<HTMLInputElement>(null);
+  const { mutateAsync: saveDraftMutation } = useSaveDraft();
+
+  // Fetch draft if UUID is in URL
+  const { data: loadedDraft, isLoading: isLoadingDraft } =
+    useGetDraft(draftUuidFromUrl);
 
   const {
     writeContractAsync,
@@ -242,6 +261,66 @@ export default function CreateRevampPage() {
   const handleTextSelection = (text: string) => {
     setSelectedText(text);
   };
+
+  // Load draft when UUID is provided in URL (only once)
+  const hasLoadedDraft = useRef(false);
+  useEffect(() => {
+    if (loadedDraft && !isLoadingDraft && !hasLoadedDraft.current) {
+      hasLoadedDraft.current = true;
+      if (loadedDraft.title) {
+        setTitle(loadedDraft.title);
+      }
+      if (loadedDraft.content) {
+        // Set markdown content (this is what gets saved)
+        setMarkdownContent(loadedDraft.content);
+        // Convert markdown to HTML for the editor (TipTap expects HTML)
+        const htmlContent = md.render(loadedDraft.content);
+        setEditorContent(htmlContent);
+      }
+      if (loadedDraft.uuid) {
+        setCurrentDraftUuid(loadedDraft.uuid);
+      }
+    }
+  }, [loadedDraft, isLoadingDraft]);
+
+  // Auto-save when title or content changes (but skip if we're loading a draft)
+  useEffect(() => {
+    // Don't auto-save while loading a draft from URL
+    if (isLoadingDraft) {
+      return;
+    }
+
+    // Only save if there's at least a title or content
+    if (!title.trim() && !markdownContent.trim()) {
+      return;
+    }
+
+    const timeoutId = setTimeout(async () => {
+      try {
+        const savedDraft = await saveDraftMutation({
+          title: title.trim() || undefined,
+          content: markdownContent.trim() || undefined,
+          uuid: currentDraftUuid || draftUuidFromUrl || undefined,
+        });
+        // Update draft UUID if this was a new draft
+        if (!currentDraftUuid && savedDraft.uuid) {
+          setCurrentDraftUuid(savedDraft.uuid);
+        }
+      } catch (error) {
+        console.error("Failed to save draft:", error);
+        // Silently fail - don't interrupt user's writing
+      }
+    }, 2000); // 2 second debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [
+    title,
+    markdownContent,
+    currentDraftUuid,
+    saveDraftMutation,
+    draftUuidFromUrl,
+    isLoadingDraft,
+  ]);
 
   return (
     <div className="flex flex-col h-screen bg-[#f0f0f0] checkered-bg">

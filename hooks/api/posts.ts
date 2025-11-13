@@ -34,6 +34,7 @@ export interface ListPostsParams {
   page?: number;
   limit?: number;
   authorAddress?: string;
+  userUuid?: string;
   published?: boolean;
   sortBy?: string;
   sortOrder?: "asc" | "desc";
@@ -54,6 +55,7 @@ export const fetchPosts = async (
   // Add other optional params
   if (params.authorAddress)
     searchParams.append("authorAddress", params.authorAddress);
+  if (params.userUuid) searchParams.append("userUuid", params.userUuid);
   if (params.published !== undefined)
     searchParams.append("published", params.published.toString());
   if (params.sortBy) searchParams.append("sortBy", params.sortBy);

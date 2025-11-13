@@ -5,7 +5,7 @@ import { useAccount, useWriteContract } from "wagmi";
 import { useCreateScore, useUpdateScore } from "@/hooks/api/scores";
 import { showToast } from "@/utils/showToast";
 import { Star, Loader2 } from "lucide-react";
-import { useReadCuratAiTokenBalanceOf } from "@/hooks/wagmi/contracts";
+import { useCatTokenBalance } from "@/hooks/wagmi/useCatTokenBalance";
 import { useWriteCurateAiVoteVote } from "@/hooks/wagmi/contracts";
 
 interface ScoreButtonProps {
@@ -30,9 +30,7 @@ export const ScoreButton: React.FC<ScoreButtonProps> = ({
   const updateScoreMutation = useUpdateScore(postUuid);
 
   // Blockchain hooks
-  const { data: tokenBalance } = useReadCuratAiTokenBalanceOf({
-    address: userAddress as `0x${string}`,
-  });
+  const { balance: tokenBalance } = useCatTokenBalance();
 
   const { writeContractAsync } = useWriteCurateAiVoteVote();
 

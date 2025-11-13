@@ -1,108 +1,122 @@
 "use client";
 
-import { Sparkles } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { RightSidebarProps } from "@/types/home-revamp";
-import {
-  DUMMY_USERS,
-  DUMMY_TRENDS,
-  DUMMY_TOPICS,
-} from "@/constants/home-revamp";
+import { MessageSquare } from "lucide-react";
+import Link from "next/link";
+import { DUMMY_DISCUSSIONS, DUMMY_USERS } from "@/constants/home-revamp";
 
-const UserCard = ({
+const DiscussionItem = ({
+  discussion,
+}: {
+  discussion: {
+    title: string;
+    comments: number;
+    isNew?: boolean;
+  };
+}) => (
+  <Link
+    href="#"
+    className="block py-2 hover:bg-gray-50 rounded px-1 transition-colors"
+  >
+    <div className="flex items-start justify-between gap-2">
+      <p className="text-sm text-gray-900 flex-1 leading-snug">
+        {discussion.title}
+      </p>
+      {discussion.isNew && (
+        <span className="text-xs font-medium bg-yellow-100 text-yellow-700 px-1 py-0.5 rounded flex-shrink-0">
+          New
+        </span>
+      )}
+    </div>
+    {discussion.comments > 0 && (
+      <p className="text-xs text-gray-400 mt-1">
+        {discussion.comments} comments
+      </p>
+    )}
+  </Link>
+);
+
+const PersonToFollowItem = ({
   user,
   onFollow,
 }: {
   user: any;
   onFollow?: (userId: string) => void;
-}) => (
-  <div className="flex items-center justify-between">
-    <div className="flex items-center gap-2">
-      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-gray-400 to-gray-600" />
-      <span className="text-sm font-medium">{user.name}</span>
+}) => {
+  // Generate consistent dummy profile picture based on user name
+  const nameHash = user.name
+    .split("")
+    .reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);
+  const imgIndex = (nameHash % 70) + 1;
+  const avatarUrl = `https://i.pravatar.cc/150?img=${imgIndex}`;
+
+  // Generate username from name (lowercase, replace spaces with dots)
+  const username =
+    user.username || `@${user.name.toLowerCase().replace(/\s+/g, ".")}`;
+
+  return (
+    <div className="flex items-center gap-2 py-2 hover:bg-gray-50 rounded px-1 transition-colors">
+      <Link
+        href={`/profile-revamp/${user.uuid || user.name}`}
+        className="flex items-center gap-2 flex-1 min-w-0"
+      >
+        <img
+          src={avatarUrl}
+          alt={user.name}
+          className="w-6 h-6 rounded-full object-cover flex-shrink-0"
+        />
+        <div className="flex-1 min-w-0">
+          <p className="text-sm text-gray-900 leading-snug">{user.name}</p>
+          <p className="text-xs text-gray-500 leading-snug">{username}</p>
+        </div>
+      </Link>
+      <button
+        className="text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-100 px-2 py-1 rounded transition-colors flex-shrink-0 border-none bg-transparent"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onFollow?.(user.name);
+        }}
+      >
+        Follow
+      </button>
     </div>
-    <Button
-      variant={user.following ? "default" : "outline"}
-      size="sm"
-      className={
-        user.following
-          ? "bg-black hover:bg-gray-800 rounded-full text-white cursor-pointer"
-          : "rounded-full cursor-pointer"
-      }
-      onClick={() => onFollow?.(user.name)}
-    >
-      {user.following ? "Following" : "Follow"}
-    </Button>
-  </div>
-);
+  );
+};
 
-const TrendCard = ({ trend }: { trend: any }) => (
-  <div>
-    <h4 className="font-medium text-sm mb-1">{trend.title}</h4>
-    <div className="flex items-center gap-2">
-      <span className="text-xs text-gray-500">By</span>
-      <div className="w-4 h-4 rounded-full bg-gradient-to-br from-gray-400 to-gray-600" />
-      <span className="text-xs text-gray-700">{trend.author}</span>
-    </div>
-  </div>
-);
-
-const TopicButton = ({
-  topic,
-  onClick,
-}: {
-  topic: string;
-  onClick?: (topic: string) => void;
-}) => (
-  <button
-    className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-full text-sm font-medium transition-colors cursor-pointer"
-    onClick={() => onClick?.(topic)}
-  >
-    {topic}
-  </button>
-);
-
-export const RightSidebar = ({
-  users = DUMMY_USERS,
-  trends = DUMMY_TRENDS,
-  topics = DUMMY_TOPICS,
-  onFollowUser,
-  onTopicClick,
-}: RightSidebarProps) => {
+export const RightSidebar = () => {
   return (
     <div className="w-80 bg-white border-l border-gray-100 p-6 overflow-y-auto">
+      {/* #discuss Section */}
+      <div className="mb-8">
+        <h3 className="text-sm font-bold text-gray-900 mb-2">#discuss</h3>
+        <p className="text-xs text-gray-500 mb-4">
+          Discussion threads targeting the whole community
+        </p>
+        <div className="space-y-1">
+          {DUMMY_DISCUSSIONS.slice(0, 4).map((discussion, i) => (
+            <DiscussionItem key={i} discussion={discussion} />
+          ))}
+        </div>
+      </div>
+
       {/* People to Follow */}
-      <div className="mb-10">
-        <h3 className="font-semibold mb-5 flex items-center gap-2">
-          <Sparkles className="w-4 h-4" /> People who to follow
-        </h3>
-        <div className="space-y-4">
-          {users.map((user, i) => (
-            <UserCard key={i} user={user} onFollow={onFollowUser} />
-          ))}
-        </div>
-      </div>
-
-      {/* Top Trends */}
-      <div className="mb-10">
-        <h3 className="font-semibold mb-5 flex items-center gap-2">
-          <span className="rotate-45">◆</span> Today's top trends
-        </h3>
-        <div className="space-y-5">
-          {trends.map((trend, i) => (
-            <TrendCard key={i} trend={trend} />
-          ))}
-        </div>
-      </div>
-
-      {/* Topics */}
       <div>
-        <h3 className="font-semibold mb-5 flex items-center gap-2">
-          <Sparkles className="w-4 h-4" /> Topics for you
+        <h3 className="text-sm font-bold text-gray-900 mb-2">
+          #people to follow
         </h3>
-        <div className="flex flex-wrap gap-2">
-          {topics.map((topic, i) => (
-            <TopicButton key={i} topic={topic} onClick={onTopicClick} />
+        <p className="text-xs text-gray-500 mb-4">
+          Discover creators and thought leaders
+        </p>
+        <div className="space-y-1">
+          {DUMMY_USERS.map((user, i) => (
+            <PersonToFollowItem
+              key={i}
+              user={user}
+              onFollow={(name) => {
+                console.log("Follow user:", name);
+                // Handle follow logic here
+              }}
+            />
           ))}
         </div>
       </div>

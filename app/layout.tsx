@@ -4,6 +4,7 @@ import "./globals.css";
 import { Magic } from "@/context/magic.provider";
 import { Wagmi } from "@/context/wagmi.provider";
 import { QueryProvider } from "@/context/query.provider";
+import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,7 +33,10 @@ export default function RootLayout({
       >
         <Magic>
           <Wagmi>
-            <QueryProvider>{children}</QueryProvider>
+            <QueryProvider>
+              <ServiceWorkerRegistration />
+              {children}
+            </QueryProvider>
           </Wagmi>
         </Magic>
       </body>

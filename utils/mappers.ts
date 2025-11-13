@@ -25,6 +25,8 @@ export const mapApiPostToBlogPost = (apiPost: PostResponseDto): BlogPost => {
     aiRating: apiPost.aiRatingId || 0, // Using aiRatingId as aiRating
     ipfsHash: apiPost.ipfsHash,
     transactionHash: apiPost.transactionHash,
+    clapCount: apiPost.clapCount, // Pass clapCount from API
+    commentCount: apiPost.commentCount, // Pass commentCount from API
   };
 };
 

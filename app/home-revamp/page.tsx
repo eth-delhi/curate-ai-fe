@@ -5,6 +5,7 @@ import HomeNavbar from "@/components/ui/HomeNavbar";
 import {
   FeaturedPostsSection,
   FeedSection,
+  LeftSidebar,
   RightSidebar,
   LoadingState,
   ErrorState,
@@ -68,6 +69,19 @@ export default function HomeRevampPage() {
           --tw-prose-th-borders: #d1d5db;
           --tw-prose-td-borders: #e5e7eb;
         }
+
+        /* Hide scrollbar everywhere */
+        .overflow-y-auto,
+        .overflow-auto,
+        .overflow-x-auto {
+          -ms-overflow-style: none; /* IE and Edge */
+          scrollbar-width: none; /* Firefox */
+        }
+        .overflow-y-auto::-webkit-scrollbar,
+        .overflow-auto::-webkit-scrollbar,
+        .overflow-x-auto::-webkit-scrollbar {
+          display: none; /* Chrome, Safari and Opera */
+        }
       `}</style>
 
       {/* Top Navbar - Full Width */}
@@ -77,9 +91,14 @@ export default function HomeRevampPage() {
       <div className="flex flex-1 overflow-hidden pt-16">
         {/* Content Area */}
         <div className="flex flex-1 overflow-hidden bg-white">
+          {/* Left Sidebar - Hidden on mobile and tablet */}
+          <div className="hidden lg:block">
+            <LeftSidebar />
+          </div>
+
           {/* Main Content */}
-          <div className="flex-1 overflow-y-auto px-10">
-            <div className="p-8">
+          <div className="flex-1 overflow-y-auto px-4 w-full lg:w-auto">
+            <div className="p-4">
               {/* Featured Posts Section */}
               {/* <FeaturedPostsSection
                 posts={featuredPosts}
@@ -96,8 +115,10 @@ export default function HomeRevampPage() {
             </div>
           </div>
 
-          {/* Right Sidebar */}
-          <RightSidebar />
+          {/* Right Sidebar - Hidden on mobile and tablet */}
+          <div className="hidden lg:block">
+            <RightSidebar />
+          </div>
         </div>
       </div>
     </div>

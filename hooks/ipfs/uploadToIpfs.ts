@@ -41,12 +41,18 @@ export const uploadFileToIpfs = async (file: File) => {
   const formData = new FormData();
   formData.append("file", file);
 
-  const res = await axios.post(PINATA.PINANATE_URL, formData, {
-    headers: {
-      pinata_api_key: PINATA.PINATA_API_KEY,
-      pinata_secret_api_key: PINATA.PINATA_SECRET_KEY,
-    },
-  });
+  // Use Pinata's file upload endpoint
+  const res = await axios.post(
+    "https://api.pinata.cloud/pinning/pinFileToIPFS",
+    formData,
+    {
+      headers: {
+        pinata_api_key: PINATA.PINATA_API_KEY,
+        pinata_secret_api_key: PINATA.PINATA_SECRET_KEY,
+        "Content-Type": "multipart/form-data",
+      },
+    }
+  );
 
   return res.data;
 };

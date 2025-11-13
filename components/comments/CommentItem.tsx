@@ -123,7 +123,10 @@ export const CommentItem: React.FC<CommentItemProps> = ({
               {formatWalletAddress(comment.userWalletAddress)}
             </p>
             {isOwner && (
-              <Badge variant="secondary" className="text-xs">
+              <Badge
+                variant="secondary"
+                className="text-xs bg-gray-100 text-gray-600"
+              >
                 You
               </Badge>
             )}
@@ -143,7 +146,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({
             <Textarea
               value={editContent}
               onChange={(e) => setEditContent(e.target.value)}
-              className="mb-2 min-h-[80px] border-gray-200 focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+              className="mb-2 min-h-[80px] border-gray-200 focus:border-gray-300 focus:ring focus:ring-gray-100 focus:ring-opacity-50 bg-gray-50"
               placeholder="Edit your comment..."
             />
             <div className="flex gap-2">
@@ -153,7 +156,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({
                 disabled={
                   updateCommentMutation.isPending || !editContent.trim()
                 }
-                className="bg-blue-600 hover:bg-blue-700 text-white"
+                className="bg-gray-800 hover:bg-gray-900 text-white"
               >
                 {updateCommentMutation.isPending ? (
                   <Loader2 className="h-3 w-3 mr-1 animate-spin" />
@@ -169,6 +172,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({
                   setIsEditing(false);
                   setEditContent(comment.content);
                 }}
+                className="border-gray-200 hover:bg-gray-50"
               >
                 <X className="h-3 w-3 mr-1" />
                 Cancel
@@ -180,14 +184,14 @@ export const CommentItem: React.FC<CommentItemProps> = ({
         )}
 
         <div className="flex items-center gap-4">
-          <button className="text-xs text-gray-500 hover:text-blue-600 flex items-center gap-1">
+          <button className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1 transition-colors">
             <ThumbsUp className="h-3 w-3" />
             <span>0</span>
           </button>
 
           <button
             onClick={() => setIsReplying(!isReplying)}
-            className="text-xs text-gray-500 hover:text-blue-600 flex items-center gap-1"
+            className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1 transition-colors"
           >
             <Reply className="h-3 w-3" />
             Reply
@@ -197,7 +201,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({
             <>
               <button
                 onClick={() => setIsEditing(true)}
-                className="text-xs text-gray-500 hover:text-blue-600 flex items-center gap-1"
+                className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1 transition-colors"
               >
                 <Edit className="h-3 w-3" />
                 Edit
@@ -205,7 +209,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({
               <button
                 onClick={openDeleteModal}
                 disabled={deleteCommentMutation.isPending}
-                className="text-xs text-red-500 hover:text-red-600 flex items-center gap-1"
+                className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1 transition-colors"
               >
                 <Trash2 className="h-3 w-3" />
                 Delete
@@ -220,7 +224,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({
             <Textarea
               value={replyContent}
               onChange={(e) => setReplyContent(e.target.value)}
-              className="mb-2 min-h-[80px] border-gray-200 focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+              className="mb-2 min-h-[80px] border-gray-200 focus:border-gray-300 focus:ring focus:ring-gray-100 focus:ring-opacity-50 bg-gray-50"
               placeholder="Write a reply..."
             />
             <div className="flex gap-2">
@@ -228,7 +232,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({
                 size="sm"
                 onClick={handleReply}
                 disabled={!replyContent.trim()}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
+                className="bg-gray-800 hover:bg-gray-900 text-white"
               >
                 <Send className="h-3 w-3 mr-1" />
                 Reply
@@ -240,6 +244,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({
                   setIsReplying(false);
                   setReplyContent("");
                 }}
+                className="border-gray-200 hover:bg-gray-50"
               >
                 <X className="h-3 w-3 mr-1" />
                 Cancel
@@ -270,7 +275,10 @@ export const CommentItem: React.FC<CommentItemProps> = ({
                       </p>
                       {userAddress?.toLowerCase() ===
                         reply.userWalletAddress.toLowerCase() && (
-                        <Badge variant="secondary" className="text-xs">
+                        <Badge
+                          variant="secondary"
+                          className="text-xs bg-gray-100 text-gray-600"
+                        >
                           You
                         </Badge>
                       )}

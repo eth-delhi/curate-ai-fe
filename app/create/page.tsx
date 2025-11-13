@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import axios from "axios";
 import { useAccount } from "wagmi";
 import { ConfirmActionModal } from "@/components/modal/confirmActionModal";
@@ -16,12 +16,21 @@ import {
 } from "@/hooks/api/create";
 import { useIPFSUpload } from "@/hooks/ipfs/uploadToIpfs";
 import { contract } from "@/constants/contract";
+import { useSaveDraft, useGetDraft } from "@/hooks/api/drafts";
+import MarkdownIt from "markdown-it";
 
 // Import modular components
 import CreateLayout from "@/components/create/CreateLayout";
 import CreateHeader from "@/components/create/CreateHeader";
 import EditorSection from "@/components/create/EditorSection";
 import ActionButtons from "@/components/create/ActionButtons";
+
+// Markdown parser for converting markdown to HTML
+const md = new MarkdownIt({
+  html: true,
+  linkify: true,
+  typographer: true,
+});
 
 export default function CreatePostPage() {
   const [title, setTitle] = useState("");
@@ -35,9 +44,19 @@ export default function CreatePostPage() {
   const [coverImage, setCoverImage] = useState("");
   const [markdownContent, setMarkdownContent] = useState("");
   const [transactionHash, setTransactionHash] = useState<string | null>(null);
+  const [currentDraftUuid, setCurrentDraftUuid] = useState<string | undefined>(
+    undefined
+  );
 
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const draftUuidFromUrl = searchParams.get("draft");
   const { address: account } = useAccount();
+  const { mutateAsync: saveDraftMutation } = useSaveDraft();
+
+  // Fetch draft if UUID is in URL
+  const { data: loadedDraft, isLoading: isLoadingDraft } =
+    useGetDraft(draftUuidFromUrl);
 
   const {
     writeContractAsync,
@@ -194,6 +213,66 @@ export default function CreatePostPage() {
     // Clear the selected text
     setSelectedText("");
   };
+
+  // Load draft when UUID is provided in URL (only once)
+  const hasLoadedDraft = useRef(false);
+  useEffect(() => {
+    if (loadedDraft && !isLoadingDraft && !hasLoadedDraft.current) {
+      hasLoadedDraft.current = true;
+      if (loadedDraft.title) {
+        setTitle(loadedDraft.title);
+      }
+      if (loadedDraft.content) {
+        // Set markdown content (this is what gets saved)
+        setMarkdownContent(loadedDraft.content);
+        // Convert markdown to HTML for the editor (TipTap expects HTML)
+        const htmlContent = md.render(loadedDraft.content);
+        setEditorContent(htmlContent);
+      }
+      if (loadedDraft.uuid) {
+        setCurrentDraftUuid(loadedDraft.uuid);
+      }
+    }
+  }, [loadedDraft, isLoadingDraft]);
+
+  // Auto-save when title or content changes (but skip if we're loading a draft)
+  useEffect(() => {
+    // Don't auto-save while loading a draft from URL
+    if (isLoadingDraft) {
+      return;
+    }
+
+    // Only save if there's at least a title or content
+    if (!title.trim() && !markdownContent.trim()) {
+      return;
+    }
+
+    const timeoutId = setTimeout(async () => {
+      try {
+        const savedDraft = await saveDraftMutation({
+          title: title.trim() || undefined,
+          content: markdownContent.trim() || undefined,
+          uuid: currentDraftUuid || draftUuidFromUrl || undefined,
+        });
+        // Update draft UUID if this was a new draft
+        if (!currentDraftUuid && savedDraft.uuid) {
+          setCurrentDraftUuid(savedDraft.uuid);
+        }
+      } catch (error) {
+        console.error("Failed to save draft:", error);
+        // Silently fail - don't interrupt user's writing
+      }
+    }, 2000); // 2 second debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [
+    title,
+    markdownContent,
+    currentDraftUuid,
+    saveDraftMutation,
+    draftUuidFromUrl,
+    isLoadingDraft,
+  ]);
 
   return (
     <CreateLayout>

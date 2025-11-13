@@ -60,6 +60,61 @@ export const DUMMY_TRENDS: Trend[] = [
   { title: "The real impact of dark UX patterns", author: "Lindsey Curtis" },
 ];
 
+export interface DiscussionThread {
+  title: string;
+  comments: number;
+  isNew?: boolean;
+}
+
+export interface TrendingResource {
+  title: string;
+  isRocket?: boolean;
+}
+
+export const DUMMY_DISCUSSIONS: DiscussionThread[] = [
+  {
+    title: "Why Logic Isn't as Objective as You Think",
+    comments: 0,
+    isNew: true,
+  },
+  {
+    title: "Why Most AI Startups Fail (And What I'd Do Differently)",
+    comments: 25,
+  },
+  {
+    title:
+      "How I Got My First 2,000 Followers on Dev.to With These Simple Strategies",
+    comments: 1,
+  },
+  {
+    title: "Senior C# Dev Reacts to Reddit's /csharp (Hot Takes Only)",
+    comments: 0,
+    isNew: true,
+  },
+  {
+    title: "Meme Monday",
+    comments: 78,
+  },
+];
+
+export const DUMMY_TRENDING_RESOURCES: TrendingResource[] = [
+  {
+    title:
+      "Why Everyone Uses localhost:3000 - The History of Dev Ports (3000, 8000, 8080, 5173)",
+    isRocket: true,
+  },
+  {
+    title: "I Tried 20+ Books on Software",
+  },
+  {
+    title: "The Complete Guide to React Hooks",
+    isRocket: true,
+  },
+  {
+    title: "Understanding Async/Await in JavaScript",
+  },
+];
+
 export const DUMMY_TOPICS = [
   "Technology",
   "Design Thinking",

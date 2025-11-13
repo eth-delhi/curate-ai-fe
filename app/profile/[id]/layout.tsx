@@ -8,9 +8,11 @@ export default function ProfileLayout({
   children: React.ReactNode;
 }) {
   return (
-    <AuthGuard>
+    <>
+      {/* <AuthGuard> */}
       <Navbar />
       <div className="profile-layout">{children}</div>
-    </AuthGuard>
+      {/* </AuthGuard> */}
+    </>
   );
 }

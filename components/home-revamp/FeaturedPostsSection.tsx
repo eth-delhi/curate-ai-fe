@@ -2,6 +2,7 @@
 
 import { Bookmark } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { FeaturedPostsSectionProps } from "@/types/home-revamp";
 import { truncateText } from "@/utils/home-revamp";
 import { useState } from "react";
@@ -9,59 +10,71 @@ import { useState } from "react";
 const FeaturedPostCard = ({ post }: { post: any }) => {
   const [isBookmarked, setIsBookmarked] = useState(false);
 
+  // Generate consistent dummy profile picture based on author name
+  const authorName = post.author || "Anonymous";
+  const nameHash = authorName
+    .split("")
+    .reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);
+  const imgIndex = (nameHash % 70) + 1; // Use numbers 1-70 for variety
+  const avatarUrl = `https://i.pravatar.cc/150?img=${imgIndex}`;
+
   return (
-    <article className="flex bg-white rounded-lg overflow-hidden hover:shadow-md transition-shadow duration-200 group">
-      <div className="relative w-[35%] md:w-[40%]">
-        <Image
-          src={post.imageUrl || "/placeholder.svg"}
-          alt={post.title}
-          fill
-          className="object-cover"
-          sizes="(max-width: 768px) 35vw, 20vw"
-        />
-      </div>
-
-      <div className="flex-1 p-4 md:p-5 flex flex-col justify-between">
-        <div>
-          <h3 className="font-semibold text-sm md:text-base mb-2 line-clamp-2 group-hover:text-primary transition-colors">
-            {post.title}
-          </h3>
-          <p className="text-xs text-gray-600 mb-3 line-clamp-2 md:line-clamp-3">
-            {truncateText(post.content, 80)}
-          </p>
+    <Link href={`/post-revamp/${post.id}`}>
+      <article className="flex bg-white rounded-lg overflow-hidden hover:shadow-md transition-shadow duration-200 group">
+        <div className="relative w-[35%] md:w-[40%]">
+          <Image
+            src={post.imageUrl || "/placeholder.svg"}
+            alt={post.title}
+            fill
+            className="object-cover"
+            sizes="(max-width: 768px) 35vw, 20vw"
+          />
         </div>
 
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 min-w-0">
-            <div
-              className={`w-5 h-5 rounded-full bg-gradient-to-br flex-shrink-0 ${post.authorAvatar}`}
-              aria-hidden="true"
-            />
-            <span className="text-xs text-gray-700 truncate">
-              {post.author}
-            </span>
+        <div className="flex-1 p-4 md:p-5 flex flex-col justify-between">
+          <div>
+            <h3 className="font-semibold text-sm md:text-base mb-2 line-clamp-2 group-hover:text-primary transition-colors">
+              {post.title}
+            </h3>
+            <p className="text-xs text-gray-600 mb-3 line-clamp-2 md:line-clamp-3">
+              {truncateText(post.content, 80)}
+            </p>
           </div>
 
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <span className="text-xs text-gray-400">{post.timeAgo}</span>
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                setIsBookmarked(!isBookmarked);
-              }}
-              aria-label={isBookmarked ? "Remove bookmark" : "Bookmark post"}
-              className="p-1 hover:bg-gray-100 rounded transition-colors"
-            >
-              <Bookmark
-                className={`w-4 h-4 transition-colors ${
-                  isBookmarked ? "fill-current text-primary" : "text-gray-400"
-                }`}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 min-w-0">
+              <img
+                src={avatarUrl}
+                alt={authorName}
+                className="w-5 h-5 rounded-full object-cover flex-shrink-0"
+                aria-hidden="true"
               />
-            </button>
+              <span className="text-xs text-gray-700 truncate">
+                {authorName}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <span className="text-xs text-gray-400">{post.timeAgo}</span>
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  setIsBookmarked(!isBookmarked);
+                }}
+                aria-label={isBookmarked ? "Remove bookmark" : "Bookmark post"}
+                className="p-1 hover:bg-gray-100 rounded transition-colors"
+              >
+                <Bookmark
+                  className={`w-4 h-4 transition-colors ${
+                    isBookmarked ? "fill-current text-primary" : "text-gray-400"
+                  }`}
+                />
+              </button>
+            </div>
           </div>
         </div>
-      </div>
-    </article>
+      </article>
+    </Link>
   );
 };
 
