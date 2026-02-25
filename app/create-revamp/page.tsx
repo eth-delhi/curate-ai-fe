@@ -23,31 +23,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import HomeNavbar from "@/components/ui/HomeNavbar";
-import { Send, X, Sparkles } from "lucide-react";
-
-// Dummy data for right sidebar
-const DUMMY_USERS = [
-  { name: "Alena Gouse", following: false },
-  { name: "James Wilson", following: true },
-  { name: "Sarah Chen", following: false },
-];
-
-const DUMMY_TRENDS = [
-  { title: "AI Writing Tools", author: "Tech Writer" },
-  { title: "Blockchain Content", author: "Crypto Expert" },
-  { title: "Web3 Trends", author: "DeFi Analyst" },
-];
-
-const DUMMY_TOPICS = [
-  "Technology",
-  "AI",
-  "Blockchain",
-  "Web3",
-  "Crypto",
-  "DeFi",
-  "NFT",
-  "Programming",
-];
+import { LeftSidebar } from "@/components/home-revamp";
+import { X } from "lucide-react";
 
 // Markdown parser for converting markdown to HTML
 const md = new MarkdownIt({
@@ -63,7 +40,6 @@ export default function CreateRevampPage() {
   const [isPublishing, setIsPublishing] = useState(false);
   const [editorContent, setEditorContent] = useState("");
   const [isAssistantCollapsed, setIsAssistantCollapsed] = useState(false);
-  const [selectedText, setSelectedText] = useState("");
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isTagModalOpen, setIsTagModalOpen] = useState(false);
   const [coverImage, setCoverImage] = useState("");
@@ -72,6 +48,20 @@ export default function CreateRevampPage() {
   const [currentDraftUuid, setCurrentDraftUuid] = useState<string | undefined>(
     undefined
   );
+
+  // Character limit constant
+  const MAX_CONTENT_LENGTH = 20000;
+
+  // Calculate total character count (content + tags)
+  const calculateTotalCharacters = () => {
+    const contentLength = markdownContent.length;
+    const tagsLength = tags.join(",").length;
+    return contentLength + tagsLength;
+  };
+
+  const totalCharacters = calculateTotalCharacters();
+  const isOverLimit = totalCharacters > MAX_CONTENT_LENGTH;
+  const remainingCharacters = MAX_CONTENT_LENGTH - totalCharacters;
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -102,10 +92,28 @@ export default function CreateRevampPage() {
   const { getPostIdFromTransaction } = useGetPostIdFromTransaction();
 
   const handlePublish = () => {
+    // Check character limit before opening tag modal
+    if (isOverLimit) {
+      alert(
+        `Content exceeds the maximum limit of ${MAX_CONTENT_LENGTH} characters. Please reduce your content by ${
+          totalCharacters - MAX_CONTENT_LENGTH
+        } characters.`
+      );
+      return;
+    }
     setIsTagModalOpen(true);
   };
 
   const handleTagModalConfirm = () => {
+    // Double-check character limit before confirming
+    if (isOverLimit) {
+      alert(
+        `Content exceeds the maximum limit of ${MAX_CONTENT_LENGTH} characters. Please reduce your content by ${
+          totalCharacters - MAX_CONTENT_LENGTH
+        } characters.`
+      );
+      return;
+    }
     setIsTagModalOpen(false);
     setIsConfirmOpen(true);
   };
@@ -143,12 +151,17 @@ export default function CreateRevampPage() {
 
       // Step 2: Create post in database (without transaction hash)
       console.log("Step 2: Creating post in database...");
+      // Remove markdown formatting (** for bold and # for headings) before sending to AI
+      const cleanedContent = markdownContent
+        .replace(/\*\*/g, "") // Remove ** (bold markdown)
+        .replace(/#{1,6}\s/g, ""); // Remove # (heading markdown)
       const postResponse = await apiMutatePost({
         title,
-        content: markdownContent,
+        content: cleanedContent,
         ipfsHash,
         userWalletAddress: account,
         internal_id: Number(postCount) + 1 || 0,
+        tags: tags.length > 0 ? tags : undefined,
         // No transaction hash at this step
       });
 
@@ -218,26 +231,28 @@ export default function CreateRevampPage() {
       return;
     }
 
+    // Final check before publishing
+    if (isOverLimit) {
+      alert(
+        `Content exceeds the maximum limit of ${MAX_CONTENT_LENGTH} characters. Please reduce your content by ${
+          totalCharacters - MAX_CONTENT_LENGTH
+        } characters.`
+      );
+      return;
+    }
+
     // Proceed directly to contract write (which uses IPFS)
     handleContractWrite();
   };
 
   const handleInsertContent = (content: string) => {
-    // If we have selected text, replace only that part
-    if (selectedText && editorContent.includes(selectedText)) {
-      // Replace the selected text with the new content
-      const newContent = editorContent.replace(selectedText, content);
-      setEditorContent(newContent);
-    } else if (!editorContent.trim()) {
-      // If editor is empty, just set the content
+    // If editor is empty, just set the content
+    if (!editorContent.trim()) {
       setEditorContent(content);
     } else {
       // Otherwise append to existing content
       setEditorContent((prev) => `${prev}\n\n${content}`);
     }
-
-    // Clear the selected text
-    setSelectedText("");
   };
 
   const handleAddTag = () => {
@@ -256,10 +271,6 @@ export default function CreateRevampPage() {
       e.preventDefault();
       handleAddTag();
     }
-  };
-
-  const handleTextSelection = (text: string) => {
-    setSelectedText(text);
   };
 
   // Load draft when UUID is provided in URL (only once)
@@ -361,6 +372,146 @@ export default function CreateRevampPage() {
           --tw-prose-th-borders: #d1d5db;
           --tw-prose-td-borders: #e5e7eb;
         }
+
+        /* Style headings in editor */
+        .prose h1,
+        .ProseMirror h1 {
+          font-size: 1.875rem !important;
+          font-weight: 800 !important;
+          margin-top: 2rem !important;
+          margin-bottom: 0.5rem !important;
+          line-height: 1.2 !important;
+          color: #111827 !important;
+        }
+
+        .prose h2,
+        .ProseMirror h2 {
+          font-size: 1.5rem !important;
+          font-weight: 700 !important;
+          margin-top: 1.5rem !important;
+          margin-bottom: 0.5rem !important;
+          line-height: 1.3 !important;
+          color: #111827 !important;
+        }
+
+        /* Style links in editor - make them blue */
+        .prose a,
+        .ProseMirror a {
+          color: #2563eb !important;
+          text-decoration: underline !important;
+        }
+
+        .prose a:hover,
+        .ProseMirror a:hover {
+          color: #1d4ed8 !important;
+        }
+
+        /* Increase spacing between paragraphs in editor */
+        .prose p,
+        .ProseMirror p {
+          margin-top: 1rem !important;
+          margin-bottom: 1rem !important;
+        }
+
+        .prose p:first-child,
+        .ProseMirror p:first-child {
+          margin-top: 0 !important;
+        }
+
+        .prose p:last-child,
+        .ProseMirror p:last-child {
+          margin-bottom: 0 !important;
+        }
+
+        /* Ensure proper spacing after headings */
+        .prose h1 + p,
+        .prose h2 + p,
+        .ProseMirror h1 + p,
+        .ProseMirror h2 + p {
+          margin-top: 0.75rem !important;
+        }
+
+        /* Style lists in editor - show bullet points and numbers */
+        .prose ul,
+        .ProseMirror ul {
+          list-style-type: disc !important;
+          padding-left: 1.5rem !important;
+          margin-top: 1rem !important;
+          margin-bottom: 1rem !important;
+        }
+
+        .prose ol,
+        .ProseMirror ol {
+          list-style-type: decimal !important;
+          padding-left: 1.5rem !important;
+          margin-top: 1rem !important;
+          margin-bottom: 1rem !important;
+        }
+
+        .prose li,
+        .ProseMirror li {
+          display: list-item !important;
+          list-style-position: outside !important;
+          margin-top: 0.5rem !important;
+          margin-bottom: 0.5rem !important;
+          padding-left: 0.5rem !important;
+        }
+
+        .prose ul li::marker,
+        .ProseMirror ul li::marker {
+          color: #111827 !important;
+          font-size: 1.2em !important;
+        }
+
+        .prose ol li::marker,
+        .ProseMirror ol li::marker {
+          color: #111827 !important;
+          font-weight: 600 !important;
+        }
+
+        /* Style code blocks in editor */
+        .prose pre,
+        .ProseMirror pre {
+          background-color: #1f2937 !important;
+          color: #e5e7eb !important;
+          padding: 1rem !important;
+          border-radius: 0.5rem !important;
+          margin-top: 1rem !important;
+          margin-bottom: 1rem !important;
+          overflow-x: auto !important;
+          font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace !important;
+          font-size: 0.875rem !important;
+          line-height: 1.5 !important;
+        }
+
+        .prose pre code,
+        .ProseMirror pre code {
+          background-color: transparent !important;
+          color: inherit !important;
+          padding: 0 !important;
+          border-radius: 0 !important;
+          font-size: inherit !important;
+        }
+
+        /* Style inline code in editor */
+        .prose code:not(pre code),
+        .ProseMirror code:not(pre code) {
+          background-color: #f3f4f6 !important;
+          color: #111827 !important;
+          padding: 0.125rem 0.375rem !important;
+          border-radius: 0.25rem !important;
+          font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace !important;
+          font-size: 0.875em !important;
+        }
+
+        /* Hide scrollbar in create-revamp */
+        .create-revamp-scrollable::-webkit-scrollbar {
+          display: none;
+        }
+        .create-revamp-scrollable {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
       `}</style>
 
       {/* Top Navbar */}
@@ -370,40 +521,24 @@ export default function CreateRevampPage() {
       <div className="flex flex-1 overflow-hidden pt-16">
         {/* Content Area */}
         <div className="flex flex-1 overflow-hidden bg-white">
+          {/* Left Sidebar - Hidden on mobile and tablet */}
+          <div className="hidden lg:block">
+            <LeftSidebar />
+          </div>
+
           {/* Main Content */}
           <div className="flex-1 overflow-hidden flex flex-col">
             {/* Sticky Title Bar */}
-            <div className="flex justify-center bg-white border-b border-gray-100 sticky top-0 z-10">
+            <div className="flex justify-center bg-white sticky top-0 z-10">
               <div className="w-full max-w-4xl px-8 mt-6">
-                <div className="py-4 flex items-center justify-between">
-                  <div className="flex-1">
-                    <input
-                      type="text"
-                      placeholder="Title..."
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      className="w-full text-2xl font-bold text-gray-900 border-0 focus:outline-none focus:ring-0 placeholder-gray-400"
-                    />
-                  </div>
-                  <div className="ml-6">
-                    <Button
-                      onClick={handlePublish}
-                      disabled={isPublishing || !title}
-                      className="bg-gray-800 hover:bg-gray-900 text-white px-6"
-                    >
-                      {isPublishing ? (
-                        <>
-                          <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                          Publishing...
-                        </>
-                      ) : (
-                        <>
-                          <Send className="h-4 w-4 mr-2" />
-                          Publish
-                        </>
-                      )}
-                    </Button>
-                  </div>
+                <div className="py-4">
+                  <input
+                    type="text"
+                    placeholder="Title..."
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    className="w-full text-2xl font-bold text-gray-900 border-0 focus:outline-none focus:ring-0 placeholder-gray-400"
+                  />
                 </div>
               </div>
             </div>
@@ -414,9 +549,14 @@ export default function CreateRevampPage() {
                 <div className="w-full max-w-4xl px-8">
                   <AdvancedEditor
                     initialContent={editorContent}
-                    onTextSelection={handleTextSelection}
                     setMarkdownContent={setMarkdownContent}
                     markdownContent={markdownContent}
+                    onPublish={handlePublish}
+                    isPublishing={isPublishing}
+                    canPublish={!!title && !isOverLimit}
+                    maxContentLength={MAX_CONTENT_LENGTH}
+                    currentContentLength={markdownContent.length}
+                    tagsLength={tags.join(",").length}
                     onImageDataUpdate={(imageData) => {
                       if (typeof imageData === "string") {
                         setCoverImage(imageData);
@@ -430,75 +570,6 @@ export default function CreateRevampPage() {
                     }}
                   />
                 </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Sidebar */}
-          <div className="w-80 bg-white border-l border-gray-100 p-6 overflow-y-auto">
-            {/* People to Follow */}
-            <div className="mb-8">
-              <h3 className="font-semibold mb-4 flex items-center gap-2">
-                <Sparkles className="w-4 h-4" /> People who to follow
-              </h3>
-              <div className="space-y-3">
-                {DUMMY_USERS.map((user, i) => (
-                  <div key={i} className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-gray-400 to-gray-600" />
-                      <span className="text-sm font-medium">{user.name}</span>
-                    </div>
-                    <Button
-                      variant={user.following ? "default" : "outline"}
-                      size="sm"
-                      className={
-                        user.following
-                          ? "bg-black hover:bg-gray-800 rounded-full text-white"
-                          : "rounded-full"
-                      }
-                    >
-                      {user.following ? "Following" : "Follow"}
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Top Trends */}
-            <div className="mb-8">
-              <h3 className="font-semibold mb-4 flex items-center gap-2">
-                <span className="rotate-45">◆</span> Today's top trends
-              </h3>
-              <div className="space-y-4">
-                {DUMMY_TRENDS.map((trend, i) => (
-                  <div key={i}>
-                    <h4 className="font-medium text-sm mb-1">{trend.title}</h4>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-gray-500">By</span>
-                      <div className="w-4 h-4 rounded-full bg-gradient-to-br from-gray-400 to-gray-600" />
-                      <span className="text-xs text-gray-700">
-                        {trend.author}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Topics */}
-            <div>
-              <h3 className="font-semibold mb-4 flex items-center gap-2">
-                <Sparkles className="w-4 h-4" /> Topics for you
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {DUMMY_TOPICS.map((topic, i) => (
-                  <button
-                    key={i}
-                    className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-full text-sm font-medium"
-                  >
-                    {topic}
-                  </button>
-                ))}
               </div>
             </div>
           </div>

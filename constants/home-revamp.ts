@@ -125,10 +125,9 @@ export const DUMMY_TOPICS = [
 ];
 
 export const TAB_OPTIONS: TabOption[] = [
-  { id: "for-you", label: "For you" },
-  { id: "following", label: "Following" },
-  { id: "popular", label: "Popular" },
   { id: "new", label: "New" },
+  { id: "following", label: "Following" },
+  { id: "hot", label: "Hot" },
 ];
 
 export const AUTHOR_AVATARS = [

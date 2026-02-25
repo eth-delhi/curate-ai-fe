@@ -16,6 +16,13 @@ import {
 } from "lucide-react";
 import { useUserProfile } from "@/hooks/api/profile";
 import { useAuth } from "@/hooks/useAuth";
+import {
+  useNotifications,
+  useMarkAllNotificationsAsRead,
+  type NotificationResponseDto,
+} from "@/hooks/api/notifications";
+import { formatDistanceToNow } from "date-fns";
+import { useRouter } from "next/navigation";
 
 interface HomeNavbarProps {
   className?: string;
@@ -42,37 +49,50 @@ const getIpfsUrl = (hash?: string | null): string | null => {
   return `https://gateway.pinata.cloud/ipfs/${hash}`;
 };
 
-// Static notifications data
-const STATIC_NOTIFICATIONS = [
-  {
-    id: 1,
-    title: "New comment on your post",
-    message: "John Doe commented on 'Getting Started with React'",
-    time: "2h ago",
-    isRead: false,
-  },
-  {
-    id: 2,
-    title: "Someone followed you",
-    message: "Jane Smith started following you",
-    time: "5h ago",
-    isRead: false,
-  },
-  {
-    id: 3,
-    title: "Post liked",
-    message: "Your post 'Understanding TypeScript' received 10 new likes",
-    time: "1d ago",
-    isRead: true,
-  },
-  {
-    id: 4,
-    title: "Weekly digest",
-    message: "Here's what happened in your community this week",
-    time: "2d ago",
-    isRead: true,
-  },
-];
+// Format notification message based on type
+const formatNotificationMessage = (
+  notification: NotificationResponseDto
+): { title: string; message: string } => {
+  const actorName =
+    notification.actor?.profile?.fullName ||
+    notification.actor?.profile?.username ||
+    notification.actor?.email ||
+    "Someone";
+
+  switch (notification.type) {
+    case "FOLLOWED":
+      return {
+        title: "New Follower",
+        message: `${actorName} started following you`,
+      };
+    case "POST_SCORED":
+      return {
+        title: "Post Upvoted",
+        message: `${actorName} upvoted your post "${
+          notification.post?.title || "Untitled"
+        }"`,
+      };
+    case "POST_CLAPPED":
+      return {
+        title: "Post Clapped",
+        message: `${actorName} clapped on your post "${
+          notification.post?.title || "Untitled"
+        }"`,
+      };
+    case "FOLLOWED_USER_POSTED":
+      return {
+        title: "New Post",
+        message: `${actorName} published a new post "${
+          notification.post?.title || "Untitled"
+        }"`,
+      };
+    default:
+      return {
+        title: "Notification",
+        message: "You have a new notification",
+      };
+  }
+};
 
 export default function HomeNavbar({ className = "" }: HomeNavbarProps) {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -89,12 +109,29 @@ export default function HomeNavbar({ className = "" }: HomeNavbarProps) {
     });
   const profileButtonRef = useRef<HTMLButtonElement>(null);
   const notificationButtonRef = useRef<HTMLButtonElement>(null);
+  const router = useRouter();
 
   // Check if user is authenticated
   const { isAuthenticated } = useAuth();
 
-  // Calculate unread notifications count
-  const unreadCount = STATIC_NOTIFICATIONS.filter((n) => !n.isRead).length;
+  // Fetch notifications (only if authenticated)
+  const { data: notificationsData, isLoading: isNotificationsLoading } =
+    useNotifications(
+      {
+        page: 1,
+        limit: 20,
+      },
+      {
+        enabled: isAuthenticated,
+      }
+    );
+
+  // Mark all notifications as read mutation
+  const markAllAsReadMutation = useMarkAllNotificationsAsRead();
+
+  // Get unread count from API
+  const unreadCount = notificationsData?.counts?.unread || 0;
+  const notifications = notificationsData?.notifications || [];
 
   // Get user ID from token
   useEffect(() => {
@@ -171,37 +208,19 @@ export default function HomeNavbar({ className = "" }: HomeNavbarProps) {
                     href="/home-revamp"
                     className="flex items-center flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
                   >
-                    <div className="w-8 h-8 bg-black rounded flex items-center justify-center mr-3">
-                      <span
-                        className="text-white text-sm font-bold"
-                        style={{ fontFamily: '"Poppins", sans-serif' }}
-                      >
-                        C
-                      </span>
-                    </div>
-                    <span
-                      className="text-lg font-semibold text-gray-900"
-                      style={{ fontFamily: '"Poppins", sans-serif' }}
-                    >
-                      CurateAI
-                    </span>
+                    <img
+                      src="/logo.png"
+                      alt="CurateAI Logo"
+                      className="w-16 h-16 object-contain mr-3"
+                    />
                   </Link>
                 ) : (
                   <div className="flex items-center flex-shrink-0">
-                    <div className="w-8 h-8 bg-black rounded flex items-center justify-center mr-3">
-                      <span
-                        className="text-white text-sm font-bold"
-                        style={{ fontFamily: '"Poppins", sans-serif' }}
-                      >
-                        C
-                      </span>
-                    </div>
-                    <span
-                      className="text-lg font-semibold text-gray-900"
-                      style={{ fontFamily: '"Poppins", sans-serif' }}
-                    >
-                      CurateAI
-                    </span>
+                    <img
+                      src="/logo.png"
+                      alt="CurateAI Logo"
+                      className="w-16 h-16 object-contain mr-3"
+                    />
                   </div>
                 )}
 
@@ -237,82 +256,142 @@ export default function HomeNavbar({ className = "" }: HomeNavbarProps) {
                 </a>
 
                 {/* Notifications */}
-                <div className="relative">
-                  <button
-                    ref={notificationButtonRef}
-                    onClick={() => {
-                      setIsNotificationsOpen(!isNotificationsOpen);
-                      setIsProfileOpen(false);
-                    }}
-                    className="flex items-center justify-center text-sm text-gray-600 hover:text-gray-900 transition-colors cursor-pointer relative p-1"
-                  >
-                    <div className="relative">
-                      <Bell className="w-5 h-5" />
-                      {unreadCount > 0 && (
-                        <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
-                          {unreadCount > 9 ? "9+" : unreadCount}
-                        </span>
-                      )}
-                    </div>
-                  </button>
+                {isAuthenticated && (
+                  <div className="relative">
+                    <button
+                      ref={notificationButtonRef}
+                      onClick={async () => {
+                        const wasOpen = isNotificationsOpen;
+                        setIsNotificationsOpen(!wasOpen);
+                        setIsProfileOpen(false);
 
-                  {/* Notifications Dropdown */}
-                  {isNotificationsOpen && (
-                    <div
-                      className="fixed bg-white border border-gray-200 rounded-lg shadow-xl w-80 max-h-96 overflow-y-auto"
-                      style={{
-                        top: `${notificationDropdownPosition.top}px`,
-                        right: `${notificationDropdownPosition.right}px`,
-                        zIndex: 10001,
+                        // If opening notifications and there are unread notifications, mark all as read
+                        if (!wasOpen && unreadCount > 0) {
+                          try {
+                            await markAllAsReadMutation.mutateAsync();
+                          } catch (error) {
+                            console.error(
+                              "Error marking all notifications as read:",
+                              error
+                            );
+                          }
+                        }
                       }}
+                      className="flex items-center justify-center text-sm text-gray-600 hover:text-gray-900 transition-colors cursor-pointer relative p-1"
                     >
-                      <div className="p-4 border-b border-gray-100">
-                        <h3 className="text-sm font-semibold text-gray-900">
-                          Notifications
-                        </h3>
-                      </div>
-                      <div className="py-1">
-                        {STATIC_NOTIFICATIONS.length === 0 ? (
-                          <div className="px-4 py-8 text-center text-sm text-gray-500">
-                            No notifications
-                          </div>
-                        ) : (
-                          STATIC_NOTIFICATIONS.map((notification) => (
-                            <div
-                              key={notification.id}
-                              className={`px-4 py-3 border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer ${
-                                !notification.isRead ? "bg-blue-50/30" : ""
-                              }`}
-                            >
-                              <div className="flex items-start gap-3">
-                                <div className="flex-1 min-w-0">
-                                  <p
-                                    className={`text-sm ${
-                                      !notification.isRead
-                                        ? "font-semibold text-gray-900"
-                                        : "font-medium text-gray-700"
-                                    }`}
-                                  >
-                                    {notification.title}
-                                  </p>
-                                  <p className="text-xs text-gray-500 mt-1">
-                                    {notification.message}
-                                  </p>
-                                  <p className="text-xs text-gray-400 mt-1">
-                                    {notification.time}
-                                  </p>
-                                </div>
-                                {!notification.isRead && (
-                                  <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-1"></div>
-                                )}
-                              </div>
-                            </div>
-                          ))
+                      <div className="relative">
+                        <Bell className="w-5 h-5" />
+                        {unreadCount > 0 && (
+                          <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                            {unreadCount > 9 ? "9+" : unreadCount}
+                          </span>
                         )}
                       </div>
-                    </div>
-                  )}
-                </div>
+                    </button>
+
+                    {/* Notifications Dropdown */}
+                    {isNotificationsOpen && (
+                      <div
+                        className="fixed bg-white border border-gray-200 rounded-lg shadow-xl w-80 max-h-96 overflow-y-auto"
+                        style={{
+                          top: `${notificationDropdownPosition.top}px`,
+                          right: `${notificationDropdownPosition.right}px`,
+                          zIndex: 10001,
+                        }}
+                      >
+                        <div className="p-4 border-b border-gray-100">
+                          <h3 className="text-sm font-semibold text-gray-900">
+                            Notifications
+                          </h3>
+                        </div>
+                        <div className="py-1">
+                          {isNotificationsLoading ? (
+                            <div className="px-4 py-8 text-center text-sm text-gray-500">
+                              Loading notifications...
+                            </div>
+                          ) : notifications.length === 0 ? (
+                            <div className="px-4 py-8 text-center text-sm text-gray-500">
+                              No notifications
+                            </div>
+                          ) : (
+                            notifications.map((notification) => {
+                              const { title, message } =
+                                formatNotificationMessage(notification);
+                              const timeAgo = formatDistanceToNow(
+                                new Date(notification.createdAt),
+                                { addSuffix: true }
+                              );
+                              const actorProfilePic = getIpfsUrl(
+                                notification.actor?.profile?.profilePic
+                              );
+                              const actorInitials =
+                                notification.actor?.profile?.fullName
+                                  ?.split(" ")
+                                  .map((n) => n[0])
+                                  .join("")
+                                  .toUpperCase() || "U";
+
+                              return (
+                                <Link
+                                  key={notification.uuid}
+                                  href={
+                                    notification.postUuid
+                                      ? `/post-revamp/${notification.postUuid}`
+                                      : notification.actorUuid
+                                      ? `/profile-revamp/${notification.actorUuid}`
+                                      : "#"
+                                  }
+                                  onClick={() => setIsNotificationsOpen(false)}
+                                  className={`block px-4 py-3 border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer ${
+                                    !notification.read ? "bg-blue-50/30" : ""
+                                  }`}
+                                >
+                                  <div className="flex items-start gap-3">
+                                    {/* Actor Avatar */}
+                                    <div className="flex-shrink-0">
+                                      <Avatar className="w-8 h-8 border border-gray-200">
+                                        <AvatarImage
+                                          src={actorProfilePic || undefined}
+                                          alt={
+                                            notification.actor?.profile
+                                              ?.fullName || "User"
+                                          }
+                                        />
+                                        <AvatarFallback className="bg-gray-300 text-gray-600 text-xs font-medium">
+                                          {actorInitials}
+                                        </AvatarFallback>
+                                      </Avatar>
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p
+                                        className={`text-sm ${
+                                          !notification.read
+                                            ? "font-semibold text-gray-900"
+                                            : "font-medium text-gray-700"
+                                        }`}
+                                      >
+                                        {title}
+                                      </p>
+                                      <p className="text-xs text-gray-500 mt-1 line-clamp-2">
+                                        {message}
+                                      </p>
+                                      <p className="text-xs text-gray-400 mt-1">
+                                        {timeAgo}
+                                      </p>
+                                    </div>
+                                    {!notification.read && (
+                                      <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-1"></div>
+                                    )}
+                                  </div>
+                                </Link>
+                              );
+                            })
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Profile Dropdown */}
                 <div className="relative">
@@ -371,9 +450,17 @@ export default function HomeNavbar({ className = "" }: HomeNavbarProps) {
                         <div className="border-t border-gray-100 my-1"></div>
                         <button
                           onClick={() => {
-                            // Add logout logic here
-                            console.log("Logout clicked");
-                            setIsProfileOpen(false);
+                            try {
+                              localStorage.clear();
+                            } catch (error) {
+                              console.error(
+                                "Error clearing localStorage:",
+                                error
+                              );
+                            } finally {
+                              setIsProfileOpen(false);
+                              router.push("/auth");
+                            }
                           }}
                           className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-900 hover:bg-gray-50 transition-colors text-left cursor-pointer"
                         >

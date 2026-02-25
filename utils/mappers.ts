@@ -18,8 +18,10 @@ export const mapApiPostToBlogPost = (apiPost: PostResponseDto): BlogPost => {
     imageUrl: apiPost.thumbnail || null, // Use real thumbnail from API, null if not available
     contentHash: apiPost.ipfsHash, // Using ipfsHash as contentHash
     internal_id: apiPost.internal_id?.toString() || "",
-    tags: [], // API doesn't provide tags, using empty array as default
-    date: new Date().toISOString(), // API doesn't provide date, using current date as default
+    tags: apiPost.tags || [], // Use tags from API, empty array as default
+    date: apiPost.createdAt
+      ? new Date(apiPost.createdAt).toISOString()
+      : new Date().toISOString(), // Use createdAt from API if available
     score: 0, // API doesn't provide score, using 0 as default
     userRating: apiPost.userRating || 0,
     aiRating: apiPost.aiRatingId || 0, // Using aiRatingId as aiRating
@@ -27,6 +29,9 @@ export const mapApiPostToBlogPost = (apiPost: PostResponseDto): BlogPost => {
     transactionHash: apiPost.transactionHash,
     clapCount: apiPost.clapCount, // Pass clapCount from API
     commentCount: apiPost.commentCount, // Pass commentCount from API
+    xMinRead: apiPost.xMinRead, // Pass xMinRead from API
+    createdAt: apiPost.createdAt, // Pass createdAt from API
+    author: apiPost.author, // Pass author information including username, fullName, profilePic
   };
 };
 

@@ -11,6 +11,7 @@ import HomeNavbar from "@/components/ui/HomeNavbar";
 import { usePosts } from "@/hooks/api/posts";
 import { useUpdateProfile, useUserProfile } from "@/hooks/api/profile";
 import { useGetDrafts } from "@/hooks/api/drafts";
+import { useScoredPosts } from "@/hooks/api/scores";
 import {
   useFollowUser,
   useUnfollowUser,
@@ -433,6 +434,15 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
     isError: isProfileError,
   } = useUserProfile(id);
 
+  // Set page title to username
+  useEffect(() => {
+    if (profileData?.profile?.username) {
+      document.title = profileData.profile.username;
+    } else if (profileData?.email) {
+      document.title = profileData.email.split("@")[0];
+    }
+  }, [profileData?.profile?.username, profileData?.email]);
+
   // Profile update mutation
   const updateProfileMutation = useUpdateProfile();
 
@@ -493,6 +503,25 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
   // Map API data to DisplayPost format
   const blogPosts = postsData ? mapApiPostsToBlogPosts(postsData.posts) : [];
   const userPosts = blogPosts.map((post, index) =>
+    convertBlogPostToDisplayPost(post, index)
+  );
+
+  // Fetch posts scored by this user
+  const {
+    data: scoredPostsData,
+    isLoading: isScoredPostsLoading,
+    error: scoredPostsError,
+    isError: isScoredPostsError,
+  } = useScoredPosts(id, {
+    page: 1,
+    limit: 50,
+  });
+
+  // Map scored posts to DisplayPost format
+  const scoredBlogPosts = scoredPostsData
+    ? mapApiPostsToBlogPosts(scoredPostsData.posts)
+    : [];
+  const scoredPosts = scoredBlogPosts.map((post, index) =>
     convertBlogPostToDisplayPost(post, index)
   );
 
@@ -802,7 +831,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
   const handleFollow = async () => {
     try {
       await followUserMutation.mutateAsync({
-        userUuid: id,
+        followingUuid: id,
       });
       showToast({
         message: "You are now following this user",
@@ -820,7 +849,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
   const handleUnfollow = async () => {
     try {
       await unfollowUserMutation.mutateAsync({
-        userUuid: id,
+        followingUuid: id,
       });
       showToast({
         message: "You unfollowed this user",
@@ -1123,15 +1152,15 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                         )}
                       </button>
                       <button
-                        onClick={() => setActiveTab("analytics")}
+                        onClick={() => setActiveTab("scored")}
                         className={`px-4 py-2 text-sm font-medium transition-colors relative ${
-                          activeTab === "analytics"
+                          activeTab === "scored"
                             ? "text-gray-900 font-semibold"
                             : "text-gray-600 hover:text-gray-900"
                         }`}
                       >
-                        Analytics
-                        {activeTab === "analytics" && (
+                        Scored
+                        {activeTab === "scored" && (
                           <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900"></span>
                         )}
                       </button>
@@ -1190,22 +1219,13 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                           ) : (
                             <div className="bg-white rounded-lg">
                               {userPosts.map((post) => {
-                                // Generate consistent dummy profile picture
-                                const authorName = post.author || userData.name;
-                                const nameHash = authorName
-                                  .split("")
-                                  .reduce(
-                                    (acc: number, char: string) =>
-                                      acc + char.charCodeAt(0),
-                                    0
-                                  );
-                                const imgIndex = (nameHash % 70) + 1;
-                                const avatarUrl = `https://i.pravatar.cc/150?img=${imgIndex}`;
-                                const tags = [
-                                  "#webdev",
-                                  "#career",
-                                  "#beginners",
-                                ];
+                                // Use real tags from API, format with # prefix
+                                const tags =
+                                  post.tags && post.tags.length > 0
+                                    ? post.tags.map((tag: string) =>
+                                        tag.startsWith("#") ? tag : `#${tag}`
+                                      )
+                                    : [];
                                 const reactions =
                                   Math.floor(Math.random() * 50) + 10;
                                 const comments =
@@ -1220,19 +1240,8 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                                       <div className="flex items-start justify-between gap-4">
                                         {/* Main Content */}
                                         <div className="flex-1 min-w-0">
-                                          {/* Author Info */}
+                                          {/* Time Info */}
                                           <div className="flex items-center gap-2 mb-2">
-                                            <img
-                                              src={avatarUrl}
-                                              alt={authorName}
-                                              className="w-8 h-8 rounded-full object-cover"
-                                            />
-                                            <span className="text-sm font-medium text-gray-900">
-                                              {authorName}
-                                            </span>
-                                            <span className="text-sm text-gray-500">
-                                              ·
-                                            </span>
                                             <span className="text-sm text-gray-500">
                                               {post.timeAgo || "Recently"}
                                             </span>
@@ -1244,23 +1253,25 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                                           </h3>
 
                                           {/* Tags */}
-                                          <div className="flex flex-wrap gap-2 mb-3">
-                                            {tags
-                                              .slice(0, 4)
-                                              .map(
-                                                (
-                                                  tag: string,
-                                                  index: number
-                                                ) => (
-                                                  <span
-                                                    key={index}
-                                                    className="text-sm text-gray-600 hover:text-blue-600 cursor-pointer"
-                                                  >
-                                                    {tag}
-                                                  </span>
-                                                )
-                                              )}
-                                          </div>
+                                          {tags.length > 0 && (
+                                            <div className="flex flex-wrap gap-2 mb-3">
+                                              {tags
+                                                .slice(0, 4)
+                                                .map(
+                                                  (
+                                                    tag: string,
+                                                    index: number
+                                                  ) => (
+                                                    <span
+                                                      key={index}
+                                                      className="text-sm text-gray-600 hover:text-blue-600 cursor-pointer"
+                                                    >
+                                                      {tag}
+                                                    </span>
+                                                  )
+                                                )}
+                                            </div>
+                                          )}
 
                                           {/* Engagement Metrics */}
                                           <div className="flex items-center gap-4 text-sm text-gray-600">
@@ -1273,7 +1284,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                                               <span>{comments}</span>
                                             </div>
                                             <span className="text-gray-500">
-                                              {post.readTime || "2 min read"}
+                                              {post.readTime || "0 min read"}
                                             </span>
                                           </div>
                                         </div>
@@ -1329,7 +1340,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                                 return (
                                   <Link
                                     key={draft.uuid}
-                                    href={`/create?draft=${draft.uuid}`}
+                                    href={`/create-revamp?draft=${draft.uuid}`}
                                   >
                                     <article className="bg-white border-b border-gray-200 py-4 px-6 cursor-pointer">
                                       <div className="flex items-start justify-between gap-4">
@@ -1371,38 +1382,116 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                         </div>
                       )}
 
-                      {/* Analytics Tab */}
-                      {activeTab === "analytics" && (
+                      {/* Scored Tab */}
+                      {activeTab === "scored" && (
                         <div>
-                          <h2 className="text-xl font-bold text-gray-900 mb-4">
-                            Analytics
-                          </h2>
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div className="text-center p-4 bg-gray-50 rounded-lg">
-                              <p className="text-2xl font-bold text-gray-900">
-                                1,234
-                              </p>
-                              <p className="text-sm text-gray-600">
-                                Total Views
+                          {isScoredPostsLoading ? (
+                            <div className="flex items-center justify-center py-12">
+                              <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+                              <span className="ml-3 text-gray-600">
+                                Loading scored posts...
+                              </span>
+                            </div>
+                          ) : isScoredPostsError ? (
+                            <div className="flex flex-col items-center justify-center py-12">
+                              <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
+                              <p className="text-gray-600">
+                                Failed to load scored posts
                               </p>
                             </div>
-                            <div className="text-center p-4 bg-gray-50 rounded-lg">
-                              <p className="text-2xl font-bold text-gray-900">
-                                567
-                              </p>
-                              <p className="text-sm text-gray-600">
-                                Total Likes
-                              </p>
-                            </div>
-                            <div className="text-center p-4 bg-gray-50 rounded-lg">
-                              <p className="text-2xl font-bold text-gray-900">
-                                89
-                              </p>
-                              <p className="text-sm text-gray-600">
-                                Total Comments
+                          ) : scoredPosts.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center py-12">
+                              <FileText className="w-12 h-12 text-gray-400 mb-4" />
+                              <p className="text-gray-600">
+                                No scored posts found
                               </p>
                             </div>
-                          </div>
+                          ) : (
+                            <div className="bg-white rounded-lg">
+                              {scoredPosts.map((post) => {
+                                const tags = [
+                                  "#webdev",
+                                  "#career",
+                                  "#beginners",
+                                ];
+                                const reactions =
+                                  Math.floor(Math.random() * 50) + 10;
+                                const comments =
+                                  Math.floor(Math.random() * 20) + 5;
+
+                                return (
+                                  <Link
+                                    key={post.id}
+                                    href={`/post-revamp/${post.id}`}
+                                  >
+                                    <article className="bg-white border-b border-gray-200 py-4 px-6 cursor-pointer">
+                                      <div className="flex items-start justify-between gap-4">
+                                        {/* Main Content */}
+                                        <div className="flex-1 min-w-0">
+                                          {/* Time Info */}
+                                          <div className="flex items-center gap-2 mb-2">
+                                            <span className="text-sm text-gray-500">
+                                              {post.timeAgo || "Recently"}
+                                            </span>
+                                          </div>
+
+                                          {/* Title */}
+                                          <h3 className="text-xl font-bold text-gray-900 mb-3 hover:text-blue-800 transition-colors">
+                                            {post.title}
+                                          </h3>
+
+                                          {/* Tags */}
+                                          <div className="flex flex-wrap gap-2 mb-3">
+                                            {tags
+                                              .slice(0, 4)
+                                              .map(
+                                                (
+                                                  tag: string,
+                                                  index: number
+                                                ) => (
+                                                  <span
+                                                    key={index}
+                                                    className="text-sm text-gray-600 hover:text-blue-600 cursor-pointer"
+                                                  >
+                                                    {tag}
+                                                  </span>
+                                                )
+                                              )}
+                                          </div>
+
+                                          {/* Engagement Metrics */}
+                                          <div className="flex items-center gap-4 text-sm text-gray-600">
+                                            <div className="flex items-center gap-1">
+                                              <Heart className="w-4 h-4" />
+                                              <span>{reactions}</span>
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                              <MessageCircle className="w-4 h-4" />
+                                              <span>{comments}</span>
+                                            </div>
+                                            <span className="text-gray-500">
+                                              {post.readTime || "0 min read"}
+                                            </span>
+                                          </div>
+                                        </div>
+
+                                        {/* Thumbnail Image - Right Side */}
+                                        {post.imageUrl && (
+                                          <div className="w-32 h-24 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                                            <img
+                                              src={post.imageUrl}
+                                              alt={post.title}
+                                              className="w-full h-full object-cover"
+                                            />
+                                          </div>
+                                        )}
+                                      </div>
+                                    </article>
+                                  </Link>
+                                );
+                              })}
+                            </div>
+                          )}
                         </div>
                       )}
 
@@ -1620,122 +1709,272 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                     </div>
                   </div>
                 ) : (
-                  // Other user's profile - only show posts
-                  <div>
-                    {isPostsLoading ? (
-                      <div className="flex items-center justify-center py-12">
-                        <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
-                        <span className="ml-3 text-gray-600">
-                          Loading posts...
-                        </span>
-                      </div>
-                    ) : isPostsError ? (
-                      <div className="flex flex-col items-center justify-center py-12">
-                        <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
-                        <p className="text-gray-600">Failed to load posts</p>
-                      </div>
-                    ) : userPosts.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center py-12">
-                        <FileText className="w-12 h-12 text-gray-400 mb-4" />
-                        <p className="text-gray-600">No posts found</p>
-                      </div>
-                    ) : (
-                      <div className="bg-white rounded-lg">
-                        {userPosts.map((post) => {
-                          // Generate consistent dummy profile picture
-                          const authorName = post.author || userData.name;
-                          const nameHash = authorName
-                            .split("")
-                            .reduce(
-                              (acc: number, char: string) =>
-                                acc + char.charCodeAt(0),
-                              0
-                            );
-                          const imgIndex = (nameHash % 70) + 1;
-                          const avatarUrl = `https://i.pravatar.cc/150?img=${imgIndex}`;
-                          const tags = ["#webdev", "#career", "#beginners"];
-                          const reactions = Math.floor(Math.random() * 50) + 10;
-                          const comments = Math.floor(Math.random() * 20) + 5;
+                  // Other user's profile - show Posts and Scored tabs
+                  <div className="w-full">
+                    {/* Tabs */}
+                    <div className="flex gap-1 border-b border-gray-200 mb-6">
+                      <button
+                        onClick={() => setActiveTab("posts")}
+                        className={`px-4 py-2 text-sm font-medium transition-colors relative ${
+                          activeTab === "posts"
+                            ? "text-gray-900 font-semibold"
+                            : "text-gray-600 hover:text-gray-900"
+                        }`}
+                      >
+                        Posts
+                        {activeTab === "posts" && (
+                          <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900"></span>
+                        )}
+                      </button>
+                      <button
+                        onClick={() => setActiveTab("scored")}
+                        className={`px-4 py-2 text-sm font-medium transition-colors relative ${
+                          activeTab === "scored"
+                            ? "text-gray-900 font-semibold"
+                            : "text-gray-600 hover:text-gray-900"
+                        }`}
+                      >
+                        Scored
+                        {activeTab === "scored" && (
+                          <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900"></span>
+                        )}
+                      </button>
+                    </div>
 
-                          return (
-                            <Link
-                              key={post.id}
-                              href={`/post-revamp/${post.id}`}
-                            >
-                              <article className="bg-white border-b border-gray-200 py-4 px-6 cursor-pointer">
-                                <div className="flex items-start justify-between gap-4">
-                                  {/* Main Content */}
-                                  <div className="flex-1 min-w-0">
-                                    {/* Author Info */}
-                                    <div className="flex items-center gap-2 mb-2">
-                                      <img
-                                        src={avatarUrl}
-                                        alt={authorName}
-                                        className="w-8 h-8 rounded-full object-cover"
-                                      />
-                                      <span className="text-sm font-medium text-gray-900">
-                                        {authorName}
-                                      </span>
-                                      <span className="text-sm text-gray-500">
-                                        ·
-                                      </span>
-                                      <span className="text-sm text-gray-500">
-                                        {post.timeAgo || "Recently"}
-                                      </span>
-                                    </div>
+                    {/* Tab Content */}
+                    <div>
+                      {/* Posts Tab */}
+                      {activeTab === "posts" && (
+                        <div>
+                          {isPostsLoading ? (
+                            <div className="flex items-center justify-center py-12">
+                              <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+                              <span className="ml-3 text-gray-600">
+                                Loading posts...
+                              </span>
+                            </div>
+                          ) : isPostsError ? (
+                            <div className="flex flex-col items-center justify-center py-12">
+                              <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
+                              <p className="text-gray-600">
+                                Failed to load posts
+                              </p>
+                            </div>
+                          ) : userPosts.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center py-12">
+                              <FileText className="w-12 h-12 text-gray-400 mb-4" />
+                              <p className="text-gray-600">No posts found</p>
+                            </div>
+                          ) : (
+                            <div className="bg-white rounded-lg">
+                              {userPosts.map((post) => {
+                                // Use real tags from API, format with # prefix
+                                const tags =
+                                  post.tags && post.tags.length > 0
+                                    ? post.tags.map((tag: string) =>
+                                        tag.startsWith("#") ? tag : `#${tag}`
+                                      )
+                                    : [];
+                                const reactions =
+                                  Math.floor(Math.random() * 50) + 10;
+                                const comments =
+                                  Math.floor(Math.random() * 20) + 5;
 
-                                    {/* Title */}
-                                    <h3 className="text-xl font-bold text-gray-900 mb-3 hover:text-blue-800 transition-colors">
-                                      {post.title}
-                                    </h3>
+                                return (
+                                  <Link
+                                    key={post.id}
+                                    href={`/post-revamp/${post.id}`}
+                                  >
+                                    <article className="bg-white border-b border-gray-200 py-4 px-6 cursor-pointer">
+                                      <div className="flex items-start justify-between gap-4">
+                                        {/* Main Content */}
+                                        <div className="flex-1 min-w-0">
+                                          {/* Time Info */}
+                                          <div className="flex items-center gap-2 mb-2">
+                                            <span className="text-sm text-gray-500">
+                                              {post.timeAgo || "Recently"}
+                                            </span>
+                                          </div>
 
-                                    {/* Tags */}
-                                    <div className="flex flex-wrap gap-2 mb-3">
-                                      {tags
-                                        .slice(0, 4)
-                                        .map((tag: string, index: number) => (
-                                          <span
-                                            key={index}
-                                            className="text-sm text-gray-600 hover:text-blue-600 cursor-pointer"
-                                          >
-                                            {tag}
-                                          </span>
-                                        ))}
-                                    </div>
+                                          {/* Title */}
+                                          <h3 className="text-xl font-bold text-gray-900 mb-3 hover:text-blue-800 transition-colors">
+                                            {post.title}
+                                          </h3>
 
-                                    {/* Engagement Metrics */}
-                                    <div className="flex items-center gap-4 text-sm text-gray-600">
-                                      <div className="flex items-center gap-1">
-                                        <Heart className="w-4 h-4" />
-                                        <span>{reactions}</span>
+                                          {/* Tags */}
+                                          {tags.length > 0 && (
+                                            <div className="flex flex-wrap gap-2 mb-3">
+                                              {tags
+                                                .slice(0, 4)
+                                                .map(
+                                                  (
+                                                    tag: string,
+                                                    index: number
+                                                  ) => (
+                                                    <span
+                                                      key={index}
+                                                      className="text-sm text-gray-600 hover:text-blue-600 cursor-pointer"
+                                                    >
+                                                      {tag}
+                                                    </span>
+                                                  )
+                                                )}
+                                            </div>
+                                          )}
+
+                                          {/* Engagement Metrics */}
+                                          <div className="flex items-center gap-4 text-sm text-gray-600">
+                                            <div className="flex items-center gap-1">
+                                              <Heart className="w-4 h-4" />
+                                              <span>{reactions}</span>
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                              <MessageCircle className="w-4 h-4" />
+                                              <span>{comments}</span>
+                                            </div>
+                                            <span className="text-gray-500">
+                                              {post.readTime || "0 min read"}
+                                            </span>
+                                          </div>
+                                        </div>
+
+                                        {/* Thumbnail Image - Right Side */}
+                                        {post.imageUrl && (
+                                          <div className="w-32 h-24 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                                            <img
+                                              src={post.imageUrl}
+                                              alt={post.title}
+                                              className="w-full h-full object-cover"
+                                            />
+                                          </div>
+                                        )}
                                       </div>
-                                      <div className="flex items-center gap-1">
-                                        <MessageCircle className="w-4 h-4" />
-                                        <span>{comments}</span>
-                                      </div>
-                                      <span className="text-gray-500">
-                                        {post.readTime || "2 min read"}
-                                      </span>
-                                    </div>
-                                  </div>
+                                    </article>
+                                  </Link>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      )}
 
-                                  {/* Thumbnail Image - Right Side */}
-                                  {post.imageUrl && (
-                                    <div className="w-32 h-24 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
-                                      <img
-                                        src={post.imageUrl}
-                                        alt={post.title}
-                                        className="w-full h-full object-cover"
-                                      />
-                                    </div>
-                                  )}
-                                </div>
-                              </article>
-                            </Link>
-                          );
-                        })}
-                      </div>
-                    )}
+                      {/* Scored Tab */}
+                      {activeTab === "scored" && (
+                        <div>
+                          {isScoredPostsLoading ? (
+                            <div className="flex items-center justify-center py-12">
+                              <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+                              <span className="ml-3 text-gray-600">
+                                Loading scored posts...
+                              </span>
+                            </div>
+                          ) : isScoredPostsError ? (
+                            <div className="flex flex-col items-center justify-center py-12">
+                              <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
+                              <p className="text-gray-600">
+                                Failed to load scored posts
+                              </p>
+                            </div>
+                          ) : scoredPosts.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center py-12">
+                              <FileText className="w-12 h-12 text-gray-400 mb-4" />
+                              <p className="text-gray-600">
+                                No scored posts found
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="bg-white rounded-lg">
+                              {scoredPosts.map((post) => {
+                                // Use real tags from API, format with # prefix
+                                const tags =
+                                  post.tags && post.tags.length > 0
+                                    ? post.tags.map((tag: string) =>
+                                        tag.startsWith("#") ? tag : `#${tag}`
+                                      )
+                                    : [];
+                                const reactions =
+                                  Math.floor(Math.random() * 50) + 10;
+                                const comments =
+                                  Math.floor(Math.random() * 20) + 5;
+
+                                return (
+                                  <Link
+                                    key={post.id}
+                                    href={`/post-revamp/${post.id}`}
+                                  >
+                                    <article className="bg-white border-b border-gray-200 py-4 px-6 cursor-pointer">
+                                      <div className="flex items-start justify-between gap-4">
+                                        {/* Main Content */}
+                                        <div className="flex-1 min-w-0">
+                                          {/* Time Info */}
+                                          <div className="flex items-center gap-2 mb-2">
+                                            <span className="text-sm text-gray-500">
+                                              {post.timeAgo || "Recently"}
+                                            </span>
+                                          </div>
+
+                                          {/* Title */}
+                                          <h3 className="text-xl font-bold text-gray-900 mb-3 hover:text-blue-800 transition-colors">
+                                            {post.title}
+                                          </h3>
+
+                                          {/* Tags */}
+                                          {tags.length > 0 && (
+                                            <div className="flex flex-wrap gap-2 mb-3">
+                                              {tags
+                                                .slice(0, 4)
+                                                .map(
+                                                  (
+                                                    tag: string,
+                                                    index: number
+                                                  ) => (
+                                                    <span
+                                                      key={index}
+                                                      className="text-sm text-gray-600 hover:text-blue-600 cursor-pointer"
+                                                    >
+                                                      {tag}
+                                                    </span>
+                                                  )
+                                                )}
+                                            </div>
+                                          )}
+
+                                          {/* Engagement Metrics */}
+                                          <div className="flex items-center gap-4 text-sm text-gray-600">
+                                            <div className="flex items-center gap-1">
+                                              <Heart className="w-4 h-4" />
+                                              <span>{reactions}</span>
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                              <MessageCircle className="w-4 h-4" />
+                                              <span>{comments}</span>
+                                            </div>
+                                            <span className="text-gray-500">
+                                              {post.readTime || "0 min read"}
+                                            </span>
+                                          </div>
+                                        </div>
+
+                                        {/* Thumbnail Image - Right Side */}
+                                        {post.imageUrl && (
+                                          <div className="w-32 h-24 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                                            <img
+                                              src={post.imageUrl}
+                                              alt={post.title}
+                                              className="w-full h-full object-cover"
+                                            />
+                                          </div>
+                                        )}
+                                      </div>
+                                    </article>
+                                  </Link>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </motion.div>

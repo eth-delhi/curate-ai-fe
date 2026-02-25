@@ -21,6 +21,9 @@ export type BlogPost = {
   transactionHash?: string;
   clapCount?: number; // Clap count from API
   commentCount?: number; // Comment count from API
+  xMinRead?: number; // Read time in minutes from API
+  createdAt?: string | Date; // Created date from API
+  author?: AuthorDto; // Author information including username, fullName, profilePic
 };
 
 // API response types
@@ -38,6 +41,10 @@ export interface PostResponseDto {
   thumbnail?: string | null; // Add thumbnail field
   clapCount?: number; // Clap count from API
   commentCount?: number; // Comment count from API
+  tags?: string[]; // Tags array from API
+  xMinRead?: number; // Read time in minutes from API
+  createdAt?: string | Date; // Created date from API
+  author?: AuthorDto; // Author information including username, fullName, profilePic
 }
 
 export interface CreatePostRequestDto {
@@ -47,6 +54,7 @@ export interface CreatePostRequestDto {
   userWalletAddress: string;
   internal_id?: number;
   transactionHash?: string;
+  tags?: string[];
 }
 
 export interface UpdatePostRequestDto {
@@ -103,9 +111,12 @@ export interface CommentDto {
 
 // Single post API types
 export interface AuthorDto {
-  walletAddress: string;
-  email: string;
+  walletAddress?: string;
+  email?: string;
   uuid?: string; // User UUID if available
+  username?: string; // Username from profile
+  fullName?: string; // Full name from profile
+  profilePic?: string; // Profile picture IPFS hash
 }
 
 export interface AIPostRatingDto {
@@ -139,6 +150,9 @@ export interface SinglePostResponseDto {
   comments?: CommentDto[];
   thumbnail?: string | null; // Add thumbnail field
   flagCount?: number; // Add flag count field
+  tags?: string[]; // Tags array from API
+  xMinRead?: number; // Read time in minutes from API
+  createdAt?: string | Date; // Created date from API
 }
 
 export type TxnParams = {

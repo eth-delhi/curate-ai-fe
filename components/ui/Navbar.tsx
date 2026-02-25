@@ -19,12 +19,11 @@ export default function Navbar({ className = "" }: NavbarProps) {
         <div className="flex justify-between items-center h-16">
           {/* Left - Logo */}
           <div className="flex items-center">
-            <div className="w-8 h-8 bg-black rounded flex items-center justify-center mr-3">
-              <span className="text-white text-sm font-bold">C</span>
-            </div>
-            <span className="text-lg font-semibold text-gray-900">
-              CurateAi
-            </span>
+            <img
+              src="/logo.png"
+              alt="CurateAI Logo"
+              className="w-16 h-16 object-contain mr-3"
+            />
           </div>
 
           {/* Middle - Navigation Links */}

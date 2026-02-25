@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useHomeRevampData } from "@/hooks/useHomeRevampData";
 import HomeNavbar from "@/components/ui/HomeNavbar";
 import {
@@ -20,7 +21,18 @@ export default function HomeRevampPage() {
     isError,
     error,
     handleTabChange,
+    handleTagClick,
+    selectedTag,
+    clearTagFilter,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
   } = useHomeRevampData();
+
+  // Set page title with quote
+  useEffect(() => {
+    document.title = "Curate AI: Where Intelligence Meets Curation";
+  }, []);
 
   if (isLoading) {
     return <LoadingState />;
@@ -93,7 +105,10 @@ export default function HomeRevampPage() {
         <div className="flex flex-1 overflow-hidden bg-white">
           {/* Left Sidebar - Hidden on mobile and tablet */}
           <div className="hidden lg:block">
-            <LeftSidebar />
+            <LeftSidebar
+              onTopicClick={handleTagClick}
+              selectedTag={selectedTag}
+            />
           </div>
 
           {/* Main Content */}
@@ -111,6 +126,11 @@ export default function HomeRevampPage() {
                 activeTab={activeTab}
                 onTabChange={handleTabChange}
                 isLoading={isLoading}
+                selectedTag={selectedTag}
+                onClearTagFilter={clearTagFilter}
+                hasNextPage={hasNextPage}
+                isFetchingNextPage={isFetchingNextPage}
+                onLoadMore={fetchNextPage}
               />
             </div>
           </div>

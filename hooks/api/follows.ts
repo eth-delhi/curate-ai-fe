@@ -3,11 +3,11 @@ import API from "../utils/axiosInstance";
 
 // Types based on the backend DTOs
 export interface FollowUserDto {
-  userUuid: string;
+  followingUuid: string;
 }
 
 export interface UnfollowUserDto {
-  userUuid: string;
+  followingUuid: string;
 }
 
 export interface UserFollowStatusDto {
@@ -38,6 +38,18 @@ export interface FollowUser {
   updatedAt?: Date | string;
 }
 
+// People to follow DTO
+export interface PeopleToFollowDto {
+  uuid: string;
+  email: string;
+  walletAddress: string;
+  profile?: {
+    fullName: string;
+    username: string;
+    profilePic: string | null;
+  } | null;
+}
+
 // API response structure for followers/following lists
 export interface FollowRelationship {
   uuid: string;
@@ -64,7 +76,7 @@ export const useFollowUser = () => {
     onSuccess: (_, variables) => {
       // Invalidate follow status and lists
       queryClient.invalidateQueries({
-        queryKey: ["followStatus", variables.userUuid],
+        queryKey: ["followStatus", variables.followingUuid],
       });
       queryClient.invalidateQueries({
         queryKey: ["following"],
@@ -73,14 +85,18 @@ export const useFollowUser = () => {
         queryKey: ["followers"],
       });
       queryClient.invalidateQueries({
-        queryKey: ["userFollowing", variables.userUuid],
+        queryKey: ["userFollowing", variables.followingUuid],
       });
       queryClient.invalidateQueries({
-        queryKey: ["userFollowers", variables.userUuid],
+        queryKey: ["userFollowers", variables.followingUuid],
       });
       // Invalidate profile to update follower count
       queryClient.invalidateQueries({
-        queryKey: ["profile", variables.userUuid],
+        queryKey: ["profile", variables.followingUuid],
+      });
+      // Invalidate people to follow list
+      queryClient.invalidateQueries({
+        queryKey: ["peopleToFollow"],
       });
     },
   });
@@ -102,7 +118,7 @@ export const useUnfollowUser = () => {
     onSuccess: (_, variables) => {
       // Invalidate follow status and lists
       queryClient.invalidateQueries({
-        queryKey: ["followStatus", variables.userUuid],
+        queryKey: ["followStatus", variables.followingUuid],
       });
       queryClient.invalidateQueries({
         queryKey: ["following"],
@@ -111,14 +127,18 @@ export const useUnfollowUser = () => {
         queryKey: ["followers"],
       });
       queryClient.invalidateQueries({
-        queryKey: ["userFollowing", variables.userUuid],
+        queryKey: ["userFollowing", variables.followingUuid],
       });
       queryClient.invalidateQueries({
-        queryKey: ["userFollowers", variables.userUuid],
+        queryKey: ["userFollowers", variables.followingUuid],
       });
       // Invalidate profile to update follower count
       queryClient.invalidateQueries({
-        queryKey: ["profile", variables.userUuid],
+        queryKey: ["profile", variables.followingUuid],
+      });
+      // Invalidate people to follow list
+      queryClient.invalidateQueries({
+        queryKey: ["peopleToFollow"],
       });
     },
   });
@@ -214,6 +234,24 @@ export const useUserFollowers = (userUuid: string) => {
     queryKey: ["userFollowers", userUuid],
     queryFn: () => getUserFollowers(userUuid),
     enabled: !!userUuid,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
+  });
+};
+
+// Get people to follow
+export const getPeopleToFollow = async (): Promise<PeopleToFollowDto[]> => {
+  const response = await API.get<PeopleToFollowDto[]>(
+    "/follows/people-to-follow"
+  );
+  return response.data;
+};
+
+export const usePeopleToFollow = (options: { enabled?: boolean } = {}) => {
+  return useQuery({
+    queryKey: ["peopleToFollow"],
+    queryFn: getPeopleToFollow,
+    enabled: options.enabled !== undefined ? options.enabled : true,
     staleTime: 2 * 60 * 1000, // 2 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
   });

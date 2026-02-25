@@ -75,6 +75,13 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
     error: postError,
   } = useSinglePost(params.uuid);
 
+  // Set page title to post title
+  useEffect(() => {
+    if (postData?.title) {
+      document.title = postData.title;
+    }
+  }, [postData?.title]);
+
   // Get author UUID (might be in author object or need to derive from address)
   const authorUuid = postData?.author?.uuid;
 
@@ -1100,24 +1107,18 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
                   </motion.h1>
 
                   {/* Tags */}
-                  <div className="flex flex-wrap gap-2 mb-6">
-                    {postData.aiRating?.secondaryTopics?.map((topic) => (
-                      <span
-                        key={topic}
-                        className="text-xs text-gray-600 hover:text-gray-800 cursor-pointer transition-colors"
-                      >
-                        #{topic}
-                      </span>
-                    )) ||
-                      ["blockchain", "web3", "development"].map((tag) => (
+                  {postData.tags && postData.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-6">
+                      {postData.tags.map((tag) => (
                         <span
                           key={tag}
                           className="text-xs text-gray-600 hover:text-gray-800 cursor-pointer transition-colors"
                         >
-                          #{tag}
+                          {tag.startsWith("#") ? tag : `#${tag}`}
                         </span>
                       ))}
-                  </div>
+                    </div>
+                  )}
 
                   {/* Engagement Metrics */}
                   <div className="flex items-center gap-4 text-xs text-gray-600 mb-4">
@@ -1125,7 +1126,9 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
                       <IoChevronUpCircle className="w-3.5 h-3.5" />
                       <span>{postScore ? postScore.toString() : "0"}</span>
                     </div>
-                    <span className="text-gray-500">5 min read</span>
+                    <span className="text-gray-500">
+                      {`${postData?.xMinRead ?? 0} min read`}
+                    </span>
                   </div>
                 </div>
 

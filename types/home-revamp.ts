@@ -4,12 +4,16 @@ export interface DisplayPost {
   title: string;
   content: string;
   imageUrl: string;
-  author: string;
+  author: string; // Keep for backward compatibility
   timeAgo: string;
-  authorAvatar: string;
+  authorAvatar: string; // Keep for backward compatibility
   readTime?: string;
   clapCount?: number;
   commentCount?: number;
+  tags?: string[]; // Tags array from API
+  authorUuid?: string; // Author UUID for navigation
+  authorFullName?: string; // Author full name
+  authorProfilePic?: string; // Author profile picture IPFS hash
 }
 
 export interface User {
@@ -49,6 +53,11 @@ export interface FeedSectionProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
   isLoading?: boolean;
+  selectedTag?: string | null;
+  onClearTagFilter?: () => void;
+  hasNextPage?: boolean;
+  isFetchingNextPage?: boolean;
+  onLoadMore?: () => void;
 }
 
 export interface RightSidebarProps {

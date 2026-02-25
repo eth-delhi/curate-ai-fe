@@ -117,9 +117,13 @@ export default function CreatePostPage() {
 
       // Step 2: Create post in database (without transaction hash)
       console.log("Step 2: Creating post in database...");
+      // Remove markdown formatting (** for bold and # for headings) before sending to AI
+      const cleanedContent = markdownContent
+        .replace(/\*\*/g, "") // Remove ** (bold markdown)
+        .replace(/#{1,6}\s/g, ""); // Remove # (heading markdown)
       const postResponse = await apiMutatePost({
         title,
-        content: markdownContent,
+        content: cleanedContent,
         ipfsHash,
         userWalletAddress: account,
         internal_id: Number(postCount) + 1 || 0,
@@ -159,7 +163,7 @@ export default function CreatePostPage() {
         txHash = undefined;
       }
 
-      // Step 4: Update post with transaction hash and status
+      // Step 4: Update post with transaction hash and status`
       console.log("Step 4: Updating post with transaction hash...");
       await apiUpdatePost({
         postUuid: postResponse.uuid,

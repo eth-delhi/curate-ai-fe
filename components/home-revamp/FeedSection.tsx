@@ -1,26 +1,45 @@
 "use client";
 
-import { Bookmark, MessageCircle } from "lucide-react";
+import { Bookmark, MessageCircle, X } from "lucide-react";
 import { PiHandsClappingThin } from "react-icons/pi";
 import { FeedSectionProps } from "@/types/home-revamp";
 import { TAB_OPTIONS } from "@/constants/home-revamp";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Badge } from "@/components/ui/badge";
+import { useEffect, useRef, useCallback } from "react";
 
 const FeedPostCard = ({ post }: { post: any }) => {
-  // Generate consistent dummy profile picture based on author name
-  const authorName = post.author || "Anonymous";
-  const nameHash = authorName
-    .split("")
-    .reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);
-  const imgIndex = (nameHash % 70) + 1; // Use numbers 1-70 for variety
-  const avatarUrl = `https://i.pravatar.cc/150?img=${imgIndex}`;
+  const router = useRouter();
 
-  // Mock tags (you can add tags to post data later)
-  const tags = post.tags || ["#webdev", "#career", "#beginners"];
+  // Get author information - use real data if available
+  const authorName = post.authorFullName || post.author || "Anonymous";
+  const authorUuid = post.authorUuid;
+
+  // Get profile picture - use real IPFS URL if available, otherwise fallback
+  const avatarUrl = post.authorProfilePic
+    ? `https://gateway.pinata.cloud/ipfs/${post.authorProfilePic}`
+    : post.authorAvatar ||
+      `https://i.pravatar.cc/150?img=${Math.floor(Math.random() * 70) + 1}`;
+
+  // Use real tags from API, format with # prefix
+  const tags =
+    post.tags && post.tags.length > 0
+      ? post.tags.map((tag: string) => (tag.startsWith("#") ? tag : `#${tag}`))
+      : [];
 
   // Engagement metrics
   const clapCount = post.clapCount || 0;
   const commentCount = post.commentCount || 0;
+
+  // Handle author click - navigate to profile if UUID is available
+  const handleAuthorClick = (e: React.MouseEvent) => {
+    if (authorUuid) {
+      e.preventDefault();
+      e.stopPropagation();
+      router.push(`/profile-revamp/${authorUuid}`);
+    }
+  };
 
   return (
     <Link href={`/post-revamp/${post.uuid || post.id}`}>
@@ -30,14 +49,32 @@ const FeedPostCard = ({ post }: { post: any }) => {
           <div className="flex-1 min-w-0">
             {/* Author Info */}
             <div className="flex items-center gap-2 mb-2">
-              <img
-                src={avatarUrl}
-                alt={authorName}
-                className="w-8 h-8 rounded-full object-cover"
-              />
-              <span className="text-sm font-medium text-gray-900">
-                {authorName}
-              </span>
+              {authorUuid ? (
+                <button
+                  onClick={handleAuthorClick}
+                  className="flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer"
+                >
+                  <img
+                    src={avatarUrl}
+                    alt={authorName}
+                    className="w-8 h-8 rounded-full object-cover cursor-pointer"
+                  />
+                  <span className="text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors cursor-pointer">
+                    {authorName}
+                  </span>
+                </button>
+              ) : (
+                <>
+                  <img
+                    src={avatarUrl}
+                    alt={authorName}
+                    className="w-8 h-8 rounded-full object-cover"
+                  />
+                  <span className="text-sm font-medium text-gray-900">
+                    {authorName}
+                  </span>
+                </>
+              )}
               <span className="text-sm text-gray-500">·</span>
               <span className="text-sm text-gray-500">
                 {post.timeAgo || "Nov 4"}
@@ -61,16 +98,18 @@ const FeedPostCard = ({ post }: { post: any }) => {
             </h3>
 
             {/* Tags */}
-            <div className="flex flex-wrap gap-2 mb-3">
-              {tags.slice(0, 4).map((tag: string, index: number) => (
-                <span
-                  key={index}
-                  className="text-sm text-gray-600 hover:text-blue-600 cursor-pointer"
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
+            {tags.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-3">
+                {tags.slice(0, 4).map((tag: string, index: number) => (
+                  <span
+                    key={index}
+                    className="text-sm text-gray-600 hover:text-blue-600 cursor-pointer"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
 
             {/* Engagement Metrics */}
             <div className="flex items-center gap-4 text-sm text-gray-600">
@@ -83,7 +122,7 @@ const FeedPostCard = ({ post }: { post: any }) => {
                 <span>{commentCount}</span>
               </div>
               <span className="text-gray-500">
-                {post.readTime || "2 min read"}
+                {post.readTime || "0 min read"}
               </span>
             </div>
           </div>
@@ -115,7 +154,7 @@ const TabButton = ({
   onClick: (id: string) => void;
 }) => (
   <button
-    className={`px-4 py-2 text-sm font-medium transition-colors relative ${
+    className={`px-4 py-2 text-sm font-medium transition-colors relative cursor-pointer ${
       isActive
         ? "text-gray-900 font-semibold"
         : "text-gray-600 hover:text-gray-900"
@@ -134,7 +173,45 @@ export const FeedSection = ({
   activeTab,
   onTabChange,
   isLoading,
+  selectedTag,
+  onClearTagFilter,
+  hasNextPage,
+  isFetchingNextPage,
+  onLoadMore,
 }: FeedSectionProps) => {
+  // Intersection Observer for infinite scroll
+  const observerTarget = useRef<HTMLDivElement>(null);
+
+  // Load more when observer target comes into view
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (
+          entries[0].isIntersecting &&
+          hasNextPage &&
+          !isFetchingNextPage &&
+          onLoadMore
+        ) {
+          onLoadMore();
+        }
+      },
+      {
+        threshold: 0.1, // Trigger when 10% of the element is visible
+        rootMargin: "100px", // Start loading 100px before reaching the bottom
+      }
+    );
+
+    const currentTarget = observerTarget.current;
+    if (currentTarget) {
+      observer.observe(currentTarget);
+    }
+
+    return () => {
+      if (currentTarget) {
+        observer.unobserve(currentTarget);
+      }
+    };
+  }, [hasNextPage, isFetchingNextPage, onLoadMore]);
   if (isLoading) {
     return (
       <div className="bg-white rounded-lg">
@@ -175,6 +252,30 @@ export const FeedSection = ({
 
   return (
     <div className="bg-white rounded-lg">
+      {/* Active Tag Filter */}
+      {selectedTag && (
+        <div className="px-6 pt-4 pb-2 border-b border-gray-200">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-600">Filtered by:</span>
+            <Badge
+              variant="secondary"
+              className="bg-gray-100 text-gray-900 px-3 py-1 text-sm font-medium"
+            >
+              #{selectedTag}
+            </Badge>
+            {onClearTagFilter && (
+              <button
+                onClick={onClearTagFilter}
+                className="ml-2 p-1 hover:bg-gray-100 rounded transition-colors"
+                aria-label="Clear tag filter"
+              >
+                <X className="w-4 h-4 text-gray-500" />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Tabs */}
       <div className="flex gap-1 border-b border-gray-200 px-6 pt-4">
         {TAB_OPTIONS.map((tab) => (
@@ -190,9 +291,31 @@ export const FeedSection = ({
       {/* Feed Articles */}
       <div>
         {posts.length > 0 ? (
-          posts.map((post, index) => (
-            <FeedPostCard key={post.id || index} post={post} />
-          ))
+          <>
+            {posts.map((post, index) => (
+              <FeedPostCard key={post.id || post.uuid || index} post={post} />
+            ))}
+            {/* Infinite scroll trigger element */}
+            {hasNextPage && (
+              <div
+                ref={observerTarget}
+                className="h-20 flex items-center justify-center"
+              >
+                {isFetchingNextPage && (
+                  <div className="flex items-center gap-2 text-gray-500">
+                    <div className="w-5 h-5 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin"></div>
+                    <span className="text-sm">Loading more posts...</span>
+                  </div>
+                )}
+              </div>
+            )}
+            {/* End of feed message */}
+            {!hasNextPage && posts.length > 0 && (
+              <div className="text-center py-8 px-6">
+                <p className="text-gray-400 text-sm">You've reached the end</p>
+              </div>
+            )}
+          </>
         ) : (
           <div className="text-center py-12 px-6">
             <p className="text-gray-500 text-lg">No posts available</p>

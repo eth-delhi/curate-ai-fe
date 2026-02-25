@@ -3,7 +3,6 @@
 import { Wallet, Loader2 } from "lucide-react";
 import { IoChevronUpCircle } from "react-icons/io5";
 import { RightSidebarProps } from "@/types/home-revamp";
-import { DUMMY_TOPICS } from "@/constants/home-revamp";
 import { useAccount, useBalance } from "wagmi";
 import { useCatTokenBalance } from "@/hooks/wagmi/useCatTokenBalance";
 import { useReadCuratAiTokenDecimals } from "@/hooks/wagmi/contracts";
@@ -12,13 +11,17 @@ import { formatUnits } from "viem";
 import { useMemo } from "react";
 import Link from "next/link";
 import { useDailyVotePercentage } from "@/hooks/api/scores";
+import { useTopTags } from "@/hooks/api/tags";
+import { useAuth } from "@/hooks/useAuth";
 
 const TopicItem = ({
   topic,
   onClick,
+  isSelected,
 }: {
   topic: string;
   onClick?: (topic: string) => void;
+  isSelected?: boolean;
 }) => (
   <Link
     href="#"
@@ -26,7 +29,9 @@ const TopicItem = ({
       e.preventDefault();
       onClick?.(topic);
     }}
-    className="block py-2 hover:bg-gray-50 rounded px-1 transition-colors pl-2.5"
+    className={`block py-2 hover:bg-gray-50 rounded px-1 transition-colors pl-2.5 ${
+      isSelected ? "bg-gray-100 font-semibold" : ""
+    }`}
   >
     <p className="text-sm text-gray-900 leading-snug lowercase">
       {topic.toLowerCase()}
@@ -181,11 +186,29 @@ const WalletWidget = () => {
 };
 
 export const LeftSidebar = ({
-  topics = DUMMY_TOPICS,
   onTopicClick,
-}: Pick<RightSidebarProps, "topics" | "onTopicClick">) => {
+  selectedTag,
+}: Pick<RightSidebarProps, "onTopicClick"> & {
+  selectedTag?: string | null;
+}) => {
+  // Check if user is authenticated
+  const { isAuthenticated } = useAuth();
+
+  // Fetch top tags from API
+  const { data: tagsData, isLoading: isTagsLoading } = useTopTags(
+    { limit: 15 },
+    { enabled: isAuthenticated }
+  );
+
+  // Extract tag names from API response
+  const topics = useMemo(() => {
+    if (!tagsData || tagsData.length === 0) return [];
+    return tagsData.map((tag) => tag.name);
+  }, [tagsData]);
+
   // Expand topics to fill the remaining height by repeating the list
   const expandedTopics = useMemo(() => {
+    if (topics.length === 0) return [];
     const repeatCount = Math.ceil(25 / topics.length); // Repeat enough to fill screen
     return Array.from({ length: repeatCount }, () => topics).flat();
   }, [topics]);
@@ -201,11 +224,24 @@ export const LeftSidebar = ({
         <p className="text-xs text-gray-600 mb-4">
           Trending topics for you to explore
         </p>
-        <div className="space-y-1 border-l-2 border-gray-200 pl-2.5">
-          {expandedTopics.map((topic, i) => (
-            <TopicItem key={i} topic={topic} onClick={onTopicClick} />
-          ))}
-        </div>
+        {isTagsLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+          </div>
+        ) : expandedTopics.length === 0 ? (
+          <div className="text-xs text-gray-500 py-4">No topics available</div>
+        ) : (
+          <div className="space-y-1 border-l-2 border-gray-200 pl-2.5">
+            {expandedTopics.map((topic, i) => (
+              <TopicItem
+                key={i}
+                topic={topic}
+                onClick={onTopicClick}
+                isSelected={selectedTag?.toLowerCase() === topic.toLowerCase()}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -78,3 +78,34 @@ export const useDailyVotePercentage = (userWalletAddress: string) => {
     gcTime: 5 * 60 * 1000, // 5 minutes
   });
 };
+
+// Fetch posts scored by a user
+export interface ScoredPostsParams {
+  page?: number;
+  limit?: number;
+}
+
+export const fetchScoredPosts = async (
+  userUuid: string,
+  params: ScoredPostsParams = {}
+): Promise<any> => {
+  const { page = 1, limit = 20 } = params;
+  const response = await API.get(
+    `/scores/user-uuid/${userUuid}/posts?page=${page}&limit=${limit}`
+  );
+  return response.data;
+};
+
+export const useScoredPosts = (
+  userUuid: string,
+  params: ScoredPostsParams = {},
+  options?: { enabled?: boolean }
+) => {
+  return useQuery({
+    queryKey: ["scoredPosts", userUuid, params],
+    queryFn: () => fetchScoredPosts(userUuid, params),
+    enabled: options?.enabled !== undefined ? options.enabled : !!userUuid,
+    staleTime: 30 * 1000, // 30 seconds
+    gcTime: 5 * 60 * 1000, // 5 minutes
+  });
+};

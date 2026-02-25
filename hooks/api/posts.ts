@@ -1,6 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import API from "../utils/axiosInstance";
-import { SinglePostResponseDto } from "@/utils/types";
+import { SinglePostResponseDto, AuthorDto } from "@/utils/types";
 
 // Types based on the backend DTOs
 export interface PostResponseDto {
@@ -14,6 +14,10 @@ export interface PostResponseDto {
   aiRatingId?: number;
   internal_id?: number;
   transactionHash?: string;
+  tags?: string[]; // Tags array from API
+  xMinRead?: number; // Read time in minutes from API
+  createdAt?: string | Date; // Created date from API
+  author?: AuthorDto; // Author information including username, fullName, profilePic
 }
 
 export interface PaginationInfo {
@@ -38,9 +42,12 @@ export interface ListPostsParams {
   published?: boolean;
   sortBy?: string;
   sortOrder?: "asc" | "desc";
+  tag?: string;
+  followingOnly?: boolean;
+  hot?: boolean;
 }
 
-// Fetch posts function
+// Fetch posts function`
 export const fetchPosts = async (
   params: ListPostsParams = {}
 ): Promise<PaginatedPostsResponseDto> => {
@@ -60,6 +67,11 @@ export const fetchPosts = async (
     searchParams.append("published", params.published.toString());
   if (params.sortBy) searchParams.append("sortBy", params.sortBy);
   if (params.sortOrder) searchParams.append("sortOrder", params.sortOrder);
+  if (params.tag) searchParams.append("tag", params.tag);
+  if (params.followingOnly !== undefined)
+    searchParams.append("followingOnly", params.followingOnly.toString());
+  if (params.hot !== undefined)
+    searchParams.append("hot", params.hot.toString());
 
   const queryString = searchParams.toString();
   const url = `/posts/list${queryString ? `?${queryString}` : ""}`;
@@ -73,6 +85,26 @@ export const usePosts = (params: ListPostsParams = {}) => {
   return useQuery({
     queryKey: ["posts", params],
     queryFn: () => fetchPosts(params),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
+  });
+};
+
+// Hook for infinite scroll - fetches posts page by page
+export const useInfinitePosts = (params: Omit<ListPostsParams, "page"> = {}) => {
+  const pageSize = params.limit || 10;
+  
+  return useInfiniteQuery({
+    queryKey: ["posts-infinite", params],
+    queryFn: ({ pageParam = 1 }) => fetchPosts({ ...params, page: pageParam, limit: pageSize }),
+    getNextPageParam: (lastPage) => {
+      // If there's a next page, return the next page number
+      if (lastPage.pagination.hasNext) {
+        return lastPage.pagination.page + 1;
+      }
+      return undefined; // No more pages
+    },
+    initialPageParam: 1,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
   });
