@@ -10,10 +10,10 @@ export const ErrorState = ({
   message = "Failed to load posts",
 }: ErrorStateProps) => {
   return (
-    <div className="flex h-screen bg-[#e8e7ed] items-center justify-center">
+    <div className="flex h-screen bg-muted items-center justify-center">
       <div className="text-center">
-        <p className="text-red-600 mb-4">{message}</p>
-        <p className="text-gray-600 text-sm">
+        <p className="text-destructive mb-4">{message}</p>
+        <p className="text-muted-foreground text-sm">
           {error?.message || "An error occurred while fetching posts"}
         </p>
       </div>

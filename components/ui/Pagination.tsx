@@ -37,20 +37,20 @@ export const Pagination: React.FC<PaginationProps> = ({
       <button
         onClick={handlePrevious}
         disabled={!hasPrev}
-        className="flex items-center px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="flex items-center px-3 py-2 text-sm font-medium text-muted-foreground bg-background border border-border rounded-md transition-colors duration-150 hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <ChevronLeft className="h-4 w-4 mr-1" />
         Previous
       </button>
 
-      <span className="px-3 py-2 text-sm text-gray-700">
+      <span className="px-3 py-2 text-sm text-foreground">
         Page {currentPage} of {totalPages}
       </span>
 
       <button
         onClick={handleNext}
         disabled={!hasNext}
-        className="flex items-center px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="flex items-center px-3 py-2 text-sm font-medium text-muted-foreground bg-background border border-border rounded-md transition-colors duration-150 hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
       >
         Next
         <ChevronRight className="h-4 w-4 ml-1" />

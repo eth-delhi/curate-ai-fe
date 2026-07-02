@@ -48,7 +48,7 @@ const UserItem = ({ user }: { user: FollowUser }) => {
   return (
     <Link
       href={`/profile-revamp/${user.uuid}`}
-      className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors"
+      className="flex items-center gap-3 p-3 hover:bg-accent rounded-lg transition-colors duration-150"
     >
       <Avatar className="h-12 w-12">
         <AvatarImage
@@ -56,13 +56,13 @@ const UserItem = ({ user }: { user: FollowUser }) => {
           alt={displayName}
           className="object-cover"
         />
-        <AvatarFallback className="bg-gray-200 text-gray-700">
+        <AvatarFallback className="bg-muted text-muted-foreground">
           {initials}
         </AvatarFallback>
       </Avatar>
       <div className="flex-1 min-w-0">
-        <p className="font-medium text-gray-900 truncate">{displayName}</p>
-        <p className="text-sm text-gray-500 truncate">@{username}</p>
+        <p className="font-medium text-foreground truncate">{displayName}</p>
+        <p className="text-sm text-muted-foreground truncate">@{username}</p>
       </div>
     </Link>
   );
@@ -136,7 +136,7 @@ export const FollowersFollowingModal = ({
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-black bg-opacity-25" />
+          <div className="fixed inset-0 bg-foreground/25" />
         </Transition.Child>
 
         <div className="fixed inset-0 overflow-y-auto">
@@ -151,20 +151,20 @@ export const FollowersFollowingModal = ({
               leaveTo="opacity-0 scale-95"
             >
               <Dialog.Panel
-                className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white shadow-xl transition-all"
+                className="w-full max-w-md transform overflow-hidden rounded-lg bg-background shadow-sm transition-all"
                 onClick={(e) => e.stopPropagation()}
               >
                 {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                  <Dialog.Title className="text-xl font-bold text-gray-900">
+                <div className="flex items-center justify-between p-6 border-b border-border">
+                  <Dialog.Title className="text-xl font-bold text-foreground">
                     {title}
                   </Dialog.Title>
                   <button
                     onClick={onClose}
-                    className="rounded-lg p-2 hover:bg-gray-100 transition-colors"
+                    className="rounded-lg p-2 hover:bg-accent transition-colors duration-150"
                     aria-label="Close"
                   >
-                    <X className="h-5 w-5 text-gray-500" />
+                    <X className="h-5 w-5 text-muted-foreground" />
                   </button>
                 </div>
 
@@ -175,22 +175,22 @@ export const FollowersFollowingModal = ({
                 >
                   {isLoading ? (
                     <div className="flex flex-col items-center justify-center py-12">
-                      <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
-                      <span className="mt-3 text-gray-600">Loading...</span>
+                      <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+                      <span className="mt-3 text-muted-foreground">Loading...</span>
                     </div>
                   ) : error ? (
                     <div className="flex flex-col items-center justify-center py-12">
-                      <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
-                      <p className="text-gray-600">Failed to load {title}</p>
+                      <AlertCircle className="w-12 h-12 text-destructive mb-4" />
+                      <p className="text-muted-foreground">Failed to load {title}</p>
                     </div>
                   ) : !data || data.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-12">
-                      <p className="text-gray-600">
+                      <p className="text-muted-foreground">
                         No {title.toLowerCase()} found
                       </p>
                     </div>
                   ) : (
-                    <div className="divide-y divide-gray-100">
+                    <div className="divide-y divide-border">
                       {data.map((user) => (
                         <UserItem key={user.uuid} user={user} />
                       ))}

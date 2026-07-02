@@ -97,8 +97,8 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
     commentsData?.filter((comment) => !comment.parentCommentUuid) || [];
 
   return (
-    <div className="bg-white p-6">
-      <h2 className="text-lg font-semibold text-gray-900 mb-6">
+    <div className="bg-background px-1 py-1">
+      <h2 className="mb-6 text-[20px] font-semibold text-foreground">
         Comments ({commentsData?.length || 0})
       </h2>
 
@@ -106,23 +106,23 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
       <div className="mb-8">
         {isAuthenticated ? (
           <form onSubmit={handleCommentSubmit}>
-            <div className="flex gap-3 mb-3">
-              <Avatar className="h-10 w-10 border border-gray-200">
+            <div className="mb-3 flex gap-3">
+              <Avatar className="h-10 w-10 border border-border">
                 <AvatarImage src="/placeholder.svg" alt="User" />
-                <AvatarFallback>
+                <AvatarFallback className="bg-muted text-muted-foreground">
                   <User className="h-5 w-5" />
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
-                  <p className="text-sm font-medium text-gray-900">
+                <div className="mb-2 flex items-center gap-2">
+                  <p className="text-[14px] font-medium text-foreground">
                     {userAddress
                       ? formatWalletAddress(userAddress)
                       : "Anonymous User"}
                   </p>
                   <Badge
                     variant="secondary"
-                    className="text-xs bg-gray-100 text-gray-600"
+                    className="border border-border bg-muted text-[11px] text-muted-foreground"
                   >
                     You
                   </Badge>
@@ -133,20 +133,23 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
                   }
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
-                  className="min-h-[100px] border-gray-200 focus:border-gray-300 focus:ring focus:ring-gray-100 focus:ring-opacity-50 bg-gray-50"
+                  className="min-h-[110px] rounded-xl border-input bg-background text-[15px] leading-[1.6] text-foreground placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring"
                 />
               </div>
             </div>
 
             {replyingTo && (
               <div className="mb-3 ml-13">
-                <Badge variant="outline" className="text-xs border-gray-200">
+                <Badge
+                  variant="outline"
+                  className="border-border text-[11px] text-muted-foreground"
+                >
                   Replying to comment
                 </Badge>
                 <button
                   type="button"
                   onClick={handleCancelReply}
-                  className="ml-2 text-xs text-gray-500 hover:text-gray-700"
+                  className="ml-2 text-[12px] text-muted-foreground transition-colors duration-150 hover:text-foreground"
                 >
                   Cancel
                 </button>
@@ -157,7 +160,7 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
               <Button
                 type="submit"
                 disabled={!newComment.trim() || createCommentMutation.isPending}
-                className="bg-gray-800 hover:bg-gray-900 text-white"
+                className="rounded-full bg-primary px-5 text-primary-foreground transition-colors duration-150 hover:bg-primary/90"
               >
                 {createCommentMutation.isPending ? (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -169,8 +172,8 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
             </div>
           </form>
         ) : (
-          <div className="p-4 bg-gray-50 rounded-lg border border-gray-100">
-            <p className="text-gray-600 text-center text-sm">
+          <div className="rounded-xl border border-border bg-muted p-4">
+            <p className="text-center text-[14px] text-muted-foreground">
               Please log in to leave a comment.
             </p>
           </div>
@@ -193,11 +196,11 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
         </div>
       ) : (
         <div className="text-center py-8">
-          <MessageSquare className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-          <h3 className="text-lg font-medium text-gray-900 mb-1">
+          <MessageSquare className="mx-auto mb-3 h-12 w-12 text-muted-foreground" />
+          <h3 className="mb-1 text-[18px] font-medium text-foreground">
             No comments yet
           </h3>
-          <p className="text-gray-500">
+          <p className="text-[14px] text-muted-foreground">
             Be the first to share your thoughts on this post
           </p>
         </div>

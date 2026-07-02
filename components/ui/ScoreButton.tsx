@@ -89,8 +89,8 @@ export const ScoreButton: React.FC<ScoreButtonProps> = ({
   if (!userAddress) {
     return (
       <div className="flex items-center gap-2">
-        <Star className="h-5 w-5 text-gray-400" />
-        <span className="text-sm text-gray-600">Connect wallet to score</span>
+        <Star className="h-5 w-5 text-muted-foreground" />
+        <span className="text-sm text-muted-foreground">Connect wallet to score</span>
       </div>
     );
   }
@@ -135,7 +135,7 @@ export const ScoreButton: React.FC<ScoreButtonProps> = ({
       </div>
 
       {tokenBalance && (
-        <div className="text-xs text-gray-500">
+        <div className="text-xs text-muted-foreground">
           Balance: {tokenBalance.toString()}
         </div>
       )}

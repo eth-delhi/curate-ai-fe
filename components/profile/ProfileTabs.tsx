@@ -70,38 +70,38 @@ export const ProfileTabs = ({
         className="w-full"
         onValueChange={setActiveTab}
       >
-        <TabsList className="bg-white shadow-sm rounded-xl p-1 space-x-1 border border-gray-200 mb-8">
+        <TabsList className="bg-background rounded-lg p-1 space-x-1 border border-border mb-8">
           <TabsTrigger
             value="posts"
-            className="text-sm rounded-lg data-[state=active]:bg-blue-500 data-[state=active]:text-white text-gray-600 px-4 py-2 transition-all"
+            className="text-sm rounded-md data-[state=active]:bg-accent data-[state=active]:text-accent-foreground text-muted-foreground hover:text-foreground px-4 py-2 transition-colors duration-150"
           >
             <FileText className="h-4 w-4 mr-2" />
             Posts
           </TabsTrigger>
           <TabsTrigger
             value="drafts"
-            className="text-sm rounded-lg data-[state=active]:bg-blue-500 data-[state=active]:text-white text-gray-600 px-4 py-2 transition-all"
+            className="text-sm rounded-md data-[state=active]:bg-accent data-[state=active]:text-accent-foreground text-muted-foreground hover:text-foreground px-4 py-2 transition-colors duration-150"
           >
             <Edit2 className="h-4 w-4 mr-2" />
             Drafts
           </TabsTrigger>
           <TabsTrigger
             value="analytics"
-            className="text-sm rounded-lg data-[state=active]:bg-blue-500 data-[state=active]:text-white text-gray-600 px-4 py-2 transition-all"
+            className="text-sm rounded-md data-[state=active]:bg-accent data-[state=active]:text-accent-foreground text-muted-foreground hover:text-foreground px-4 py-2 transition-colors duration-150"
           >
             <BarChart2 className="h-4 w-4 mr-2" />
             Analytics
           </TabsTrigger>
           <TabsTrigger
             value="settings"
-            className="text-sm rounded-lg data-[state=active]:bg-blue-500 data-[state=active]:text-white text-gray-600 px-4 py-2 transition-all"
+            className="text-sm rounded-md data-[state=active]:bg-accent data-[state=active]:text-accent-foreground text-muted-foreground hover:text-foreground px-4 py-2 transition-colors duration-150"
           >
             <Settings className="h-4 w-4 mr-2" />
             Settings
           </TabsTrigger>
           <TabsTrigger
             value="wallet"
-            className="text-sm rounded-lg data-[state=active]:bg-blue-500 data-[state=active]:text-white text-gray-600 px-4 py-2 transition-all"
+            className="text-sm rounded-md data-[state=active]:bg-accent data-[state=active]:text-accent-foreground text-muted-foreground hover:text-foreground px-4 py-2 transition-colors duration-150"
           >
             <Wallet className="h-4 w-4 mr-2" />
             Wallet
@@ -130,8 +130,8 @@ export const ProfileTabs = ({
 
         {/* Wallet Tab */}
         <TabsContent value="wallet" className="mt-0">
-          <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-md border border-gray-100">
-            <p className="text-gray-500">
+          <div className="bg-background/80 backdrop-blur-sm rounded-lg p-6 border border-border">
+            <p className="text-muted-foreground">
               Wallet component will be integrated here
             </p>
           </div>

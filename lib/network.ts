@@ -8,6 +8,7 @@ export enum Network {
   ZKSYNC = "zksync",
   ZKSYNC_SEPOLIA = "zksync-sepolia",
   SONIC_TESTNET = "sonic-blaze",
+  HEDERA_TESTNET = "hedera-testnet",
 }
 
 export const getNetworkUrl = () => {
@@ -30,6 +31,8 @@ export const getNetworkUrl = () => {
       return "https://zksync-era-sepolia.blockpi.network/v1/rpc/public";
     case Network.SONIC_TESTNET:
       return "https://sonic-blaze.g.alchemy.com/v2/qAEksW6pFqzHzh8WDvAC5CnhfBII8fJ-";
+    case Network.HEDERA_TESTNET:
+      return "https://testnet.hashio.io/api";
     default:
       throw new Error("Network not supported");
   }
@@ -55,6 +58,8 @@ export const getChainId = () => {
       return 128123;
     case Network.SONIC_TESTNET:
       return 57054; // Sonic Testnet Chain ID
+    case Network.HEDERA_TESTNET:
+      return 296;
     default:
       throw new Error("Network not supported");
   }
@@ -75,6 +80,8 @@ export const getNetworkToken = () => {
       return "XTZ";
     case Network.SONIC_TESTNET:
       return "S";
+    case Network.HEDERA_TESTNET:
+      return "HBAR";
     default:
       throw new Error("Network not supported");
   }
@@ -117,6 +124,8 @@ export const getNetworkName = () => {
       return "zkSync (Sepolia)";
     case Network.SONIC_TESTNET:
       return "Sonic (Blaze Testnet)";
+    case Network.HEDERA_TESTNET:
+      return "Hedera (Testnet)";
     default:
       throw new Error("Network not supported");
   }

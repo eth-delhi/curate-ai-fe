@@ -1,38 +1,54 @@
 "use client";
 
-import { Bookmark, MessageCircle, X } from "lucide-react";
+import {
+  Bookmark,
+  MessageCircle,
+  X,
+  MoreHorizontal,
+} from "lucide-react";
 import { PiHandsClappingThin } from "react-icons/pi";
 import { FeedSectionProps } from "@/types/home-revamp";
-import { TAB_OPTIONS } from "@/constants/home-revamp";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
+import { getIpfsUrl } from "@/utils/ipfs";
+
+function formatEngagement(n: number): string {
+  if (n >= 1000) {
+    const k = n / 1000;
+    const s = k % 1 === 0 ? k.toFixed(0) : k.toFixed(1);
+    return `${s.replace(/\.0$/, "")}K`;
+  }
+  return String(n);
+}
+
+/** Strip markup for feed excerpt (design: 2–3 lines of grey body). */
+function excerptPlainText(htmlOrText: string | undefined): string {
+  if (!htmlOrText) return "";
+  return htmlOrText
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+const tabActiveBar =
+  "pointer-events-none absolute bottom-0 left-0 right-0 h-[3px] bg-primary";
 
 const FeedPostCard = ({ post }: { post: any }) => {
   const router = useRouter();
+  const [avatarLoadError, setAvatarLoadError] = useState(false);
 
-  // Get author information - use real data if available
   const authorName = post.authorFullName || post.author || "Anonymous";
   const authorUuid = post.authorUuid;
 
-  // Get profile picture - use real IPFS URL if available, otherwise fallback
-  const avatarUrl = post.authorProfilePic
-    ? `https://gateway.pinata.cloud/ipfs/${post.authorProfilePic}`
-    : post.authorAvatar ||
-      `https://i.pravatar.cc/150?img=${Math.floor(Math.random() * 70) + 1}`;
-
-  // Use real tags from API, format with # prefix
+  const clapCount = post.clapCount ?? 0;
+  const commentCount = post.commentCount ?? 0;
   const tags =
     post.tags && post.tags.length > 0
       ? post.tags.map((tag: string) => (tag.startsWith("#") ? tag : `#${tag}`))
       : [];
 
-  // Engagement metrics
-  const clapCount = post.clapCount || 0;
-  const commentCount = post.commentCount || 0;
-
-  // Handle author click - navigate to profile if UUID is available
   const handleAuthorClick = (e: React.MouseEvent) => {
     if (authorUuid) {
       e.preventDefault();
@@ -41,132 +57,115 @@ const FeedPostCard = ({ post }: { post: any }) => {
     }
   };
 
+  const gradientClass = "bg-muted";
+
+  const profilePicUrl =
+    getIpfsUrl(post.authorProfilePic) ||
+    (typeof post.authorAvatar === "string" && post.authorAvatar.startsWith("http")
+      ? post.authorAvatar
+      : null);
+
   return (
     <Link href={`/post-revamp/${post.uuid || post.id}`}>
-      <article className="bg-white border-b border-gray-200 py-4 px-6 cursor-pointer">
-        <div className="flex items-start justify-between gap-4">
-          {/* Main Content - Column Layout */}
-          <div className="flex-1 min-w-0">
-            {/* Author Info */}
-            <div className="flex items-center gap-2 mb-2">
-              {authorUuid ? (
-                <button
-                  onClick={handleAuthorClick}
-                  className="flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer"
-                >
-                  <img
-                    src={avatarUrl}
-                    alt={authorName}
-                    className="w-8 h-8 rounded-full object-cover cursor-pointer"
-                  />
-                  <span className="text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors cursor-pointer">
-                    {authorName}
-                  </span>
-                </button>
-              ) : (
-                <>
-                  <img
-                    src={avatarUrl}
-                    alt={authorName}
-                    className="w-8 h-8 rounded-full object-cover"
-                  />
-                  <span className="text-sm font-medium text-gray-900">
-                    {authorName}
-                  </span>
-                </>
-              )}
-              <span className="text-sm text-gray-500">·</span>
-              <span className="text-sm text-gray-500">
-                {post.timeAgo || "Nov 4"}
-              </span>
-            </div>
-
-            {/* Thumbnail Image - Above Title in Column */}
-            {post.imageUrl && (
-              <div className="mb-2 rounded-lg overflow-hidden bg-gray-100 aspect-[16/10]">
-                <img
-                  src={post.imageUrl}
-                  alt={post.title}
-                  className="w-full h-full object-cover"
-                />
-              </div>
+      <article className="border-b border-border py-8">
+        <div className="mb-3 flex items-center gap-2.5">
+          {profilePicUrl && !avatarLoadError ? (
+            <img
+              src={profilePicUrl}
+              alt={authorName}
+              className="h-7 w-7 shrink-0 rounded-full object-cover"
+              onError={() => setAvatarLoadError(true)}
+            />
+          ) : (
+            <span
+              className={`h-7 w-7 shrink-0 rounded-full ${gradientClass}`}
+            />
+          )}
+          <span className="text-[15px] font-medium text-foreground">
+            {authorUuid ? (
+              <button
+                type="button"
+                onClick={handleAuthorClick}
+                className="font-medium text-foreground hover:underline"
+              >
+                {authorName}
+              </button>
+            ) : (
+              <span>{authorName}</span>
             )}
+          </span>
+          <span className="text-[15px] text-muted-foreground">
+            · {post.timeAgo || "Recently"}
+          </span>
+        </div>
 
-            {/* Title */}
-            <h3 className="text-xl font-bold text-gray-900 mb-3 hover:text-blue-800 transition-colors">
+        <div className="flex gap-8">
+          <div className="min-w-0 flex-1">
+            <h3 className="mb-2 font-serif text-[26px] font-bold leading-[1.25] tracking-tight text-foreground">
               {post.title}
             </h3>
-
-            {/* Tags */}
-            {tags.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-3">
-                {tags.slice(0, 4).map((tag: string, index: number) => (
-                  <span
-                    key={index}
-                    className="text-sm text-gray-600 hover:text-blue-600 cursor-pointer"
-                  >
-                    {tag}
+            <p className="mb-5 line-clamp-3 text-[17px] leading-[1.55] text-muted-foreground">
+              {excerptPlainText(post.content)}
+            </p>
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="whitespace-nowrap rounded-2xl bg-muted px-[11px] py-1.5 text-[14px] text-foreground">
+                  {(tags[0] || "#General").replace("#", "")}
+                </span>
+                <span className="whitespace-nowrap text-[14px] text-muted-foreground">
+                  {post.readTime || "3 min read"}
+                </span>
+                <div className="flex items-center gap-4 text-[14px] text-muted-foreground">
+                  <span className="flex items-center gap-1.5">
+                    <PiHandsClappingThin className="h-5 w-5 shrink-0" />
+                    {formatEngagement(clapCount)}
                   </span>
-                ))}
+                  <span className="flex items-center gap-1.5">
+                    <MessageCircle className="h-5 w-5 shrink-0" />
+                    {commentCount}
+                  </span>
+                </div>
               </div>
-            )}
-
-            {/* Engagement Metrics */}
-            <div className="flex items-center gap-4 text-sm text-gray-600">
-              <div className="flex items-center gap-1.5">
-                <PiHandsClappingThin className="w-4 h-4" />
-                <span>{clapCount}</span>
+              <div className="flex shrink-0 items-center gap-5 text-muted-foreground">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                  aria-label="Bookmark"
+                  className="hover:text-foreground transition-colors duration-150"
+                >
+                  <Bookmark className="h-6 w-6" />
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                  aria-label="More"
+                  className="text-lg hover:text-foreground transition-colors duration-150"
+                >
+                  <MoreHorizontal className="h-6 w-6" />
+                </button>
               </div>
-              <div className="flex items-center gap-1.5">
-                <MessageCircle className="w-4 h-4" />
-                <span>{commentCount}</span>
-              </div>
-              <span className="text-gray-500">
-                {post.readTime || "0 min read"}
-              </span>
             </div>
           </div>
-
-          {/* Bookmark Icon - Right Side */}
-          <button
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-            }}
-            className="p-2 hover:bg-gray-200 rounded transition-colors flex-shrink-0"
-            aria-label="Bookmark"
-          >
-            <Bookmark className="w-5 h-5 text-gray-400" />
-          </button>
+          {post.imageUrl ? (
+          <div className="h-[118px] w-44 shrink-0 overflow-hidden rounded-md">
+            <img
+              src={post.imageUrl}
+              alt=""
+              className="h-full w-full object-cover"
+            />
+          </div>
+          ) : null}
         </div>
       </article>
     </Link>
   );
 };
-
-const TabButton = ({
-  tab,
-  isActive,
-  onClick,
-}: {
-  tab: { id: string; label: string };
-  isActive: boolean;
-  onClick: (id: string) => void;
-}) => (
-  <button
-    className={`px-4 py-2 text-sm font-medium transition-colors relative cursor-pointer ${
-      isActive
-        ? "text-gray-900 font-semibold"
-        : "text-gray-600 hover:text-gray-900"
-    }`}
-    onClick={() => onClick(tab.id)}
-  >
-    {tab.label}
-    {isActive && (
-      <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900"></span>
-    )}
-  </button>
-);
 
 export const FeedSection = ({
   posts,
@@ -179,10 +178,8 @@ export const FeedSection = ({
   isFetchingNextPage,
   onLoadMore,
 }: FeedSectionProps) => {
-  // Intersection Observer for infinite scroll
   const observerTarget = useRef<HTMLDivElement>(null);
 
-  // Load more when observer target comes into view
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -196,8 +193,8 @@ export const FeedSection = ({
         }
       },
       {
-        threshold: 0.1, // Trigger when 10% of the element is visible
-        rootMargin: "100px", // Start loading 100px before reaching the bottom
+        threshold: 0.1,
+        rootMargin: "100px",
       }
     );
 
@@ -212,114 +209,123 @@ export const FeedSection = ({
       }
     };
   }, [hasNextPage, isFetchingNextPage, onLoadMore]);
+
   if (isLoading) {
     return (
-      <div className="bg-white rounded-lg">
-        <div className="flex gap-1 border-b border-gray-200 px-6 pt-4 pb-2">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div
-              key={i}
-              className="h-8 w-20 bg-gray-200 rounded animate-pulse mr-4"
-            ></div>
-          ))}
-        </div>
-        <div>
-          {Array.from({ length: 5 }).map((_, index) => (
-            <div
-              key={index}
-              className="border-b border-gray-200 py-6 px-6 animate-pulse"
-            >
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 bg-gray-200 rounded-full"></div>
-                <div className="h-4 w-32 bg-gray-200 rounded"></div>
-                <div className="h-4 w-16 bg-gray-200 rounded"></div>
-              </div>
-              <div className="h-6 bg-gray-200 rounded w-3/4 mb-3"></div>
-              <div className="flex gap-2 mb-3">
-                <div className="h-4 w-16 bg-gray-200 rounded"></div>
-                <div className="h-4 w-16 bg-gray-200 rounded"></div>
-              </div>
-              <div className="flex gap-4">
-                <div className="h-4 w-12 bg-gray-200 rounded"></div>
-                <div className="h-4 w-12 bg-gray-200 rounded"></div>
-              </div>
+      <div>
+        {Array.from({ length: 5 }).map((_, index) => (
+          <div
+            key={index}
+            className="animate-pulse border-b border-border py-8"
+          >
+            <div className="mb-3 flex gap-2">
+              <div className="h-5 w-5 rounded bg-muted" />
+              <div className="h-4 w-48 rounded bg-muted" />
             </div>
-          ))}
-        </div>
+            <div className="mb-3 h-7 w-3/4 rounded bg-muted" />
+            <div className="mb-2 h-4 w-full rounded bg-muted" />
+            <div className="h-4 w-2/3 rounded bg-muted" />
+          </div>
+        ))}
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg">
-      {/* Active Tag Filter */}
+    <div>
+      <div className="mb-10 flex gap-10 border-b border-border">
+        <button
+          type="button"
+          onClick={() => onTabChange("new")}
+          className={`relative flex items-center gap-2 py-5 text-[16px] font-medium leading-snug transition-colors duration-150 ${
+            activeTab === "new"
+              ? "text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <span className="text-[20px] font-normal leading-none">+</span>
+          For you
+          {activeTab === "new" && <span className={tabActiveBar} />}
+        </button>
+        <button
+          type="button"
+          onClick={() => onTabChange("following")}
+          className={`relative py-5 text-[16px] font-medium leading-snug transition-colors duration-150 ${
+            activeTab === "following"
+              ? "text-primary"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Following
+          {activeTab === "following" && <span className={tabActiveBar} />}
+        </button>
+        <button
+          type="button"
+          onClick={() => onTabChange("hot")}
+          className={`relative py-5 text-[16px] font-medium leading-snug transition-colors duration-150 ${
+            activeTab === "hot"
+              ? "text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Hot
+          {activeTab === "hot" && <span className={tabActiveBar} />}
+        </button>
+      </div>
+
       {selectedTag && (
-        <div className="px-6 pt-4 pb-2 border-b border-gray-200">
+        <div className="mb-4 border-b border-border pb-3">
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600">Filtered by:</span>
+            <span className="text-sm text-muted-foreground">Filtered by:</span>
             <Badge
               variant="secondary"
-              className="bg-gray-100 text-gray-900 px-3 py-1 text-sm font-medium"
+              className="bg-muted px-3 py-1 text-sm font-medium text-foreground"
             >
               #{selectedTag}
             </Badge>
             {onClearTagFilter && (
               <button
+                type="button"
                 onClick={onClearTagFilter}
-                className="ml-2 p-1 hover:bg-gray-100 rounded transition-colors"
+                className="ml-2 rounded p-1 transition-colors duration-150 hover:bg-accent"
                 aria-label="Clear tag filter"
               >
-                <X className="w-4 h-4 text-gray-500" />
+                <X className="h-4 w-4 text-muted-foreground" />
               </button>
             )}
           </div>
         </div>
       )}
 
-      {/* Tabs */}
-      <div className="flex gap-1 border-b border-gray-200 px-6 pt-4">
-        {TAB_OPTIONS.map((tab) => (
-          <TabButton
-            key={tab.id}
-            tab={tab}
-            isActive={activeTab === tab.id}
-            onClick={onTabChange}
-          />
-        ))}
-      </div>
-
-      {/* Feed Articles */}
       <div>
         {posts.length > 0 ? (
           <>
             {posts.map((post, index) => (
               <FeedPostCard key={post.id || post.uuid || index} post={post} />
             ))}
-            {/* Infinite scroll trigger element */}
             {hasNextPage && (
               <div
                 ref={observerTarget}
-                className="h-20 flex items-center justify-center"
+                className="flex h-20 items-center justify-center"
               >
                 {isFetchingNextPage && (
-                  <div className="flex items-center gap-2 text-gray-500">
-                    <div className="w-5 h-5 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin"></div>
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-border border-t-foreground" />
                     <span className="text-sm">Loading more posts...</span>
                   </div>
                 )}
               </div>
             )}
-            {/* End of feed message */}
             {!hasNextPage && posts.length > 0 && (
-              <div className="text-center py-8 px-6">
-                <p className="text-gray-400 text-sm">You've reached the end</p>
+              <div className="px-6 py-8 text-center">
+                <p className="text-sm text-muted-foreground">You&apos;ve reached the end</p>
               </div>
             )}
           </>
         ) : (
-          <div className="text-center py-12 px-6">
-            <p className="text-gray-500 text-lg">No posts available</p>
-            <p className="text-gray-400 text-sm mt-2">
+          <div className="px-6 py-12 text-center">
+            <p className="text-lg text-muted-foreground">No posts available</p>
+            <p className="mt-2 text-sm text-muted-foreground">
               Be the first to create a post!
             </p>
           </div>

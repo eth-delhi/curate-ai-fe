@@ -1,13 +1,18 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter, Source_Serif_4, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Magic } from "@/context/magic.provider";
 import { Wagmi } from "@/context/wagmi.provider";
 import { QueryProvider } from "@/context/query.provider";
 import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin"],
+});
+
+const sourceSerif = Source_Serif_4({
+  variable: "--font-source-serif",
   subsets: ["latin"],
 });
 
@@ -29,7 +34,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${inter.variable} ${sourceSerif.variable} ${geistMono.variable} antialiased`}
       >
         <Magic>
           <Wagmi>

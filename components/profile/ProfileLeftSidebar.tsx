@@ -77,8 +77,8 @@ const WalletWidget = () => {
   if (!isConnected || !address) {
     return (
       <div className="mb-6">
-        <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-3 border border-gray-200">
-          <p className="text-xs text-gray-500">
+        <div className="bg-muted rounded-lg p-3 border border-border">
+          <p className="text-xs text-muted-foreground">
             Connect your wallet to view balances
           </p>
         </div>
@@ -88,22 +88,22 @@ const WalletWidget = () => {
 
   return (
     <div className="mb-6">
-      <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-3 border border-gray-200">
+      <div className="bg-muted rounded-lg p-3 border border-border">
         {isLoading ? (
           <div className="flex items-center justify-center py-2">
-            <Loader2 className="w-4 h-4 animate-spin text-gray-500" />
+            <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
           </div>
         ) : (
           <div className="space-y-2.5">
             {/* CAT Balance */}
             <div className="space-y-0.5">
               <div className="flex items-center justify-between">
-                <p className="text-xs text-gray-500">CAT</p>
-                <p className="text-xs font-semibold text-gray-900">
+                <p className="text-xs text-muted-foreground">CAT</p>
+                <p className="text-xs font-semibold text-foreground">
                   ${catUsdValue}
                 </p>
               </div>
-              <p className="text-sm font-bold text-gray-900">
+              <p className="text-sm font-bold text-foreground">
                 {formattedCatBalance} CAT
               </p>
             </div>
@@ -111,12 +111,12 @@ const WalletWidget = () => {
             {/* Sonic Balance */}
             <div className="space-y-0.5">
               <div className="flex items-center justify-between">
-                <p className="text-xs text-gray-500">SONIC</p>
-                <p className="text-xs font-semibold text-gray-900">
+                <p className="text-xs text-muted-foreground">SONIC</p>
+                <p className="text-xs font-semibold text-foreground">
                   ${sonicUsdValue}
                 </p>
               </div>
-              <p className="text-sm font-bold text-gray-900">
+              <p className="text-sm font-bold text-foreground">
                 {formattedSonicBalance} SONIC
               </p>
             </div>
@@ -153,11 +153,11 @@ const UserItem = ({ user }: { user: FollowUser }) => {
   return (
     <Link
       href={`/profile-revamp/${user.uuid}`}
-      className="flex items-center gap-2 py-2 hover:bg-gray-50 rounded px-1 transition-colors"
+      className="flex items-center gap-2 py-2 hover:bg-accent rounded px-1 transition-colors duration-150"
     >
       <Avatar className="w-8 h-8 flex-shrink-0">
         <AvatarImage src={avatarUrl || undefined} alt={displayName} />
-        <AvatarFallback className="bg-gray-200 text-gray-600 text-xs">
+        <AvatarFallback className="bg-muted text-muted-foreground text-xs">
           {displayName
             .split(" ")
             .map((n) => n[0])
@@ -166,10 +166,10 @@ const UserItem = ({ user }: { user: FollowUser }) => {
         </AvatarFallback>
       </Avatar>
       <div className="flex-1 min-w-0">
-        <p className="text-sm text-gray-900 font-medium truncate">
+        <p className="text-sm text-foreground font-medium truncate">
           {displayName}
         </p>
-        <p className="text-xs text-gray-500 truncate">{username}</p>
+        <p className="text-xs text-muted-foreground truncate">{username}</p>
       </div>
     </Link>
   );
@@ -202,19 +202,19 @@ const StatItem = ({
       <Icon
         className={`${
           highlighted
-            ? "w-5 h-5 text-gray-700"
+            ? "w-5 h-5 text-foreground"
             : small
-            ? "w-3.5 h-3.5 text-gray-500"
-            : "w-4 h-4 text-gray-600"
+            ? "w-3.5 h-3.5 text-muted-foreground"
+            : "w-4 h-4 text-muted-foreground"
         }`}
       />
       <p
         className={`${
           highlighted
-            ? "text-base font-medium text-gray-900"
+            ? "text-base font-medium text-foreground"
             : small
-            ? "text-xs text-gray-500"
-            : "text-sm text-gray-600"
+            ? "text-xs text-muted-foreground"
+            : "text-sm text-muted-foreground"
         }`}
       >
         {label}:
@@ -223,10 +223,10 @@ const StatItem = ({
     <p
       className={`${
         highlighted
-          ? "text-base font-semibold text-gray-900"
+          ? "text-base font-semibold text-foreground"
           : small
-          ? "text-xs font-semibold text-gray-700"
-          : "text-sm font-semibold text-gray-900"
+          ? "text-xs font-semibold text-foreground"
+          : "text-sm font-semibold text-foreground"
       }`}
     >
       {value}
@@ -260,12 +260,12 @@ export const ProfileLeftSidebar = ({ userUuid }: ProfileLeftSidebarProps) => {
   const totalClaps = 42; // Static value as requested
 
   return (
-    <div className="w-80 bg-white border-r border-gray-100 p-6 overflow-y-auto h-full flex flex-col">
+    <div className="w-80 bg-background border-r border-border p-6 overflow-y-auto h-full flex flex-col">
       {/* Wallet Widget */}
       <WalletWidget />
 
       {/* Stats Section */}
-      <div className="mb-6 pb-6 border-b border-gray-200">
+      <div className="mb-6 pb-6 border-b border-border">
         <div className="space-y-1">
           <StatItem
             icon={FileText}
@@ -293,38 +293,38 @@ export const ProfileLeftSidebar = ({ userUuid }: ProfileLeftSidebarProps) => {
       {/* Followers/Following Section */}
       <div className="flex-1 flex flex-col">
         {/* Tabs */}
-        <div className="flex gap-1 mb-4 border-b border-gray-200">
+        <div className="flex gap-1 mb-4 border-b border-border">
           <button
             onClick={() => setActiveTab("followers")}
-            className={`flex-1 py-2 px-3 text-sm font-medium transition-colors relative ${
+            className={`flex-1 py-2 px-3 text-sm font-medium transition-colors duration-150 relative ${
               activeTab === "followers"
-                ? "text-gray-900"
-                : "text-gray-500 hover:text-gray-700"
+                ? "text-foreground"
+                : "text-muted-foreground hover:text-foreground"
             }`}
           >
             Followers
             {activeTab === "followers" && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900"></div>
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"></div>
             )}
           </button>
           <button
             onClick={() => setActiveTab("following")}
-            className={`flex-1 py-2 px-3 text-sm font-medium transition-colors relative ${
+            className={`flex-1 py-2 px-3 text-sm font-medium transition-colors duration-150 relative ${
               activeTab === "following"
-                ? "text-gray-900"
-                : "text-gray-500 hover:text-gray-700"
+                ? "text-foreground"
+                : "text-muted-foreground hover:text-foreground"
             }`}
           >
             Following
             {activeTab === "following" && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900"></div>
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"></div>
             )}
           </button>
         </div>
 
         {/* Count Display */}
         <div className="mb-4">
-          <div className="flex items-center gap-2 text-xs text-gray-500">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Users className="w-4 h-4" />
             <span>
               {activeTab === "followers"
@@ -343,11 +343,11 @@ export const ProfileLeftSidebar = ({ userUuid }: ProfileLeftSidebarProps) => {
           {activeTab === "followers" ? (
             isFollowersLoading ? (
               <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+                <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
               </div>
             ) : followers.length === 0 ? (
               <div className="text-center py-8">
-                <p className="text-sm text-gray-500">No followers yet</p>
+                <p className="text-sm text-muted-foreground">No followers yet</p>
               </div>
             ) : (
               <div className="space-y-1">
@@ -358,11 +358,11 @@ export const ProfileLeftSidebar = ({ userUuid }: ProfileLeftSidebarProps) => {
             )
           ) : isFollowingLoading ? (
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+              <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
             </div>
           ) : following.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-sm text-gray-500">Not following anyone yet</p>
+              <p className="text-sm text-muted-foreground">Not following anyone yet</p>
             </div>
           ) : (
             <div className="space-y-1">

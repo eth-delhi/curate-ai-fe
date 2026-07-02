@@ -20,7 +20,7 @@ const FeaturedPostCard = ({ post }: { post: any }) => {
 
   return (
     <Link href={`/post-revamp/${post.id}`}>
-      <article className="flex bg-white rounded-lg overflow-hidden hover:shadow-md transition-shadow duration-200 group">
+      <article className="flex bg-background border border-border rounded-lg overflow-hidden hover:border-foreground/20 transition-colors duration-200 group">
         <div className="relative w-[35%] md:w-[40%]">
           <Image
             src={post.imageUrl || "/placeholder.svg"}
@@ -33,10 +33,10 @@ const FeaturedPostCard = ({ post }: { post: any }) => {
 
         <div className="flex-1 p-4 md:p-5 flex flex-col justify-between">
           <div>
-            <h3 className="font-semibold text-sm md:text-base mb-2 line-clamp-2 group-hover:text-primary transition-colors">
+            <h3 className="font-serif font-semibold text-sm md:text-base mb-2 line-clamp-2 group-hover:text-primary transition-colors duration-150">
               {post.title}
             </h3>
-            <p className="text-xs text-gray-600 mb-3 line-clamp-2 md:line-clamp-3">
+            <p className="text-xs text-muted-foreground mb-3 line-clamp-2 md:line-clamp-3">
               {truncateText(post.content, 80)}
             </p>
           </div>
@@ -49,24 +49,24 @@ const FeaturedPostCard = ({ post }: { post: any }) => {
                 className="w-5 h-5 rounded-full object-cover flex-shrink-0"
                 aria-hidden="true"
               />
-              <span className="text-xs text-gray-700 truncate">
+              <span className="text-xs text-foreground truncate">
                 {authorName}
               </span>
             </div>
 
             <div className="flex items-center gap-2 flex-shrink-0">
-              <span className="text-xs text-gray-400">{post.timeAgo}</span>
+              <span className="text-xs text-muted-foreground">{post.timeAgo}</span>
               <button
                 onClick={(e) => {
                   e.preventDefault();
                   setIsBookmarked(!isBookmarked);
                 }}
                 aria-label={isBookmarked ? "Remove bookmark" : "Bookmark post"}
-                className="p-1 hover:bg-gray-100 rounded transition-colors"
+                className="p-1 hover:bg-accent rounded transition-colors duration-150"
               >
                 <Bookmark
-                  className={`w-4 h-4 transition-colors ${
-                    isBookmarked ? "fill-current text-primary" : "text-gray-400"
+                  className={`w-4 h-4 transition-colors duration-150 ${
+                    isBookmarked ? "fill-current text-primary" : "text-muted-foreground"
                   }`}
                 />
               </button>
@@ -79,18 +79,18 @@ const FeaturedPostCard = ({ post }: { post: any }) => {
 };
 
 const LoadingSkeleton = () => (
-  <div className="flex bg-white rounded-lg overflow-hidden animate-pulse">
-    <div className="w-[35%] md:w-[40%] bg-gray-200" />
+  <div className="flex bg-background border border-border rounded-lg overflow-hidden animate-pulse">
+    <div className="w-[35%] md:w-[40%] bg-muted" />
     <div className="flex-1 p-4 md:p-5 space-y-3">
-      <div className="h-4 bg-gray-200 rounded" />
-      <div className="h-3 bg-gray-200 rounded" />
-      <div className="h-3 bg-gray-200 rounded w-3/4" />
+      <div className="h-4 bg-muted rounded" />
+      <div className="h-3 bg-muted rounded" />
+      <div className="h-3 bg-muted rounded w-3/4" />
       <div className="flex justify-between items-center pt-2">
         <div className="flex items-center gap-2">
-          <div className="w-5 h-5 bg-gray-200 rounded-full" />
-          <div className="h-3 w-20 bg-gray-200 rounded" />
+          <div className="w-5 h-5 bg-muted rounded-full" />
+          <div className="h-3 w-20 bg-muted rounded" />
         </div>
-        <div className="h-3 w-12 bg-gray-200 rounded" />
+        <div className="h-3 w-12 bg-muted rounded" />
       </div>
     </div>
   </div>
@@ -113,7 +113,7 @@ export const FeaturedPostsSection = ({
   if (!posts || posts.length === 0) {
     return (
       <div className="text-center py-12 mb-8">
-        <p className="text-gray-500">No featured posts available</p>
+        <p className="text-muted-foreground">No featured posts available</p>
       </div>
     );
   }

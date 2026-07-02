@@ -84,11 +84,11 @@ export const EmailLogin = ({ token, setToken }: LoginProps) => {
             if (emailError) setEmailError(false);
             setEmail(e.target.value);
           }}
-          className="w-full h-14 pl-14 pr-4 text-gray-800 bg-white/90 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400 shadow-sm"
+          className="w-full h-14 pl-14 pr-4 text-foreground bg-background/90 border border-border rounded-xl focus:ring-2 focus:ring-ring focus:border-primary placeholder-muted-foreground shadow-sm"
           disabled={token.length > 0}
         />
         <Mail
-          className="absolute left-5 top-1/2 transform -translate-y-1/2 text-blue-500"
+          className="absolute left-5 top-1/2 transform -translate-y-1/2 text-primary"
           size={20}
         />
       </div>
@@ -96,14 +96,14 @@ export const EmailLogin = ({ token, setToken }: LoginProps) => {
         <motion.p
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-sm text-red-500 mt-2 pl-4"
+          className="text-sm text-destructive mt-2 pl-4"
         >
           Please enter a valid email address
         </motion.p>
       )}
       <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
         <Button
-          className="w-full h-14 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-all duration-300 ease-in-out shadow-md hover:shadow-lg"
+          className="w-full h-14 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl transition-colors duration-200 ease-in-out shadow-md hover:shadow-lg"
           onClick={handleLogin}
           disabled={
             isLoginInProgress || (token.length > 0 ? false : email.length === 0)

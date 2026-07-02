@@ -31,31 +31,31 @@ export const PostsTab = ({ posts }: PostsTabProps) => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
-            className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
+            className="bg-background rounded-lg border border-border overflow-hidden"
           >
             <div className="p-6">
               <div className="flex flex-col md:flex-row gap-5">
                 {/* Left content */}
                 <div className="md:w-3/4">
-                  <h2 className="text-xl font-bold text-gray-900 mb-3">
+                  <h2 className="text-xl font-bold text-foreground mb-3">
                     {post.title}
                   </h2>
 
-                  <p className="text-base text-gray-700 mb-4">{post.excerpt}</p>
+                  <p className="text-base text-foreground mb-4">{post.excerpt}</p>
 
                   <div className="flex flex-wrap gap-2 mb-4">
                     {post.tags.map((tag) => (
                       <Badge
                         key={tag}
                         variant="outline"
-                        className="bg-blue-50 text-blue-600 border-blue-100 text-xs px-2 py-1"
+                        className="bg-accent text-accent-foreground border-border text-xs px-2 py-1"
                       >
                         #{tag}
                       </Badge>
                     ))}
                   </div>
 
-                  <div className="flex items-center text-gray-500 text-sm">
+                  <div className="flex items-center text-muted-foreground text-sm">
                     <div className="flex items-center gap-1.5 mr-5">
                       <Heart className="h-4 w-4" />
                       <span>{post.likes}</span>
@@ -69,7 +69,7 @@ export const PostsTab = ({ posts }: PostsTabProps) => {
                       <span>{post.views}</span>
                     </div>
                     <span className="flex items-center">
-                      <Clock className="h-4 w-4 mr-1.5 text-blue-400" />
+                      <Clock className="h-4 w-4 mr-1.5 text-primary/70" />
                       {post.readTime}
                     </span>
                   </div>
@@ -83,7 +83,7 @@ export const PostsTab = ({ posts }: PostsTabProps) => {
                       alt="Blog cover"
                       className="w-full h-full object-cover"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-br from-black/20 to-transparent opacity-50"></div>
+                    <div className="absolute inset-0 bg-gradient-to-br from-foreground/20 to-transparent opacity-50"></div>
                   </div>
                 </div>
               </div>

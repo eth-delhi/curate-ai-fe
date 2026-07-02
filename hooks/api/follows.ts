@@ -172,10 +172,11 @@ export const getFollowing = async (): Promise<FollowUser[]> => {
   return response.data.map((rel) => rel.following);
 };
 
-export const useFollowing = () => {
+export const useFollowing = (options?: { enabled?: boolean }) => {
   return useQuery({
     queryKey: ["following"],
     queryFn: getFollowing,
+    enabled: options?.enabled ?? true,
     staleTime: 2 * 60 * 1000, // 2 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
   });

@@ -4,7 +4,6 @@ import { useEffect } from "react";
 import { useHomeRevampData } from "@/hooks/useHomeRevampData";
 import HomeNavbar from "@/components/ui/HomeNavbar";
 import {
-  FeaturedPostsSection,
   FeedSection,
   LeftSidebar,
   RightSidebar,
@@ -14,7 +13,6 @@ import {
 
 export default function HomeRevampPage() {
   const {
-    featuredPosts,
     feedPosts,
     activeTab,
     isLoading,
@@ -29,7 +27,6 @@ export default function HomeRevampPage() {
     isFetchingNextPage,
   } = useHomeRevampData();
 
-  // Set page title with quote
   useEffect(() => {
     document.title = "Curate AI: Where Intelligence Meets Curation";
   }, []);
@@ -43,102 +40,69 @@ export default function HomeRevampPage() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-[#f0f0f0] checkered-bg">
+    <div className="home-revamp-scribe min-h-screen bg-background text-foreground">
       <style jsx global>{`
-        @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap");
-        * {
-          font-family: "Poppins", sans-serif;
-        }
-
-        /* Subtle checkered texture */
-        .checkered-bg {
-          background-image: linear-gradient(
-              45deg,
-              rgba(0, 0, 0, 0.02) 25%,
-              transparent 25%
-            ),
-            linear-gradient(-45deg, rgba(0, 0, 0, 0.02) 25%, transparent 25%),
-            linear-gradient(45deg, transparent 75%, rgba(0, 0, 0, 0.02) 75%),
-            linear-gradient(-45deg, transparent 75%, rgba(0, 0, 0, 0.02) 75%);
-          background-size: 20px 20px;
-          background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        /* Scoped to this page subtree so we don’t change app-wide metrics after client nav. */
+        .home-revamp-scribe {
+          font-family: var(--font-sans), system-ui, sans-serif;
         }
 
         .prose {
-          --tw-prose-headings: #374151;
-          --tw-prose-body: #4b5563;
-          --tw-prose-links: #374151;
-          --tw-prose-bold: #111827;
-          --tw-prose-counters: #6b7280;
-          --tw-prose-bullets: #d1d5db;
-          --tw-prose-hr: #e5e7eb;
-          --tw-prose-quotes: #374151;
-          --tw-prose-quote-borders: #e5e7eb;
-          --tw-prose-captions: #6b7280;
-          --tw-prose-code: #111827;
-          --tw-prose-pre-code: #e5e7eb;
-          --tw-prose-pre-bg: #1f2937;
-          --tw-prose-th-borders: #d1d5db;
-          --tw-prose-td-borders: #e5e7eb;
+          --tw-prose-headings: #1a1a1a;
+          --tw-prose-body: #1a1a1a;
+          --tw-prose-links: #1a1a1a;
+          --tw-prose-bold: #1a1a1a;
+          --tw-prose-counters: #6b6b6b;
+          --tw-prose-bullets: #e6e5e0;
+          --tw-prose-hr: #e6e5e0;
+          --tw-prose-quotes: #1a1a1a;
+          --tw-prose-quote-borders: #e6e5e0;
+          --tw-prose-captions: #6b6b6b;
+          --tw-prose-code: #1a1a1a;
+          --tw-prose-pre-code: #e6e5e0;
+          --tw-prose-pre-bg: #1a1a1a;
+          --tw-prose-th-borders: #e6e5e0;
+          --tw-prose-td-borders: #e6e5e0;
         }
 
-        /* Hide scrollbar everywhere */
         .overflow-y-auto,
         .overflow-auto,
         .overflow-x-auto {
-          -ms-overflow-style: none; /* IE and Edge */
-          scrollbar-width: none; /* Firefox */
+          -ms-overflow-style: none;
+          scrollbar-width: none;
         }
         .overflow-y-auto::-webkit-scrollbar,
         .overflow-auto::-webkit-scrollbar,
         .overflow-x-auto::-webkit-scrollbar {
-          display: none; /* Chrome, Safari and Opera */
+          display: none;
         }
       `}</style>
 
-      {/* Top Navbar - Full Width */}
-      <HomeNavbar />
+      <HomeNavbar variant="scribe" />
 
-      {/* Main Content Area - Below Navbar */}
-      <div className="flex flex-1 overflow-hidden pt-16">
-        {/* Content Area */}
-        <div className="flex flex-1 overflow-hidden bg-white">
-          {/* Left Sidebar - Hidden on mobile and tablet */}
-          <div className="hidden lg:block">
-            <LeftSidebar
-              onTopicClick={handleTagClick}
+      <div className="pt-[57px]">
+        <div className="max-w-[1336px] mx-auto px-6 py-6 flex gap-12">
+          <aside className="hidden lg:block w-[220px] shrink-0">
+            <LeftSidebar />
+          </aside>
+
+          <main className="flex-1 max-w-[680px]">
+            <FeedSection
+              posts={feedPosts}
+              activeTab={activeTab}
+              onTabChange={handleTabChange}
+              isLoading={isLoading}
               selectedTag={selectedTag}
+              onClearTagFilter={clearTagFilter}
+              hasNextPage={hasNextPage}
+              isFetchingNextPage={isFetchingNextPage}
+              onLoadMore={fetchNextPage}
             />
-          </div>
+          </main>
 
-          {/* Main Content */}
-          <div className="flex-1 overflow-y-auto px-4 w-full lg:w-auto">
-            <div className="p-4">
-              {/* Featured Posts Section */}
-              {/* <FeaturedPostsSection
-                posts={featuredPosts}
-                isLoading={isLoading}
-              /> */}
-
-              {/* Feed Section */}
-              <FeedSection
-                posts={feedPosts}
-                activeTab={activeTab}
-                onTabChange={handleTabChange}
-                isLoading={isLoading}
-                selectedTag={selectedTag}
-                onClearTagFilter={clearTagFilter}
-                hasNextPage={hasNextPage}
-                isFetchingNextPage={isFetchingNextPage}
-                onLoadMore={fetchNextPage}
-              />
-            </div>
-          </div>
-
-          {/* Right Sidebar - Hidden on mobile and tablet */}
-          <div className="hidden lg:block">
-            <RightSidebar />
-          </div>
+          <aside className="hidden lg:block w-[320px] shrink-0">
+            <RightSidebar onTopicClick={handleTagClick} />
+          </aside>
         </div>
       </div>
     </div>

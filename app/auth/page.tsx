@@ -33,7 +33,7 @@ export default function AuthRevampPage() {
   // Show loading if already authenticated
   if (token && token.length > 0) {
     return (
-      <div className="min-h-screen bg-neutral-50 overflow-hidden relative">
+      <div className="min-h-screen bg-background overflow-hidden relative">
         {/* Navbar */}
         <Navbar />
 
@@ -46,7 +46,7 @@ export default function AuthRevampPage() {
             className="text-center"
           >
             <motion.div
-              className="w-16 h-16 rounded-full bg-gradient-to-br from-gray-800 to-black flex items-center justify-center mx-auto mb-4"
+              className="w-16 h-16 rounded-full bg-primary flex items-center justify-center mx-auto mb-4"
               animate={{
                 rotate: 360,
               }}
@@ -56,7 +56,7 @@ export default function AuthRevampPage() {
                 ease: "linear",
               }}
             >
-              <Brain className="w-8 h-8 text-white" />
+              <Brain className="w-8 h-8 text-primary-foreground" />
             </motion.div>
 
             <motion.div
@@ -64,11 +64,11 @@ export default function AuthRevampPage() {
               animate={{ opacity: 1 }}
               transition={{ duration: 0.5, delay: 0.2 }}
             >
-              <Loader2 className="w-8 h-8 animate-spin text-gray-600 mx-auto mb-4" />
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              <Loader2 className="w-8 h-8 animate-spin text-muted-foreground mx-auto mb-4" />
+              <h2 className="text-xl font-serif font-semibold text-foreground mb-2">
                 Already Authenticated
               </h2>
-              <p className="text-gray-600">Redirecting to your dashboard...</p>
+              <p className="text-muted-foreground">Redirecting to your dashboard...</p>
             </motion.div>
           </motion.div>
         </div>
@@ -147,13 +147,8 @@ export default function AuthRevampPage() {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50 overflow-hidden relative">
+    <div className="min-h-screen bg-background overflow-hidden relative">
       <style jsx global>{`
-        @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap");
-        * {
-          font-family: "Poppins", sans-serif;
-        }
-
         /* Bubble animations */
         @keyframes bubbleFloat1 {
           0%,
@@ -215,20 +210,20 @@ export default function AuthRevampPage() {
       {/* Main Content */}
       <div className="pt-20 min-h-screen flex items-center justify-center">
         <div className="w-full px-4 sm:px-8 lg:px-16">
-          <div className="w-full bg-white rounded-3xl shadow-xl overflow-hidden flex min-h-[700px]">
+          <div className="w-full bg-background border border-border rounded-lg shadow-sm overflow-hidden flex min-h-[700px]">
             {/* Left Side - Login Form */}
             <div className="w-full lg:w-5/12 p-8 md:p-16 flex flex-col justify-center">
               <div className="mb-10">
                 <div className="flex items-center gap-2 mb-8">
-                  <div className="w-7 h-7 bg-black rounded flex items-center justify-center">
-                    <span className="text-white text-xs font-bold">C</span>
+                  <div className="w-7 h-7 bg-primary rounded flex items-center justify-center">
+                    <span className="text-primary-foreground text-xs font-bold">C</span>
                   </div>
                   <span className="text-lg font-semibold">CurateAi</span>
                 </div>
-                <h1 className="text-3xl font-semibold mb-2 text-neutral-900">
+                <h1 className="text-3xl font-serif font-semibold mb-2 text-foreground">
                   Welcome back
                 </h1>
-                <p className="text-sm text-neutral-500">
+                <p className="text-sm text-muted-foreground">
                   Sign in to continue to your account
                 </p>
               </div>
@@ -237,7 +232,7 @@ export default function AuthRevampPage() {
               <div className="space-y-3 mb-8">
                 <Button
                   variant="outline"
-                  className="w-full h-11 justify-start text-left font-normal border-neutral-200 hover:bg-neutral-50 bg-white text-neutral-700 cursor-pointer"
+                  className="w-full h-11 justify-start text-left font-normal border-border hover:bg-accent bg-background text-foreground cursor-pointer transition-colors duration-150"
                   onClick={handleGoogleLogin}
                   disabled={isGoogleLoginInProgress}
                 >
@@ -264,7 +259,7 @@ export default function AuthRevampPage() {
 
                 <Button
                   variant="outline"
-                  className="w-full h-11 justify-start text-left font-normal border-neutral-200 hover:bg-neutral-50 bg-white text-neutral-700 cursor-pointer"
+                  className="w-full h-11 justify-start text-left font-normal border-border hover:bg-accent bg-background text-foreground cursor-pointer transition-colors duration-150"
                   disabled
                 >
                   <svg
@@ -280,10 +275,10 @@ export default function AuthRevampPage() {
 
               <div className="relative mb-8">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-neutral-200" />
+                  <div className="w-full border-t border-border" />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-white px-2 text-neutral-500">
+                  <span className="bg-background px-2 text-muted-foreground">
                     Or continue with email
                   </span>
                 </div>
@@ -294,7 +289,7 @@ export default function AuthRevampPage() {
                 <div>
                   <label
                     htmlFor="email"
-                    className="block text-sm font-medium text-neutral-700 mb-1.5"
+                    className="block text-sm font-medium text-foreground mb-1.5"
                   >
                     Email address
                   </label>
@@ -304,11 +299,11 @@ export default function AuthRevampPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@example.com"
-                    className="w-full h-11 border-neutral-200 focus:border-neutral-900 focus:ring-neutral-900 bg-white"
+                    className="w-full h-11 border-input focus:border-primary focus:ring-ring bg-background"
                     required
                   />
                   {emailError && (
-                    <p className="text-red-500 text-sm mt-1">
+                    <p className="text-destructive text-sm mt-1">
                       Please enter a valid email address
                     </p>
                   )}
@@ -317,7 +312,7 @@ export default function AuthRevampPage() {
                 <Button
                   onClick={handleEmailLogin}
                   disabled={isLoginInProgress}
-                  className="w-full h-11 bg-neutral-900 hover:bg-neutral-800 text-white font-medium mt-6 transition-colors cursor-pointer"
+                  className="w-full h-11 bg-primary hover:bg-primary/90 text-primary-foreground font-medium mt-6 transition-colors duration-150 cursor-pointer"
                 >
                   {isLoginInProgress ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
@@ -332,11 +327,11 @@ export default function AuthRevampPage() {
 
               {/* Footer */}
               <div className="mt-8 text-center">
-                <p className="text-sm text-neutral-600">
+                <p className="text-sm text-muted-foreground">
                   New to CurateAi?{" "}
                   <a
                     href="#"
-                    className="text-neutral-900 font-medium hover:underline"
+                    className="text-primary font-medium hover:underline transition-colors duration-150"
                   >
                     Create account
                   </a>
@@ -344,7 +339,7 @@ export default function AuthRevampPage() {
               </div>
             </div>
 
-            <div className="hidden lg:block lg:w-7/12 relative overflow-hidden bg-white">
+            <div className="hidden lg:block lg:w-7/12 relative overflow-hidden bg-background">
               {/* Halftone pattern background */}
               <div className="absolute inset-0">
                 <svg
@@ -354,16 +349,16 @@ export default function AuthRevampPage() {
                   <defs>
                     {/* Create varying dot sizes for halftone effect */}
                     <radialGradient id="dotGrad1" cx="50%" cy="50%">
-                      <stop offset="0%" stopColor="#000" stopOpacity="1" />
-                      <stop offset="100%" stopColor="#000" stopOpacity="0" />
+                      <stop offset="0%" stopColor="var(--primary)" stopOpacity="1" />
+                      <stop offset="100%" stopColor="var(--primary)" stopOpacity="0" />
                     </radialGradient>
                     <radialGradient id="dotGrad2" cx="50%" cy="50%">
-                      <stop offset="0%" stopColor="#000" stopOpacity="0.8" />
-                      <stop offset="100%" stopColor="#000" stopOpacity="0" />
+                      <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.8" />
+                      <stop offset="100%" stopColor="var(--primary)" stopOpacity="0" />
                     </radialGradient>
                     <radialGradient id="dotGrad3" cx="50%" cy="50%">
-                      <stop offset="0%" stopColor="#000" stopOpacity="0.5" />
-                      <stop offset="100%" stopColor="#000" stopOpacity="0" />
+                      <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.5" />
+                      <stop offset="100%" stopColor="var(--primary)" stopOpacity="0" />
                     </radialGradient>
                   </defs>
 
@@ -379,7 +374,7 @@ export default function AuthRevampPage() {
                             cx={i * 60 + Math.random() * 20}
                             cy={j * 60 + Math.random() * 20}
                             r={size}
-                            fill="#000"
+                            fill="var(--primary)"
                             opacity={opacity}
                           />
                         );
@@ -399,7 +394,7 @@ export default function AuthRevampPage() {
                             cx={200 + i * 80 + Math.random() * 30}
                             cy={j * 80 + Math.random() * 30}
                             r={size}
-                            fill="#000"
+                            fill="var(--primary)"
                             opacity={opacity}
                           />
                         );
@@ -419,7 +414,7 @@ export default function AuthRevampPage() {
                             cx={450 + i * 120 + Math.random() * 40}
                             cy={j * 120 + Math.random() * 40}
                             r={size}
-                            fill="#000"
+                            fill="var(--primary)"
                             opacity={opacity}
                           />
                         );
@@ -439,7 +434,7 @@ export default function AuthRevampPage() {
                             cx={i * 100 + Math.random() * 30}
                             cy={500 + j * 80 + Math.random() * 30}
                             r={size}
-                            fill="#000"
+                            fill="var(--primary)"
                             opacity={opacity}
                           />
                         );
@@ -450,25 +445,25 @@ export default function AuthRevampPage() {
               </div>
 
               {/* Subtle gradient overlay for depth */}
-              <div className="absolute inset-0 bg-gradient-to-br from-transparent via-white/30 to-white/60 pointer-events-none" />
+              <div className="absolute inset-0 bg-gradient-to-br from-transparent via-background/30 to-background/60 pointer-events-none" />
 
               {/* Minimal content overlay */}
               <div className="absolute bottom-12 left-12 right-12">
-                <div className="bg-white/80 backdrop-blur-sm border border-neutral-200 rounded-2xl p-8 shadow-lg">
+                <div className="bg-background/80 backdrop-blur-sm border border-border rounded-2xl p-8 shadow-sm">
                   <blockquote className="space-y-4">
-                    <p className="text-lg text-neutral-900 leading-relaxed font-light">
+                    <p className="text-lg text-foreground leading-relaxed font-light">
                       "CurateAi has transformed how we discover and organize
                       content. The AI recommendations are incredibly accurate."
                     </p>
                     <footer className="flex items-center gap-3 pt-2">
-                      <div className="w-10 h-10 rounded-full bg-neutral-900 flex items-center justify-center text-white font-semibold text-sm">
+                      <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold text-sm">
                         SK
                       </div>
                       <div>
-                        <div className="text-sm font-medium text-neutral-900">
+                        <div className="text-sm font-medium text-foreground">
                           Sarah Kim
                         </div>
-                        <div className="text-xs text-neutral-500">
+                        <div className="text-xs text-muted-foreground">
                           Content Director, TechFlow
                         </div>
                       </div>

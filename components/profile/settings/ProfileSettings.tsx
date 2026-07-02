@@ -26,9 +26,9 @@ export const ProfileSettings = ({ userData }: ProfileSettingsProps) => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-md border border-gray-100"
+      className="bg-background rounded-lg p-6 border border-border"
     >
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">
+      <h3 className="text-lg font-semibold text-foreground mb-4">
         Profile Information
       </h3>
       <div className="space-y-4">
@@ -95,7 +95,7 @@ export const ProfileSettings = ({ userData }: ProfileSettingsProps) => {
         </div>
       </div>
       <div className="mt-6 flex justify-end">
-        <Button className="bg-blue-600 hover:bg-blue-700">Save Changes</Button>
+        <Button className="bg-primary hover:bg-primary/90">Save Changes</Button>
       </div>
     </motion.div>
   );

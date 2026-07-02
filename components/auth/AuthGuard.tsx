@@ -22,7 +22,7 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
       <div className="flex items-center justify-center min-h-screen">
         <div className="flex flex-col items-center space-y-4">
           <Spinner />
-          <p className="text-gray-600">Verifying authentication...</p>
+          <p className="text-muted-foreground">Verifying authentication...</p>
         </div>
       </div>
     );

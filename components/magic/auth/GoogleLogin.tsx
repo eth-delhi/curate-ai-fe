@@ -37,7 +37,7 @@ const GoogleLogin = ({ token }: LoginProps) => {
 
   return (
     <Button
-      className="w-full h-12 bg-white hover:bg-gray-100 text-gray-800 font-semibold border border-gray-300 rounded-lg transition-all duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-white flex items-center justify-center"
+      className="w-full h-12 border border-border bg-background hover:bg-muted text-foreground font-semibold rounded-lg transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background flex items-center justify-center"
       onClick={handleGoogleLogin}
       disabled={isLoginInProgress || token.length > 0}
     >

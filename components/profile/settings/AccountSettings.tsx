@@ -12,9 +12,9 @@ export const AccountSettings = () => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: 0.1 }}
-      className="bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-md border border-gray-100"
+      className="bg-background rounded-lg p-6 border border-border"
     >
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">
+      <h3 className="text-lg font-semibold text-foreground mb-4">
         Account Settings
       </h3>
       <div className="space-y-4">
@@ -35,8 +35,8 @@ export const AccountSettings = () => {
         <Separator className="my-4" />
 
         <div>
-          <h4 className="font-medium text-gray-900 mb-4">Danger Zone</h4>
-          <p className="text-sm text-gray-600 mb-4">
+          <h4 className="font-medium text-foreground mb-4">Danger Zone</h4>
+          <p className="text-sm text-muted-foreground mb-4">
             Once you delete your account, there is no going back. Please be
             certain.
           </p>

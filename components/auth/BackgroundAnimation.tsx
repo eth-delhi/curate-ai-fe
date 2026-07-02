@@ -21,12 +21,12 @@ export const AuthBackgroundAnimation = () => {
   useEffect(() => {
     const particleCount = 15;
     const vibrantColors = [
-      "rgba(59, 130, 246, 0.2)", // Blue
-      "rgba(99, 102, 241, 0.2)", // Indigo
-      "rgba(139, 92, 246, 0.2)", // Purple
-      "rgba(236, 72, 153, 0.2)", // Pink
-      "rgba(14, 165, 233, 0.2)", // Sky
-      "rgba(6, 182, 212, 0.2)", // Cyan
+      "rgba(91, 79, 232, 0.18)", // Indigo (primary)
+      "rgba(91, 79, 232, 0.12)", // Indigo (primary, softer)
+      "rgba(107, 107, 107, 0.12)", // Neutral
+      "rgba(91, 79, 232, 0.15)", // Indigo (primary)
+      "rgba(107, 107, 107, 0.1)", // Neutral, softer
+      "rgba(91, 79, 232, 0.1)", // Indigo, soft
     ];
 
     const newParticles = Array.from({ length: particleCount }, (_, i) => ({
@@ -94,7 +94,7 @@ export const AuthBackgroundAnimation = () => {
 
       {/* Add animated gradient orbs */}
       <motion.div
-        className="absolute w-96 h-96 rounded-full opacity-20 bg-gradient-to-r from-blue-400 to-purple-500"
+        className="absolute w-96 h-96 rounded-full opacity-20 bg-primary/10"
         style={{ top: "10%", left: "5%", filter: "blur(80px)" }}
         animate={{
           scale: [1, 1.2, 1],
@@ -110,7 +110,7 @@ export const AuthBackgroundAnimation = () => {
       />
 
       <motion.div
-        className="absolute w-[500px] h-[500px] rounded-full opacity-10 bg-gradient-to-r from-pink-400 to-blue-500"
+        className="absolute w-[500px] h-[500px] rounded-full opacity-10 bg-muted/40"
         style={{ bottom: "15%", right: "10%", filter: "blur(100px)" }}
         animate={{
           scale: [1, 1.3, 1],

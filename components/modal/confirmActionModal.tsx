@@ -60,15 +60,15 @@ export const ConfirmActionModal = ({
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
+              <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-lg border border-border bg-background p-6 text-left align-middle shadow-md transition-all">
                 <Dialog.Title
                   as="h3"
-                  className="text-lg font-medium leading-6 text-gray-900"
+                  className="text-lg font-medium leading-6 text-foreground"
                 >
                   Confirm {actionText}
                 </Dialog.Title>
                 <div className="mt-2">
-                  <p className="text-sm text-gray-500">{warningText}</p>
+                  <p className="text-sm text-muted-foreground">{warningText}</p>
                 </div>
 
                 <div className="mt-4 flex justify-end space-x-2">
@@ -82,7 +82,7 @@ export const ConfirmActionModal = ({
                   <Button
                     onClick={handleConfirm}
                     disabled={isLoading}
-                    className="bg-red-600 hover:bg-red-700 text-white"
+                    className="bg-destructive text-destructive-foreground transition-colors duration-150 hover:bg-destructive/90"
                   >
                     {isLoading ? "Confirming..." : "Confirm"}
                   </Button>

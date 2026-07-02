@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { useState, useEffect, useRef } from "react";
+import { use, useState, useEffect, useRef } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,7 +10,6 @@ import { Badge } from "@/components/ui/badge";
 import {
   MessageSquare,
   Flag,
-  Share2,
   Calendar,
   Clock,
   Send,
@@ -31,6 +30,7 @@ import { formatDistanceToNow } from "date-fns";
 import { motion } from "framer-motion";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useSinglePost } from "@/hooks/api/posts";
 import { useUserProfile } from "@/hooks/api/profile";
 import { useAccount } from "wagmi";
@@ -59,12 +59,13 @@ const MarkdownPreview = dynamic(
 );
 
 interface BlogPostViewProps {
-  params: {
+  params: Promise<{
     uuid: string;
-  };
+  }>;
 }
 
 export default function BlogPostView({ params }: BlogPostViewProps) {
+  const { uuid } = use(params);
   const { address: userAddress } = useAccount();
   const router = useRouter();
 
@@ -73,7 +74,7 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
     data: postData,
     isLoading: isPostLoading,
     error: postError,
-  } = useSinglePost(params.uuid);
+  } = useSinglePost(uuid);
 
   // Set page title to post title
   useEffect(() => {
@@ -118,15 +119,14 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
   const addFlagMutation = useAddFlag();
   const removeFlagMutation = useRemoveFlag();
   const { data: flagStatusData, isLoading: isFlagStatusLoading } =
-    useFlagStatus(params.uuid);
+    useFlagStatus(uuid);
 
   // API hooks for claps
   const addClapMutation = useAddClap();
   const { data: clapStatusData, isLoading: isClapStatusLoading } =
-    useClapStatus(params.uuid);
-  const { data: clapCountData, isLoading: isClapCountLoading } = useClapCount(
-    params.uuid
-  );
+    useClapStatus(uuid);
+  const { data: clapCountData, isLoading: isClapCountLoading } =
+    useClapCount(uuid);
   const { data: maxClapsData } = useMaxClapsPerUser();
 
   // State for voting
@@ -219,7 +219,7 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
       console.log("Vote percentage:", voteWeight);
       console.log("Vote quantity:", Number(voteValue));
       const scoreData = await createScoreMutation.mutateAsync({
-        postUuid: params.uuid,
+        postUuid: uuid,
         userWalletAddress: userAddress,
         quantity: Number(voteValue),
         votePercentage: voteWeight,
@@ -380,7 +380,7 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
       try {
         setIsClapping(true);
         await addClapMutation.mutateAsync({
-          postUuid: params.uuid,
+          postUuid: uuid,
           clapCount: clapCount,
         });
         setPendingClapCount(0);
@@ -407,7 +407,7 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
     };
   }, [
     maxClapsPerUser,
-    params.uuid,
+    uuid,
     clapStatusData,
     isClapPending,
     addClapMutation,
@@ -474,7 +474,7 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
       if (hasFlagged) {
         // Remove flag
         await removeFlagMutation.mutateAsync({
-          postUuid: params.uuid,
+          postUuid: uuid,
         });
         showToast({
           message: "Flag removed successfully",
@@ -483,7 +483,7 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
       } else {
         // Add flag
         await addFlagMutation.mutateAsync({
-          postUuid: params.uuid,
+          postUuid: uuid,
         });
         showToast({
           message: "Post flagged successfully",
@@ -502,10 +502,10 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
   // Loading state
   if (isPostLoading) {
     return (
-      <div className="flex h-screen bg-[#e8e7ed] items-center justify-center">
+      <div className="flex h-screen bg-background items-center justify-center">
         <div className="text-center">
-          <Loader2 className="w-12 h-12 animate-spin text-gray-600 mx-auto mb-4" />
-          <p className="text-gray-600">Loading post...</p>
+          <Loader2 className="w-12 h-12 animate-spin text-muted-foreground mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading post...</p>
         </div>
       </div>
     );
@@ -514,13 +514,13 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
   // Error state
   if (postError || !postData) {
     return (
-      <div className="flex h-screen bg-[#e8e7ed] items-center justify-center">
+      <div className="flex h-screen bg-background items-center justify-center">
         <div className="text-center">
-          <AlertCircle className="w-16 h-16 mb-4 text-red-500 mx-auto" />
-          <p className="text-xl font-semibold text-gray-900 mb-2">
+          <AlertCircle className="w-16 h-16 mb-4 text-destructive mx-auto" />
+          <p className="text-xl font-semibold text-foreground mb-2">
             Blog post not found
           </p>
-          <p className="text-gray-600">
+          <p className="text-muted-foreground">
             The post you're looking for doesn't exist or has been removed.
           </p>
         </div>
@@ -529,43 +529,35 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-[#f0f0f0] checkered-bg">
+    <div className="post-revamp-scribe flex h-screen flex-col bg-background text-foreground">
       <style jsx global>{`
-        @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap");
-        * {
-          font-family: "Poppins", sans-serif;
-        }
-
-        /* Subtle checkered texture */
-        .checkered-bg {
-          background-image: linear-gradient(
-              45deg,
-              rgba(0, 0, 0, 0.02) 25%,
-              transparent 25%
-            ),
-            linear-gradient(-45deg, rgba(0, 0, 0, 0.02) 25%, transparent 25%),
-            linear-gradient(45deg, transparent 75%, rgba(0, 0, 0, 0.02) 75%),
-            linear-gradient(-45deg, transparent 75%, rgba(0, 0, 0, 0.02) 75%);
-          background-size: 20px 20px;
-          background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        .post-revamp-scribe {
+          font-family: var(--font-sans), system-ui, sans-serif;
         }
 
         .prose {
-          --tw-prose-headings: #374151;
-          --tw-prose-body: #4b5563;
-          --tw-prose-links: #374151;
-          --tw-prose-bold: #111827;
-          --tw-prose-counters: #6b7280;
-          --tw-prose-bullets: #d1d5db;
-          --tw-prose-hr: #e5e7eb;
-          --tw-prose-quotes: #374151;
-          --tw-prose-quote-borders: #e5e7eb;
-          --tw-prose-captions: #6b7280;
-          --tw-prose-code: #111827;
-          --tw-prose-pre-code: #e5e7eb;
-          --tw-prose-pre-bg: #1f2937;
-          --tw-prose-th-borders: #d1d5db;
-          --tw-prose-td-borders: #e5e7eb;
+          --tw-prose-headings: #1a1a1a;
+          --tw-prose-body: #1a1a1a;
+          --tw-prose-links: #5b4fe8;
+          --tw-prose-bold: #1a1a1a;
+          --tw-prose-counters: #6b6b6b;
+          --tw-prose-bullets: #e6e5e0;
+          --tw-prose-hr: #e6e5e0;
+          --tw-prose-quotes: #1a1a1a;
+          --tw-prose-quote-borders: #e6e5e0;
+          --tw-prose-captions: #6b6b6b;
+          --tw-prose-code: #1a1a1a;
+          --tw-prose-pre-code: #1a1a1a;
+          --tw-prose-pre-bg: #fafaf8;
+          --tw-prose-th-borders: #e6e5e0;
+          --tw-prose-td-borders: #e6e5e0;
+        }
+
+        .wmde-markdown,
+        .wmde-markdown-color,
+        .wmde-markdown-var {
+          background: transparent !important;
+          color: #1a1a1a !important;
         }
 
         /* Increase paragraph spacing - Medium-like readability */
@@ -573,10 +565,10 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
         .wmde-markdown p,
         article p {
           margin-top: 0 !important;
-          margin-bottom: 1.25rem !important;
-          line-height: 1.75 !important;
-          font-size: 1.0625rem !important;
-          color: #292929 !important;
+          margin-bottom: 1.3rem !important;
+          line-height: 1.8 !important;
+          font-size: 1.125rem !important;
+          color: #1a1a1a !important;
         }
 
         .prose p:first-child,
@@ -656,7 +648,7 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
           margin-top: 3.5rem !important;
           margin-bottom: 0 !important;
           line-height: 1.2 !important;
-          color: #292929 !important;
+          color: #1a1a1a !important;
           border-bottom: none !important;
           border-top: none !important;
           border: none !important;
@@ -670,7 +662,7 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
           margin-top: 3rem !important;
           margin-bottom: 0 !important;
           line-height: 1.25 !important;
-          color: #292929 !important;
+          color: #1a1a1a !important;
           border-bottom: none !important;
           border-top: none !important;
           border: none !important;
@@ -684,7 +676,7 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
           margin-top: 2.5rem !important;
           margin-bottom: 0 !important;
           line-height: 1.3 !important;
-          color: #292929 !important;
+          color: #1a1a1a !important;
           border-bottom: none !important;
           border-top: none !important;
           border: none !important;
@@ -698,7 +690,7 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
           margin-top: 2.25rem !important;
           margin-bottom: 0 !important;
           line-height: 1.35 !important;
-          color: #292929 !important;
+          color: #1a1a1a !important;
           border-bottom: none !important;
           border-top: none !important;
           border: none !important;
@@ -712,7 +704,7 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
           margin-top: 2rem !important;
           margin-bottom: 0 !important;
           line-height: 1.4 !important;
-          color: #292929 !important;
+          color: #1a1a1a !important;
           border-bottom: none !important;
           border-top: none !important;
           border: none !important;
@@ -726,7 +718,7 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
           margin-top: 1.75rem !important;
           margin-bottom: 0 !important;
           line-height: 1.4 !important;
-          color: #292929 !important;
+          color: #1a1a1a !important;
           border-bottom: none !important;
           border-top: none !important;
           border: none !important;
@@ -786,14 +778,14 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
         .prose ul li::marker,
         .wmde-markdown ul li::marker,
         article ul li::marker {
-          color: #292929 !important;
+          color: #1a1a1a !important;
           font-size: 1.2em !important;
         }
 
         .prose ol li::marker,
         .wmde-markdown ol li::marker,
         article ol li::marker {
-          color: #292929 !important;
+          color: #1a1a1a !important;
           font-weight: 600 !important;
         }
 
@@ -804,6 +796,30 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
           margin-top: 3rem !important;
           margin-bottom: 3rem !important;
           border-radius: 0.5rem !important;
+          background: #fafaf8 !important;
+          border: 1px solid #e6e5e0 !important;
+          color: #1a1a1a !important;
+          padding: 1rem 1.125rem !important;
+          overflow-x: auto !important;
+        }
+
+        .prose code,
+        .wmde-markdown code,
+        article code {
+          background: #e6e5e0 !important;
+          color: #1a1a1a !important;
+          border-radius: 0.3rem !important;
+          padding: 0.1rem 0.35rem !important;
+          font-size: 0.9em !important;
+        }
+
+        .prose pre code,
+        .wmde-markdown pre code,
+        article pre code {
+          background: transparent !important;
+          color: inherit !important;
+          padding: 0 !important;
+          border-radius: 0 !important;
         }
 
         /* Better blockquote spacing */
@@ -813,7 +829,7 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
           margin-top: 3rem !important;
           margin-bottom: 3rem !important;
           padding-left: 1.5rem !important;
-          border-left: 3px solid #e5e7eb !important;
+          border-left: 3px solid #e6e5e0 !important;
           font-style: italic !important;
         }
 
@@ -911,18 +927,18 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
         }
         /* Override slider blue colors */
         [data-radix-slider-track] {
-          background-color: #e5e7eb !important;
+          background-color: #e6e5e0 !important;
         }
         [data-radix-slider-range] {
-          background-color: #4b5563 !important;
+          background-color: #1a1a1a !important;
         }
         [data-radix-slider-thumb] {
-          background-color: #4b5563 !important;
-          border-color: #4b5563 !important;
+          background-color: #1a1a1a !important;
+          border-color: #1a1a1a !important;
         }
         [data-radix-slider-thumb]:hover {
-          background-color: #374151 !important;
-          border-color: #374151 !important;
+          background-color: #5b4fe8 !important;
+          border-color: #5b4fe8 !important;
         }
 
         /* Smaller slider in upvote popover */
@@ -951,12 +967,12 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
       `}</style>
 
       {/* Top Navbar */}
-      <HomeNavbar />
+      <HomeNavbar variant="scribe" />
 
       {/* Floating Fullscreen Button - Hidden on mobile and tablet */}
       <motion.button
         onClick={() => setIsReadingMode(!isReadingMode)}
-        className="hidden lg:flex fixed bottom-8 right-8 z-50 p-2.5 bg-white/80 hover:bg-white border border-gray-200 text-gray-600 hover:text-gray-800 rounded-full shadow-sm transition-all duration-200 hover:shadow-md backdrop-blur-sm"
+        className="fixed bottom-8 right-8 z-50 hidden rounded-full border border-border bg-background/90 p-2.5 text-muted-foreground shadow-sm backdrop-blur-sm transition-all duration-200 hover:bg-background hover:text-foreground hover:shadow-md lg:flex"
         aria-label={isReadingMode ? "Exit reading mode" : "Enter reading mode"}
         animate={
           isReadingMode
@@ -982,10 +998,12 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
       </motion.button>
 
       {/* Main Content Area - Below Navbar */}
-      <div className="flex flex-1 overflow-hidden pt-16">
+      <div className="flex flex-1 overflow-hidden pt-[57px]">
         {/* Content Area */}
         <motion.div
-          className="flex flex-1 overflow-hidden bg-white"
+          className={`flex flex-1 overflow-hidden bg-background ${
+            isReadingMode ? "" : "mx-auto w-full max-w-[1336px]"
+          }`}
           initial={false}
           animate={{
             justifyContent: isReadingMode ? "center" : "flex-start",
@@ -1000,7 +1018,7 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
           <motion.div
             initial={false}
             animate={{
-              width: isReadingMode ? 0 : 320,
+              width: isReadingMode ? 0 : 220,
               opacity: isReadingMode ? 0 : 1,
             }}
             transition={{
@@ -1015,7 +1033,7 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
                 ease: [0.4, 0, 0.2, 1],
               },
             }}
-            className="hidden lg:block overflow-hidden"
+            className="hidden overflow-hidden pt-8 lg:block"
           >
             <LeftSidebar />
           </motion.div>
@@ -1033,61 +1051,23 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
             }}
             className={
               isReadingMode
-                ? "overflow-y-auto px-4 lg:px-24 scrollbar-hide w-full lg:w-auto"
-                : "overflow-y-auto px-4 lg:px-24 w-full lg:w-auto"
+                ? "scrollbar-hide w-full overflow-y-auto px-4 lg:px-12"
+                : "w-full overflow-y-auto px-4 lg:px-12"
             }
           >
-            <div className="p-1">
-              <div className="w-full lg:w-[80%] lg:mx-auto mt-8">
+            <div className="py-2">
+              <div className="mx-auto mt-8 w-full max-w-[860px]">
                 {/* Article Header */}
-                <div className="bg-white border-b border-gray-200 py-4 px-3 mb-0">
-                  {/* Author Info */}
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
-                      <Avatar className="h-7 w-7 border border-gray-200">
-                        <AvatarImage
-                          src={
-                            authorProfile?.profile?.profilePic
-                              ? `https://gateway.pinata.cloud/ipfs/${authorProfile.profile.profilePic}`
-                              : "/placeholder-user.jpg"
-                          }
-                          alt={
-                            authorProfile?.profile?.username ||
-                            postData.author?.email ||
-                            "Author"
-                          }
-                        />
-                        <AvatarFallback>
-                          {authorProfile?.profile?.username
-                            ? authorProfile.profile.username
-                                .substring(0, 2)
-                                .toUpperCase()
-                            : postData.author?.email
-                            ? postData.author.email
-                                .substring(0, 2)
-                                .toUpperCase()
-                            : "AU"}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="text-xs font-medium text-gray-900">
-                        {authorProfile?.profile?.username ||
-                          postData.author?.email ||
-                          postData.authorAddress?.slice(0, 6) + "..." ||
-                          "Anonymous"}
-                      </span>
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className="flex items-center gap-2">
-                      {/* Back Button */}
-                      <button
-                        onClick={() => router.back()}
-                        className="p-2 hover:bg-gray-100 rounded transition-colors"
-                        aria-label="Go back"
-                      >
-                        <ArrowLeft className="w-5 h-5 text-gray-600" />
-                      </button>
-                    </div>
+                <div className="mb-0 border-b border-border bg-background px-3 py-5">
+                  {/* Header actions */}
+                  <div className="mb-2 flex justify-end">
+                    <button
+                      onClick={() => router.back()}
+                      className="rounded p-2 transition-colors hover:bg-muted"
+                      aria-label="Go back"
+                    >
+                      <ArrowLeft className="h-5 w-5 text-muted-foreground" />
+                    </button>
                   </div>
 
                   {/* Title */}
@@ -1101,7 +1081,7 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
                       delay: isReadingMode ? 0.3 : 0,
                       ease: [0.4, 0, 0.2, 1],
                     }}
-                    className="font-bold text-gray-900 mb-6 text-3xl"
+                    className="mb-6 font-serif text-[40px] font-bold leading-[1.15] tracking-tight text-foreground"
                   >
                     {postData.title}
                   </motion.h1>
@@ -1112,7 +1092,7 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
                       {postData.tags.map((tag) => (
                         <span
                           key={tag}
-                          className="text-xs text-gray-600 hover:text-gray-800 cursor-pointer transition-colors"
+                          className="cursor-pointer text-[13px] text-muted-foreground transition-colors hover:text-foreground"
                         >
                           {tag.startsWith("#") ? tag : `#${tag}`}
                         </span>
@@ -1121,21 +1101,41 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
                   )}
 
                   {/* Engagement Metrics */}
-                  <div className="flex items-center gap-4 text-xs text-gray-600 mb-4">
-                    <div className="flex items-center gap-1">
-                      <IoChevronUpCircle className="w-3.5 h-3.5" />
-                      <span>{postScore ? postScore.toString() : "0"}</span>
-                    </div>
-                    <span className="text-gray-500">
+                  <div className="mb-4 flex items-center gap-4 text-[13px] text-muted-foreground">
+                    {authorUuid ? (
+                      <Link
+                        href={`/profile-revamp/${authorUuid}`}
+                        className="font-medium text-foreground hover:underline"
+                      >
+                        {authorProfile?.profile?.fullName ||
+                          authorProfile?.profile?.username ||
+                          postData.author?.email?.split("@")[0] ||
+                          "Anonymous"}
+                      </Link>
+                    ) : (
+                      <span className="font-medium text-foreground">
+                        {authorProfile?.profile?.fullName ||
+                          authorProfile?.profile?.username ||
+                          postData.author?.email?.split("@")[0] ||
+                          "Anonymous"}
+                      </span>
+                    )}
+                    <span>·</span>
+                    <span className="text-muted-foreground">
                       {`${postData?.xMinRead ?? 0} min read`}
                     </span>
+                    <span>·</span>
+                    <div className="flex items-center gap-1">
+                      <IoChevronUpCircle className="h-3.5 w-3.5" />
+                      <span>{postScore ? postScore.toString() : "0"}</span>
+                    </div>
                   </div>
                 </div>
 
                 {/* Article Content */}
-                <div className="bg-white border-b border-gray-200 py-4 px-3">
+                <div className="border-b border-border bg-background px-3 py-5">
                   <article
-                    className={`prose prose-gray max-w-none ${
+                    className={`prose max-w-none ${
                       isReadingMode ? "prose-reading-mode" : ""
                     }`}
                   >
@@ -1144,12 +1144,10 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
                 </div>
 
                 {/* Interaction Bar */}
-                <div className="bg-white border-b border-gray-100 py-6 px-3">
-                  {/* Main Actions Row */}
-                  <div className="flex items-center justify-between">
-                    {/* Left Group: Clap and Comment */}
+                <div className="border-b border-border bg-background px-3 py-5">
+                  <div className="flex items-center justify-between gap-4">
+                    {/* Left Group: Clap, Comment, Upvote */}
                     <div className="flex items-center gap-6">
-                      {/* Clap - Prominent */}
                       <div className="relative">
                         <motion.button
                           whileTap={{ scale: 0.95 }}
@@ -1157,12 +1155,12 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
                           transition={{ duration: 0.3 }}
                           onClick={handleClap}
                           disabled={isClapPending || hasReachedMax}
-                          className={`flex items-center gap-2 transition-colors ${
+                          className={`flex items-center gap-1.5 text-[14px] transition-colors ${
                             hasReachedMax
-                              ? "text-gray-400 cursor-not-allowed"
+                              ? "cursor-not-allowed text-muted-foreground/50"
                               : userClapCount > 0
-                              ? "text-gray-900"
-                              : "text-gray-600 hover:text-gray-800"
+                              ? "text-foreground"
+                              : "text-muted-foreground hover:text-foreground"
                           }`}
                           title={
                             hasReachedMax
@@ -1176,99 +1174,85 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
                             <PiHandsClappingThin
                               className={`h-5 w-5 ${
                                 hasReachedMax
-                                  ? "text-gray-400"
+                                  ? "text-muted-foreground/50"
                                   : userClapCount > 0
-                                  ? "text-gray-900"
-                                  : "text-gray-600"
+                                  ? "text-foreground"
+                                  : "text-muted-foreground"
                               }`}
                             />
                           )}
-                          <span className="text-base font-medium">
+                          <span className="text-[14px] font-medium">
                             {isClapCountLoading ? "..." : totalClapCount}
                           </span>
                         </motion.button>
 
-                        {/* +1 Animation */}
                         {clapAnimations.map((anim) => (
                           <motion.div
                             key={anim.id}
-                            initial={{
-                              opacity: 0,
-                              scale: 0.3,
-                              y: 0,
-                              x: 0,
-                            }}
+                            initial={{ opacity: 0, scale: 0.3, y: 0, x: 0 }}
                             animate={{
                               opacity: [0, 1, 1, 0.8, 0],
                               scale: [0.3, 1.3, 1.1, 1, 0.9],
                               y: -35,
                               x: anim.xOffset,
                             }}
-                            exit={{
-                              opacity: 0,
-                              scale: 0.9,
-                            }}
+                            exit={{ opacity: 0, scale: 0.9 }}
                             transition={{
                               duration: 0.7,
-                              ease: [0.34, 1.56, 0.64, 1], // Bouncy ease
+                              ease: [0.34, 1.56, 0.64, 1],
                               times: [0, 0.2, 0.4, 0.8, 1],
                             }}
-                            className="absolute top-0 left-1/2 -translate-x-1/2 pointer-events-none z-10 whitespace-nowrap"
-                            style={{
-                              transformOrigin: "center bottom",
-                            }}
+                            className="pointer-events-none absolute left-1/2 top-0 z-10 -translate-x-1/2 whitespace-nowrap"
+                            style={{ transformOrigin: "center bottom" }}
                           >
-                            <span className="text-base font-bold text-gray-800 bg-white/95 backdrop-blur-sm px-2.5 py-1 rounded-full shadow-md border border-gray-200/80">
+                            <span className="rounded-full border border-border bg-background/95 px-2.5 py-1 text-base font-bold text-foreground shadow-md backdrop-blur-sm">
                               +1
                             </span>
                           </motion.div>
                         ))}
                       </div>
 
-                      {/* Comment */}
                       <button
-                        onClick={() => {
+                        onClick={() =>
                           document
                             .getElementById("comments-section")
-                            ?.scrollIntoView({ behavior: "smooth" });
-                        }}
-                        className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
+                            ?.scrollIntoView({ behavior: "smooth" })
+                        }
+                        className="flex items-center gap-1.5 text-[14px] text-muted-foreground transition-colors hover:text-foreground"
                       >
                         <MessageCircle className="h-5 w-5" />
-                        <span className="text-base font-medium">
+                        <span className="text-[14px] font-medium">
                           {postData?.comments?.length || 0}
                         </span>
                       </button>
-                    </div>
 
-                    {/* Right Group: Upvote, Bookmark, Share, More */}
-                    <div className="flex items-center gap-4">
-                      {/* Upvote - Icon only with popover */}
                       <div className="relative" ref={scorePopoverRef}>
                         <button
                           onClick={() => setShowScorePopover(!showScorePopover)}
-                          className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
+                          className="flex items-center gap-1.5 text-[14px] text-muted-foreground transition-colors hover:text-foreground"
                         >
                           <IoChevronUpCircle className="h-5 w-5" />
+                          <span className="text-[14px] font-medium">
+                            {postScore ? postScore.toString() : "0"}
+                          </span>
                         </button>
 
-                        {/* Upvote Popover */}
                         {showScorePopover && (
-                          <div className="absolute bottom-full left-0 mb-2 bg-white border border-gray-200 rounded-lg shadow-lg p-3 w-64 z-50 upvote-popover">
+                          <div className="upvote-popover absolute bottom-full left-0 z-50 mb-2 w-64 rounded-lg border border-border bg-background p-3 shadow-lg">
                             <div className="space-y-2.5">
                               <div className="flex items-center justify-between">
-                                <span className="text-sm font-medium text-gray-700">
+                                <span className="text-sm font-medium text-foreground">
                                   Upvote
                                 </span>
                                 <button
                                   onClick={() => setShowScorePopover(false)}
-                                  className="text-gray-400 hover:text-gray-600"
+                                  className="text-muted-foreground hover:text-foreground"
                                 >
                                   <X className="h-4 w-4" />
                                 </button>
                               </div>
-                              <p className="text-xs text-gray-600 leading-relaxed">
-                                Upvoting is action tied to blockchain and can't
+                              <p className="text-xs leading-relaxed text-muted-foreground">
+                                Upvoting is action tied to blockchain and can&apos;t
                                 be reverted, this will use your daily upvoting
                                 limit.
                               </p>
@@ -1285,7 +1269,7 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
                                     className="w-full"
                                   />
                                 </div>
-                                <span className="text-xs text-gray-500 w-8 text-right">
+                                <span className="w-8 text-right text-xs text-muted-foreground">
                                   {voteWeight}%
                                 </span>
                               </div>
@@ -1298,12 +1282,12 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
                                   }
                                 }}
                                 disabled={isScorePending || voteWeight === 0}
-                                className="w-full bg-gray-800 hover:bg-gray-900 text-white"
+                                className="w-full"
                               >
                                 {isScorePending ? (
-                                  <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                                  <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
                                 ) : (
-                                  <IoChevronUpCircle className="h-4 w-4 mr-1.5" />
+                                  <IoChevronUpCircle className="mr-1.5 h-4 w-4" />
                                 )}
                                 <span>Submit Upvote</span>
                               </Button>
@@ -1311,24 +1295,14 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
                           </div>
                         )}
                       </div>
+                    </div>
 
-                      {/* Bookmark */}
-                      <button className="text-gray-600 hover:text-gray-800 transition-colors">
+                    {/* Right Group: Bookmark, More */}
+                    <div className="flex items-center gap-5">
+                      <button className="text-[#6b6b6b] transition-colors hover:text-[#242424]">
                         <Bookmark className="h-5 w-5" />
                       </button>
-
-                      {/* Share */}
-                      <button
-                        onClick={() =>
-                          navigator.clipboard.writeText(window.location.href)
-                        }
-                        className="text-gray-600 hover:text-gray-800 transition-colors"
-                      >
-                        <Share2 className="h-5 w-5" />
-                      </button>
-
-                      {/* More Options */}
-                      <button className="text-gray-600 hover:text-gray-800 transition-colors">
+                      <button className="text-[#6b6b6b] transition-colors hover:text-[#242424]">
                         <MoreHorizontal className="h-5 w-5" />
                       </button>
                     </div>
@@ -1336,18 +1310,15 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
                 </div>
 
                 {/* Comments Section */}
-                <div
-                  id="comments-section"
-                  className="bg-white border-b border-gray-200 py-4 px-3"
-                >
+                <div id="comments-section" className="border-b border-[#e6e6e6] bg-white px-3 py-5">
                   <CommentsSection
-                    postUuid={params.uuid}
+                    postUuid={uuid}
                     comments={postData?.comments || []}
                   />
                 </div>
 
                 {/* Author Bio */}
-                <div className="bg-white border-b border-gray-200 py-4 px-3">
+                <div className="border-b border-[#e6e6e6] bg-white px-3 py-5">
                   <div className="flex items-center gap-3">
                     <Avatar className="h-10 w-10 border border-gray-200">
                       <AvatarImage

@@ -132,16 +132,16 @@ const MenuBar = ({
   if (!editor) return null;
 
   return (
-    <div className="bg-white sticky top-0 z-10 border-b border-gray-100">
+    <div className="bg-background sticky top-0 z-10 border-b border-border">
       <div className="flex flex-wrap items-center gap-1 p-2">
         <Button
           variant="ghost"
           size="sm"
           onClick={() => editor.chain().focus().toggleBold().run()}
-          className={`h-8 w-8 p-0 ${
+          className={`h-8 w-8 p-0 transition-colors duration-150 ${
             editor.isActive("bold")
-              ? "bg-blue-100 text-blue-600"
-              : "text-gray-700"
+              ? "bg-accent text-accent-foreground"
+              : "text-foreground"
           }`}
           title="Bold"
         >
@@ -151,10 +151,10 @@ const MenuBar = ({
           variant="ghost"
           size="sm"
           onClick={() => editor.chain().focus().toggleItalic().run()}
-          className={`h-8 w-8 p-0 ${
+          className={`h-8 w-8 p-0 transition-colors duration-150 ${
             editor.isActive("italic")
-              ? "bg-blue-100 text-blue-600"
-              : "text-gray-700"
+              ? "bg-accent text-accent-foreground"
+              : "text-foreground"
           }`}
           title="Italic"
         >
@@ -164,10 +164,10 @@ const MenuBar = ({
           variant="ghost"
           size="sm"
           onClick={() => editor.chain().focus().toggleStrike().run()}
-          className={`h-8 w-8 p-0 ${
+          className={`h-8 w-8 p-0 transition-colors duration-150 ${
             editor.isActive("strike")
-              ? "bg-blue-100 text-blue-600"
-              : "text-gray-700"
+              ? "bg-accent text-accent-foreground"
+              : "text-foreground"
           }`}
           title="Strikethrough"
         >
@@ -177,16 +177,16 @@ const MenuBar = ({
           variant="ghost"
           size="sm"
           onClick={() => editor.chain().focus().toggleHighlight().run()}
-          className={`h-8 w-8 p-0 ${
+          className={`h-8 w-8 p-0 transition-colors duration-150 ${
             editor.isActive("highlight")
-              ? "bg-blue-100 text-blue-600"
-              : "text-gray-700"
+              ? "bg-accent text-accent-foreground"
+              : "text-foreground"
           }`}
           title="Highlight"
         >
           <Highlighter className="h-4 w-4" />
         </Button>
-        <div className="w-px h-6 bg-gray-200 mx-1"></div>
+        <div className="w-px h-6 bg-border mx-1"></div>
         <Button
           variant="ghost"
           size="sm"
@@ -195,10 +195,10 @@ const MenuBar = ({
             e.stopPropagation();
             editor.chain().focus().toggleHeading({ level: 1 }).run();
           }}
-          className={`h-8 w-8 p-0 ${
+          className={`h-8 w-8 p-0 transition-colors duration-150 ${
             editor.isActive("heading", { level: 1 })
-              ? "bg-blue-100 text-blue-600"
-              : "text-gray-700"
+              ? "bg-accent text-accent-foreground"
+              : "text-foreground"
           }`}
           title="Heading 1"
         >
@@ -212,24 +212,24 @@ const MenuBar = ({
             e.stopPropagation();
             editor.chain().focus().toggleHeading({ level: 2 }).run();
           }}
-          className={`h-8 w-8 p-0 ${
+          className={`h-8 w-8 p-0 transition-colors duration-150 ${
             editor.isActive("heading", { level: 2 })
-              ? "bg-blue-100 text-blue-600"
-              : "text-gray-700"
+              ? "bg-accent text-accent-foreground"
+              : "text-foreground"
           }`}
           title="Heading 2"
         >
           <Heading2 className="h-4 w-4" />
         </Button>
-        <div className="w-px h-6 bg-gray-200 mx-1"></div>
+        <div className="w-px h-6 bg-border mx-1"></div>
         <Button
           variant="ghost"
           size="sm"
           onClick={() => editor.chain().focus().toggleBulletList().run()}
-          className={`h-8 w-8 p-0 ${
+          className={`h-8 w-8 p-0 transition-colors duration-150 ${
             editor.isActive("bulletList")
-              ? "bg-blue-100 text-blue-600"
-              : "text-gray-700"
+              ? "bg-accent text-accent-foreground"
+              : "text-foreground"
           }`}
           title="Bullet List"
         >
@@ -239,24 +239,24 @@ const MenuBar = ({
           variant="ghost"
           size="sm"
           onClick={() => editor.chain().focus().toggleOrderedList().run()}
-          className={`h-8 w-8 p-0 ${
+          className={`h-8 w-8 p-0 transition-colors duration-150 ${
             editor.isActive("orderedList")
-              ? "bg-blue-100 text-blue-600"
-              : "text-gray-700"
+              ? "bg-accent text-accent-foreground"
+              : "text-foreground"
           }`}
           title="Ordered List"
         >
           <ListOrdered className="h-4 w-4" />
         </Button>
-        <div className="w-px h-6 bg-gray-200 mx-1"></div>
+        <div className="w-px h-6 bg-border mx-1"></div>
         <Button
           variant="ghost"
           size="sm"
           onClick={() => editor.chain().focus().setTextAlign("left").run()}
-          className={`h-8 w-8 p-0 ${
+          className={`h-8 w-8 p-0 transition-colors duration-150 ${
             editor.isActive({ textAlign: "left" })
-              ? "bg-blue-100 text-blue-600"
-              : "text-gray-700"
+              ? "bg-accent text-accent-foreground"
+              : "text-foreground"
           }`}
           title="Align Left"
         >
@@ -266,10 +266,10 @@ const MenuBar = ({
           variant="ghost"
           size="sm"
           onClick={() => editor.chain().focus().setTextAlign("center").run()}
-          className={`h-8 w-8 p-0 ${
+          className={`h-8 w-8 p-0 transition-colors duration-150 ${
             editor.isActive({ textAlign: "center" })
-              ? "bg-blue-100 text-blue-600"
-              : "text-gray-700"
+              ? "bg-accent text-accent-foreground"
+              : "text-foreground"
           }`}
           title="Align Center"
         >
@@ -279,16 +279,16 @@ const MenuBar = ({
           variant="ghost"
           size="sm"
           onClick={() => editor.chain().focus().setTextAlign("right").run()}
-          className={`h-8 w-8 p-0 ${
+          className={`h-8 w-8 p-0 transition-colors duration-150 ${
             editor.isActive({ textAlign: "right" })
-              ? "bg-blue-100 text-blue-600"
-              : "text-gray-700"
+              ? "bg-accent text-accent-foreground"
+              : "text-foreground"
           }`}
           title="Align Right"
         >
           <AlignRight className="h-4 w-4" />
         </Button>
-        <div className="w-px h-6 bg-gray-200 mx-1"></div>
+        <div className="w-px h-6 bg-border mx-1"></div>
         <Button
           variant="ghost"
           size="sm"
@@ -297,10 +297,10 @@ const MenuBar = ({
             e.stopPropagation();
             editor.chain().focus().toggleCodeBlock().run();
           }}
-          className={`h-8 w-8 p-0 ${
+          className={`h-8 w-8 p-0 transition-colors duration-150 ${
             editor.isActive("codeBlock")
-              ? "bg-blue-100 text-blue-600"
-              : "text-gray-700"
+              ? "bg-accent text-accent-foreground"
+              : "text-foreground"
           }`}
           title="Code Block"
         >
@@ -310,24 +310,24 @@ const MenuBar = ({
           variant="ghost"
           size="sm"
           onClick={() => editor.chain().focus().toggleCode().run()}
-          className={`h-8 w-8 p-0 ${
+          className={`h-8 w-8 p-0 transition-colors duration-150 ${
             editor.isActive("code")
-              ? "bg-blue-100 text-blue-600"
-              : "text-gray-700"
+              ? "bg-accent text-accent-foreground"
+              : "text-foreground"
           }`}
           title="Inline Code"
         >
           <Code className="h-4 w-4" />
         </Button>
-        <div className="w-px h-6 bg-gray-200 mx-1"></div>
+        <div className="w-px h-6 bg-border mx-1"></div>
         <Button
           variant="ghost"
           size="sm"
           onClick={() => setIsLinkModalOpen(true)}
-          className={`h-8 w-8 p-0 ${
+          className={`h-8 w-8 p-0 transition-colors duration-150 ${
             editor.isActive("link")
-              ? "bg-blue-100 text-blue-600"
-              : "text-gray-700"
+              ? "bg-accent text-accent-foreground"
+              : "text-foreground"
           }`}
           title="Add Link"
         >
@@ -337,7 +337,7 @@ const MenuBar = ({
           variant="ghost"
           size="sm"
           onClick={() => fileInputRef.current?.click()}
-          className="h-8 w-8 p-0 text-gray-700"
+          className="h-8 w-8 p-0 text-foreground transition-colors duration-150"
           disabled={isImageUploading}
           title="Add Image"
         >
@@ -347,13 +347,13 @@ const MenuBar = ({
             <ImageIcon className="h-4 w-4" />
           )}
         </Button>
-        <div className="w-px h-6 bg-gray-200 mx-1"></div>
+        <div className="w-px h-6 bg-border mx-1"></div>
         <Button
           variant="ghost"
           size="sm"
           onClick={() => editor.chain().focus().undo().run()}
           disabled={!editor.can().undo()}
-          className="h-8 w-8 p-0 text-gray-700"
+          className="h-8 w-8 p-0 text-foreground transition-colors duration-150"
           title="Undo"
         >
           <Undo className="h-4 w-4" />
@@ -363,25 +363,25 @@ const MenuBar = ({
           size="sm"
           onClick={() => editor.chain().focus().redo().run()}
           disabled={!editor.can().redo()}
-          className="h-8 w-8 p-0 text-gray-700"
+          className="h-8 w-8 p-0 text-foreground transition-colors duration-150"
           title="Redo"
         >
           <Redo className="h-4 w-4" />
         </Button>
         {onPublish && (
           <>
-            <div className="w-px h-6 bg-gray-200 mx-1"></div>
+            <div className="w-px h-6 bg-border mx-1"></div>
             <Button
               variant="ghost"
               size="sm"
               onClick={onPublish}
               disabled={isPublishing || !canPublish}
-              className={`h-8 w-8 p-0 ${
+              className={`h-8 w-8 p-0 transition-colors duration-150 ${
                 isPublishing
-                  ? "text-gray-400"
+                  ? "text-muted-foreground"
                   : canPublish
-                  ? "text-gray-700 hover:bg-gray-50"
-                  : "text-gray-400"
+                  ? "text-foreground hover:bg-muted"
+                  : "text-muted-foreground"
               }`}
               title={
                 isOverLimit
@@ -411,7 +411,7 @@ const MenuBar = ({
       </div>
 
       {isLinkModalOpen && (
-        <div className="p-3 bg-gray-50">
+        <div className="p-3 bg-muted">
           <div className="flex gap-2 items-center">
             <Input
               type="url"
@@ -424,7 +424,7 @@ const MenuBar = ({
             <Button
               onClick={setLink}
               size="sm"
-              className="bg-gray-800 hover:bg-gray-900 text-white"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground transition-colors duration-150"
             >
               Add
             </Button>
@@ -440,7 +440,7 @@ const MenuBar = ({
       )}
 
       {isImageModalOpen && (
-        <div className="p-3 bg-gray-50">
+        <div className="p-3 bg-muted">
           <div className="flex flex-col gap-3">
             <div className="flex gap-2 items-center">
               <Input
@@ -455,21 +455,21 @@ const MenuBar = ({
               <Button
                 onClick={addImage}
                 size="sm"
-                className="bg-blue-600 hover:bg-blue-700 text-white"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground transition-colors duration-150"
                 disabled={isImageUploading}
               >
                 Add
               </Button>
             </div>
             <div className="flex items-center">
-              <span className="text-sm text-gray-500 mr-2">
+              <span className="text-sm text-muted-foreground mr-2">
                 Or upload from your device:
               </span>
               <Button
                 onClick={() => fileInputRef.current?.click()}
                 variant="outline"
                 size="sm"
-                className="text-blue-600 border-blue-200"
+                className="text-primary border-primary/40 transition-colors duration-150"
                 disabled={isImageUploading}
               >
                 {isImageUploading ? (
@@ -553,7 +553,7 @@ const AdvancedEditor = ({
     editorProps: {
       attributes: {
         class:
-          "prose prose-blue max-w-none focus:outline-none w-full h-full px-6 py-4",
+          "max-w-none focus:outline-none w-full h-full px-6 py-4 text-foreground",
       },
     },
     onUpdate: ({ editor }) => {

@@ -334,43 +334,38 @@ export default function CreateRevampPage() {
   ]);
 
   return (
-    <div className="flex flex-col h-screen bg-[#f0f0f0] checkered-bg">
+    <div className="flex flex-col h-screen bg-background checkered-bg">
       <style jsx global>{`
-        @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap");
-        * {
-          font-family: "Poppins", sans-serif;
-        }
-
-        /* Subtle checkered texture */
+        /* Subtle checkered texture, retinted to near-white/neutral tones */
         .checkered-bg {
           background-image: linear-gradient(
               45deg,
-              rgba(0, 0, 0, 0.02) 25%,
+              rgba(26, 26, 26, 0.015) 25%,
               transparent 25%
             ),
-            linear-gradient(-45deg, rgba(0, 0, 0, 0.02) 25%, transparent 25%),
-            linear-gradient(45deg, transparent 75%, rgba(0, 0, 0, 0.02) 75%),
-            linear-gradient(-45deg, transparent 75%, rgba(0, 0, 0, 0.02) 75%);
+            linear-gradient(-45deg, rgba(26, 26, 26, 0.015) 25%, transparent 25%),
+            linear-gradient(45deg, transparent 75%, rgba(26, 26, 26, 0.015) 75%),
+            linear-gradient(-45deg, transparent 75%, rgba(26, 26, 26, 0.015) 75%);
           background-size: 20px 20px;
           background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
         }
 
         .prose {
-          --tw-prose-headings: #374151;
-          --tw-prose-body: #4b5563;
-          --tw-prose-links: #374151;
-          --tw-prose-bold: #111827;
-          --tw-prose-counters: #6b7280;
-          --tw-prose-bullets: #d1d5db;
-          --tw-prose-hr: #e5e7eb;
-          --tw-prose-quotes: #374151;
-          --tw-prose-quote-borders: #e5e7eb;
-          --tw-prose-captions: #6b7280;
-          --tw-prose-code: #111827;
-          --tw-prose-pre-code: #e5e7eb;
-          --tw-prose-pre-bg: #1f2937;
-          --tw-prose-th-borders: #d1d5db;
-          --tw-prose-td-borders: #e5e7eb;
+          --tw-prose-headings: #1a1a1a;
+          --tw-prose-body: #1a1a1a;
+          --tw-prose-links: #5b4fe8;
+          --tw-prose-bold: #1a1a1a;
+          --tw-prose-counters: #6b6b6b;
+          --tw-prose-bullets: #6b6b6b;
+          --tw-prose-hr: #e6e5e0;
+          --tw-prose-quotes: #1a1a1a;
+          --tw-prose-quote-borders: #e6e5e0;
+          --tw-prose-captions: #6b6b6b;
+          --tw-prose-code: #1a1a1a;
+          --tw-prose-pre-code: #f0efea;
+          --tw-prose-pre-bg: #1a1a1a;
+          --tw-prose-th-borders: #e6e5e0;
+          --tw-prose-td-borders: #e6e5e0;
         }
 
         /* Style headings in editor */
@@ -381,7 +376,7 @@ export default function CreateRevampPage() {
           margin-top: 2rem !important;
           margin-bottom: 0.5rem !important;
           line-height: 1.2 !important;
-          color: #111827 !important;
+          color: #1a1a1a !important;
         }
 
         .prose h2,
@@ -391,19 +386,19 @@ export default function CreateRevampPage() {
           margin-top: 1.5rem !important;
           margin-bottom: 0.5rem !important;
           line-height: 1.3 !important;
-          color: #111827 !important;
+          color: #1a1a1a !important;
         }
 
-        /* Style links in editor - make them blue */
+        /* Style links in editor - accent indigo */
         .prose a,
         .ProseMirror a {
-          color: #2563eb !important;
+          color: #5b4fe8 !important;
           text-decoration: underline !important;
         }
 
         .prose a:hover,
         .ProseMirror a:hover {
-          color: #1d4ed8 !important;
+          color: #4038b0 !important;
         }
 
         /* Increase spacing between paragraphs in editor */
@@ -459,21 +454,21 @@ export default function CreateRevampPage() {
 
         .prose ul li::marker,
         .ProseMirror ul li::marker {
-          color: #111827 !important;
+          color: #1a1a1a !important;
           font-size: 1.2em !important;
         }
 
         .prose ol li::marker,
         .ProseMirror ol li::marker {
-          color: #111827 !important;
+          color: #1a1a1a !important;
           font-weight: 600 !important;
         }
 
         /* Style code blocks in editor */
         .prose pre,
         .ProseMirror pre {
-          background-color: #1f2937 !important;
-          color: #e5e7eb !important;
+          background-color: #1a1a1a !important;
+          color: #f0efea !important;
           padding: 1rem !important;
           border-radius: 0.5rem !important;
           margin-top: 1rem !important;
@@ -496,8 +491,8 @@ export default function CreateRevampPage() {
         /* Style inline code in editor */
         .prose code:not(pre code),
         .ProseMirror code:not(pre code) {
-          background-color: #f3f4f6 !important;
-          color: #111827 !important;
+          background-color: #f0efea !important;
+          color: #1a1a1a !important;
           padding: 0.125rem 0.375rem !important;
           border-radius: 0.25rem !important;
           font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace !important;
@@ -520,7 +515,7 @@ export default function CreateRevampPage() {
       {/* Main Content Area - Below Navbar */}
       <div className="flex flex-1 overflow-hidden pt-16">
         {/* Content Area */}
-        <div className="flex flex-1 overflow-hidden bg-white">
+        <div className="flex flex-1 overflow-hidden bg-background">
           {/* Left Sidebar - Hidden on mobile and tablet */}
           <div className="hidden lg:block">
             <LeftSidebar />
@@ -529,7 +524,7 @@ export default function CreateRevampPage() {
           {/* Main Content */}
           <div className="flex-1 overflow-hidden flex flex-col">
             {/* Sticky Title Bar */}
-            <div className="flex justify-center bg-white sticky top-0 z-10">
+            <div className="flex justify-center bg-background sticky top-0 z-10">
               <div className="w-full max-w-4xl px-8 mt-6">
                 <div className="py-4">
                   <input
@@ -537,7 +532,7 @@ export default function CreateRevampPage() {
                     placeholder="Title..."
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    className="w-full text-2xl font-bold text-gray-900 border-0 focus:outline-none focus:ring-0 placeholder-gray-400"
+                    className="w-full text-2xl font-serif font-bold text-foreground border-0 focus:outline-none focus:ring-0 placeholder-muted-foreground"
                   />
                 </div>
               </div>
@@ -578,12 +573,12 @@ export default function CreateRevampPage() {
 
       {/* Tag Input Modal */}
       {isTagModalOpen && (
-        <div className="fixed inset-0 backdrop-blur-sm bg-white bg-opacity-10 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-96 max-w-md mx-4">
-            <h3 className="text-lg font-semibold mb-4">
+        <div className="fixed inset-0 backdrop-blur-sm bg-foreground/10 flex items-center justify-center z-50">
+          <div className="bg-background border border-border rounded-lg shadow-sm p-6 w-96 max-w-md mx-4">
+            <h3 className="text-lg font-semibold mb-4 text-foreground">
               Add Tags to Your Post
             </h3>
-            <p className="text-sm text-gray-600 mb-4">
+            <p className="text-sm text-muted-foreground mb-4">
               Add up to 5 tags to help readers discover your post
             </p>
 
@@ -595,12 +590,12 @@ export default function CreateRevampPage() {
                     <Badge
                       key={tag}
                       variant="secondary"
-                      className="bg-gray-50 text-gray-600 hover:bg-gray-100 px-3 py-1"
+                      className="bg-accent text-accent-foreground hover:bg-accent/80 px-3 py-1"
                     >
                       #{tag}
                       <button
                         onClick={() => handleRemoveTag(tag)}
-                        className="ml-2 text-gray-400 hover:text-gray-600"
+                        className="ml-2 text-muted-foreground hover:text-foreground"
                       >
                         <X className="h-3 w-3" />
                       </button>
@@ -619,12 +614,12 @@ export default function CreateRevampPage() {
                     value={tagInput}
                     onChange={(e) => setTagInput(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    className="w-full bg-gray-50 border border-gray-200 text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-gray-300 focus:border-gray-300 placeholder-gray-500"
+                    className="w-full bg-muted border border-border text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-border focus:border-border placeholder-muted-foreground text-foreground"
                   />
                 </div>
               )}
 
-              <div className="text-xs text-gray-500">
+              <div className="text-xs text-muted-foreground">
                 {tags.length}/5 tags added
               </div>
             </div>
@@ -633,13 +628,13 @@ export default function CreateRevampPage() {
               <Button
                 variant="outline"
                 onClick={() => setIsTagModalOpen(false)}
-                className="border-gray-200"
+                className="border-border"
               >
                 Cancel
               </Button>
               <Button
                 onClick={handleTagModalConfirm}
-                className="bg-gray-800 hover:bg-gray-900 text-white"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground"
               >
                 Continue to Publish
               </Button>

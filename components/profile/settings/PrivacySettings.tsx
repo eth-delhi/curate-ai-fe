@@ -12,14 +12,14 @@ export const PrivacySettings = () => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: 0.3 }}
-      className="bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-md border border-gray-100"
+      className="bg-background rounded-lg p-6 border border-border"
     >
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">Privacy</h3>
+      <h3 className="text-lg font-semibold text-foreground mb-4">Privacy</h3>
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <p className="font-medium text-gray-900">Public Profile</p>
-            <p className="text-sm text-gray-500">
+            <p className="font-medium text-foreground">Public Profile</p>
+            <p className="text-sm text-muted-foreground">
               Make your profile visible to everyone
             </p>
           </div>
@@ -30,8 +30,8 @@ export const PrivacySettings = () => {
 
         <div className="flex items-center justify-between">
           <div>
-            <p className="font-medium text-gray-900">Show Email</p>
-            <p className="text-sm text-gray-500">
+            <p className="font-medium text-foreground">Show Email</p>
+            <p className="text-sm text-muted-foreground">
               Show your email on your public profile
             </p>
           </div>
@@ -42,10 +42,10 @@ export const PrivacySettings = () => {
 
         <div className="flex items-center justify-between">
           <div>
-            <p className="font-medium text-gray-900">
+            <p className="font-medium text-foreground">
               Two-Factor Authentication
             </p>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-muted-foreground">
               Add an extra layer of security to your account
             </p>
           </div>

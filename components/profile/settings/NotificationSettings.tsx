@@ -10,16 +10,16 @@ export const NotificationSettings = () => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: 0.2 }}
-      className="bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-md border border-gray-100"
+      className="bg-background rounded-lg p-6 border border-border"
     >
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">
+      <h3 className="text-lg font-semibold text-foreground mb-4">
         Notifications
       </h3>
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <p className="font-medium text-gray-900">Email Notifications</p>
-            <p className="text-sm text-gray-500">
+            <p className="font-medium text-foreground">Email Notifications</p>
+            <p className="text-sm text-muted-foreground">
               Receive email about your account activity
             </p>
           </div>
@@ -30,8 +30,8 @@ export const NotificationSettings = () => {
 
         <div className="flex items-center justify-between">
           <div>
-            <p className="font-medium text-gray-900">Comment Notifications</p>
-            <p className="text-sm text-gray-500">
+            <p className="font-medium text-foreground">Comment Notifications</p>
+            <p className="text-sm text-muted-foreground">
               Get notified when someone comments on your post
             </p>
           </div>
@@ -42,8 +42,8 @@ export const NotificationSettings = () => {
 
         <div className="flex items-center justify-between">
           <div>
-            <p className="font-medium text-gray-900">Like Notifications</p>
-            <p className="text-sm text-gray-500">
+            <p className="font-medium text-foreground">Like Notifications</p>
+            <p className="text-sm text-muted-foreground">
               Get notified when someone likes your post
             </p>
           </div>
@@ -54,8 +54,8 @@ export const NotificationSettings = () => {
 
         <div className="flex items-center justify-between">
           <div>
-            <p className="font-medium text-gray-900">Newsletter</p>
-            <p className="text-sm text-gray-500">
+            <p className="font-medium text-foreground">Newsletter</p>
+            <p className="text-sm text-muted-foreground">
               Receive our weekly newsletter
             </p>
           </div>

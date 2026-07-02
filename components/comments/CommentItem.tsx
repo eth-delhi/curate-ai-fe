@@ -5,17 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import {
-  User,
-  ThumbsUp,
-  MessageSquare,
-  Edit,
-  Trash2,
-  Reply,
-  Send,
-  X,
-  Loader2,
-} from "lucide-react";
+import { User, ThumbsUp, Edit, Trash2, Reply, Send, X, Loader2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useAccount } from "wagmi";
 import {
@@ -109,29 +99,29 @@ export const CommentItem: React.FC<CommentItemProps> = ({
   };
 
   return (
-    <div className="border-b border-gray-100 pb-6 last:border-0">
-      <div className="flex items-start gap-3 mb-2">
-        <Avatar className="h-8 w-8">
+    <div className="border-b border-border pb-6 last:border-0">
+      <div className="mb-2 flex items-start gap-3">
+        <Avatar className="h-8 w-8 border border-border">
           <AvatarImage src="/placeholder.svg" alt="User" />
-          <AvatarFallback>
+          <AvatarFallback className="bg-muted text-muted-foreground">
             <User className="h-4 w-4" />
           </AvatarFallback>
         </Avatar>
         <div className="flex-1">
-          <div className="flex items-center gap-2 mb-1">
-            <p className="font-medium text-gray-900">
+          <div className="mb-1 flex items-center gap-2">
+            <p className="text-[14px] font-medium text-foreground">
               {formatWalletAddress(comment.userWalletAddress)}
             </p>
             {isOwner && (
               <Badge
                 variant="secondary"
-                className="text-xs bg-gray-100 text-gray-600"
+                className="border border-border bg-muted text-[11px] text-muted-foreground"
               >
                 You
               </Badge>
             )}
           </div>
-          <p className="text-xs text-gray-500">
+          <p className="text-[12px] text-muted-foreground">
             {formatDistanceToNow(new Date(comment.createdAt), {
               addSuffix: true,
             })}
@@ -146,7 +136,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({
             <Textarea
               value={editContent}
               onChange={(e) => setEditContent(e.target.value)}
-              className="mb-2 min-h-[80px] border-gray-200 focus:border-gray-300 focus:ring focus:ring-gray-100 focus:ring-opacity-50 bg-gray-50"
+              className="mb-2 min-h-[90px] rounded-xl border-input bg-background text-[14px] leading-[1.6] text-foreground focus-visible:ring-1 focus-visible:ring-ring"
               placeholder="Edit your comment..."
             />
             <div className="flex gap-2">
@@ -156,7 +146,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({
                 disabled={
                   updateCommentMutation.isPending || !editContent.trim()
                 }
-                className="bg-gray-800 hover:bg-gray-900 text-white"
+                className="rounded-full bg-primary text-primary-foreground transition-colors duration-150 hover:bg-primary/90"
               >
                 {updateCommentMutation.isPending ? (
                   <Loader2 className="h-3 w-3 mr-1 animate-spin" />
@@ -172,7 +162,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({
                   setIsEditing(false);
                   setEditContent(comment.content);
                 }}
-                className="border-gray-200 hover:bg-gray-50"
+                className="rounded-full border-border text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground"
               >
                 <X className="h-3 w-3 mr-1" />
                 Cancel
@@ -180,18 +170,20 @@ export const CommentItem: React.FC<CommentItemProps> = ({
             </div>
           </div>
         ) : (
-          <p className="text-gray-700 text-sm mb-3">{comment.content}</p>
+          <p className="mb-3 text-[15px] leading-[1.65] text-foreground">
+            {comment.content}
+          </p>
         )}
 
         <div className="flex items-center gap-4">
-          <button className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1 transition-colors">
+          <button className="flex items-center gap-1 text-[12px] text-muted-foreground transition-colors duration-150 hover:text-foreground">
             <ThumbsUp className="h-3 w-3" />
             <span>0</span>
           </button>
 
           <button
             onClick={() => setIsReplying(!isReplying)}
-            className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1 transition-colors"
+            className="flex items-center gap-1 text-[12px] text-muted-foreground transition-colors duration-150 hover:text-foreground"
           >
             <Reply className="h-3 w-3" />
             Reply
@@ -201,7 +193,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({
             <>
               <button
                 onClick={() => setIsEditing(true)}
-                className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1 transition-colors"
+                className="flex items-center gap-1 text-[12px] text-muted-foreground transition-colors duration-150 hover:text-foreground"
               >
                 <Edit className="h-3 w-3" />
                 Edit
@@ -209,7 +201,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({
               <button
                 onClick={openDeleteModal}
                 disabled={deleteCommentMutation.isPending}
-                className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1 transition-colors"
+                className="flex items-center gap-1 text-[12px] text-muted-foreground transition-colors duration-150 hover:text-destructive"
               >
                 <Trash2 className="h-3 w-3" />
                 Delete
@@ -220,11 +212,11 @@ export const CommentItem: React.FC<CommentItemProps> = ({
 
         {/* Reply form */}
         {isReplying && (
-          <div className="mt-4 ml-4 border-l-2 border-gray-200 pl-4">
+          <div className="mt-4 ml-4 border-l-2 border-border pl-4">
             <Textarea
               value={replyContent}
               onChange={(e) => setReplyContent(e.target.value)}
-              className="mb-2 min-h-[80px] border-gray-200 focus:border-gray-300 focus:ring focus:ring-gray-100 focus:ring-opacity-50 bg-gray-50"
+              className="mb-2 min-h-[90px] rounded-xl border-input bg-background text-[14px] leading-[1.6] text-foreground focus-visible:ring-1 focus-visible:ring-ring"
               placeholder="Write a reply..."
             />
             <div className="flex gap-2">
@@ -232,7 +224,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({
                 size="sm"
                 onClick={handleReply}
                 disabled={!replyContent.trim()}
-                className="bg-gray-800 hover:bg-gray-900 text-white"
+                className="rounded-full bg-primary text-primary-foreground transition-colors duration-150 hover:bg-primary/90"
               >
                 <Send className="h-3 w-3 mr-1" />
                 Reply
@@ -244,7 +236,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({
                   setIsReplying(false);
                   setReplyContent("");
                 }}
-                className="border-gray-200 hover:bg-gray-50"
+                className="rounded-full border-border text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground"
               >
                 <X className="h-3 w-3 mr-1" />
                 Cancel
@@ -259,31 +251,31 @@ export const CommentItem: React.FC<CommentItemProps> = ({
             {comment.replies.map((reply) => (
               <div
                 key={reply.uuid}
-                className="ml-4 border-l-2 border-gray-200 pl-4"
+                className="ml-4 border-l-2 border-border pl-4"
               >
-                <div className="flex items-start gap-3 mb-2">
-                  <Avatar className="h-6 w-6">
+                <div className="mb-2 flex items-start gap-3">
+                  <Avatar className="h-6 w-6 border border-border">
                     <AvatarImage src="/placeholder.svg" alt="User" />
-                    <AvatarFallback>
+                    <AvatarFallback className="bg-muted text-muted-foreground">
                       <User className="h-3 w-3" />
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <p className="font-medium text-gray-900 text-sm">
+                    <div className="mb-1 flex items-center gap-2">
+                      <p className="text-[13px] font-medium text-foreground">
                         {formatWalletAddress(reply.userWalletAddress)}
                       </p>
                       {userAddress?.toLowerCase() ===
                         reply.userWalletAddress.toLowerCase() && (
                         <Badge
                           variant="secondary"
-                          className="text-xs bg-gray-100 text-gray-600"
+                          className="border border-border bg-muted text-[11px] text-muted-foreground"
                         >
                           You
                         </Badge>
                       )}
                     </div>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-[12px] text-muted-foreground">
                       {formatDistanceToNow(new Date(reply.createdAt), {
                         addSuffix: true,
                       })}
@@ -291,7 +283,9 @@ export const CommentItem: React.FC<CommentItemProps> = ({
                   </div>
                 </div>
                 <div className="ml-9">
-                  <p className="text-gray-700 text-sm">{reply.content}</p>
+                  <p className="text-[14px] leading-[1.65] text-foreground">
+                    {reply.content}
+                  </p>
                 </div>
               </div>
             ))}

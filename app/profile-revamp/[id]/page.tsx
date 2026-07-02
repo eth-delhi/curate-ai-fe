@@ -107,7 +107,7 @@ function WalletTab() {
     return catBalance.toString();
   };
 
-  const formatSonicBalance = () => {
+  const formatGasTokenBalance = () => {
     if (!sonicBalance?.value) return "0.00";
     // Native tokens always use 18 decimals
     const formatted = formatUnits(sonicBalance.value, 18);
@@ -224,17 +224,17 @@ function WalletTab() {
       {/* Balance Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* CAT Balance Card */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+        <div className="bg-background rounded-xl p-6 border border-border">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center">
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-                <WalletIcon className="w-6 h-6 text-blue-600" />
+              <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center mr-3">
+                <WalletIcon className="w-6 h-6 text-accent-foreground" />
               </div>
               <div>
-                <h3 className="text-sm font-medium text-gray-600">
+                <h3 className="text-sm font-medium text-muted-foreground">
                   {TOKEN_DISPLAY_NAMES.CAT} Balance
                 </h3>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-2xl font-bold text-foreground">
                   {formatCatBalance()}
                 </p>
               </div>
@@ -243,18 +243,18 @@ function WalletTab() {
         </div>
 
         {/* SONIC Balance Card */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+        <div className="bg-background rounded-xl p-6 border border-border">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center">
-              <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mr-3">
-                <WalletIcon className="w-6 h-6 text-purple-600" />
+              <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center mr-3">
+                <WalletIcon className="w-6 h-6 text-accent-foreground" />
               </div>
               <div>
-                <h3 className="text-sm font-medium text-gray-600">
+                <h3 className="text-sm font-medium text-muted-foreground">
                   {TOKEN_DISPLAY_NAMES.SONIC} Balance
                 </h3>
-                <p className="text-2xl font-bold text-gray-900">
-                  {sonicBalance ? formatSonicBalance() : "0.00"}
+                <p className="text-2xl font-bold text-foreground">
+                  {sonicBalance ? formatGasTokenBalance() : "0.00"}
                 </p>
               </div>
             </div>
@@ -263,20 +263,20 @@ function WalletTab() {
       </div>
 
       {/* Transfer Form */}
-      <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-        <h2 className="text-xl font-bold text-gray-900 mb-6">
+      <div className="bg-background rounded-xl p-6 border border-border">
+        <h2 className="text-xl font-bold text-foreground mb-6">
           Transfer Tokens
         </h2>
 
         {/* Token Type Tabs */}
         <div className="mb-6">
-          <div className="flex gap-2 border-b border-gray-200">
+          <div className="flex gap-2 border-b border-border">
             <button
               onClick={() => setActiveTokenTab("CAT")}
               className={`px-4 py-2 text-sm font-medium transition-colors ${
                 activeTokenTab === "CAT"
-                  ? "text-gray-900 border-b-2 border-gray-900"
-                  : "text-gray-600 hover:text-gray-900"
+                  ? "text-primary border-b-2 border-primary"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               {TOKEN_DISPLAY_NAMES.CAT}
@@ -285,8 +285,8 @@ function WalletTab() {
               onClick={() => setActiveTokenTab("SONIC")}
               className={`px-4 py-2 text-sm font-medium transition-colors ${
                 activeTokenTab === "SONIC"
-                  ? "text-gray-900 border-b-2 border-gray-900"
-                  : "text-gray-600 hover:text-gray-900"
+                  ? "text-primary border-b-2 border-primary"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               {TOKEN_DISPLAY_NAMES.SONIC}
@@ -299,7 +299,7 @@ function WalletTab() {
           <div>
             <label
               htmlFor="recipient"
-              className="block text-sm font-medium text-gray-700 mb-2"
+              className="block text-sm font-medium text-foreground mb-2"
             >
               Recipient Address
             </label>
@@ -309,14 +309,14 @@ function WalletTab() {
               placeholder="0x..."
               value={recipientAddress}
               onChange={(e) => setRecipientAddress(e.target.value)}
-              className="border-gray-300 font-mono text-sm"
+              className="border-border font-mono text-sm"
             />
           </div>
 
           <div>
             <label
               htmlFor="amount"
-              className="block text-sm font-medium text-gray-700 mb-2"
+              className="block text-sm font-medium text-foreground mb-2"
             >
               Amount (
               {activeTokenTab === "CAT"
@@ -332,19 +332,19 @@ function WalletTab() {
                 placeholder="0.00"
                 value={transferAmount}
                 onChange={(e) => setTransferAmount(e.target.value)}
-                className="border-gray-300"
+                className="border-border"
               />
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
                 {activeTokenTab === "CAT"
                   ? TOKEN_DISPLAY_NAMES.CAT
                   : TOKEN_DISPLAY_NAMES.SONIC}
               </div>
             </div>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               Available:{" "}
               {activeTokenTab === "CAT"
                 ? formatCatBalance()
-                : formatSonicBalance()}{" "}
+                : formatGasTokenBalance()}{" "}
               {activeTokenTab === "CAT"
                 ? TOKEN_DISPLAY_NAMES.CAT
                 : TOKEN_DISPLAY_NAMES.SONIC}
@@ -354,7 +354,7 @@ function WalletTab() {
           <Button
             onClick={handleTransfer}
             disabled={isLoading || isTransferring || !userAddress}
-            className="w-full bg-gray-900 hover:bg-gray-800 text-white"
+            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
           >
             {isLoading || isTransferring ? (
               <>
@@ -869,43 +869,28 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
     followUserMutation.isPending || unfollowUserMutation.isPending;
 
   return (
-    <div className="flex flex-col h-screen bg-[#f0f0f0] checkered-bg">
+    <div className="profile-revamp-scribe flex h-screen flex-col bg-background text-foreground">
       <style jsx global>{`
-        @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap");
-        * {
-          font-family: "Poppins", sans-serif;
-        }
-
-        /* Subtle checkered texture */
-        .checkered-bg {
-          background-image: linear-gradient(
-              45deg,
-              rgba(0, 0, 0, 0.02) 25%,
-              transparent 25%
-            ),
-            linear-gradient(-45deg, rgba(0, 0, 0, 0.02) 25%, transparent 25%),
-            linear-gradient(45deg, transparent 75%, rgba(0, 0, 0, 0.02) 75%),
-            linear-gradient(-45deg, transparent 75%, rgba(0, 0, 0, 0.02) 75%);
-          background-size: 20px 20px;
-          background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        .profile-revamp-scribe {
+          font-family: var(--font-sans), system-ui, sans-serif;
         }
 
         .prose {
-          --tw-prose-headings: #374151;
-          --tw-prose-body: #4b5563;
-          --tw-prose-links: #374151;
-          --tw-prose-bold: #111827;
-          --tw-prose-counters: #6b7280;
-          --tw-prose-bullets: #d1d5db;
-          --tw-prose-hr: #e5e7eb;
-          --tw-prose-quotes: #374151;
-          --tw-prose-quote-borders: #e5e7eb;
-          --tw-prose-captions: #6b7280;
-          --tw-prose-code: #111827;
-          --tw-prose-pre-code: #e5e7eb;
-          --tw-prose-pre-bg: #1f2937;
-          --tw-prose-th-borders: #d1d5db;
-          --tw-prose-td-borders: #e5e7eb;
+          --tw-prose-headings: #1a1a1a;
+          --tw-prose-body: #1a1a1a;
+          --tw-prose-links: #5b4fe8;
+          --tw-prose-bold: #1a1a1a;
+          --tw-prose-counters: #6b6b6b;
+          --tw-prose-bullets: #e6e5e0;
+          --tw-prose-hr: #e6e5e0;
+          --tw-prose-quotes: #1a1a1a;
+          --tw-prose-quote-borders: #e6e5e0;
+          --tw-prose-captions: #6b6b6b;
+          --tw-prose-code: #1a1a1a;
+          --tw-prose-pre-code: #1a1a1a;
+          --tw-prose-pre-bg: #fafaf8;
+          --tw-prose-th-borders: #e6e5e0;
+          --tw-prose-td-borders: #e6e5e0;
         }
 
         /* Hide scrollbar everywhere */
@@ -923,16 +908,16 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
       `}</style>
 
       {/* Top Navbar */}
-      <HomeNavbar />
+      <HomeNavbar variant="scribe" />
 
       {/* Main Content Area - Below Navbar */}
-      <div className="flex flex-1 overflow-hidden pt-16">
+      <div className="flex flex-1 overflow-hidden pt-[57px]">
         {/* Content Area */}
         <div className="flex flex-1 overflow-hidden bg-white">
           <ProfileLeftSidebar userUuid={id} />
           {/* Main Content */}
-          <div className="flex-1 overflow-y-auto px-24">
-            <div className="p-4">
+          <div className="flex-1 overflow-y-auto">
+            <div className="mx-auto w-full max-w-[1040px] px-6 py-6">
               {/* Profile Header */}
               {isProfileLoading ? (
                 <div className="mb-8">
@@ -1124,70 +1109,70 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                 {isOwnProfile ? (
                   <div className="w-full">
                     {/* Tabs */}
-                    <div className="flex gap-1 border-b border-gray-200 mb-6">
+                    <div className="mb-8 flex gap-8 border-b border-border">
                       <button
                         onClick={() => setActiveTab("posts")}
-                        className={`px-4 py-2 text-sm font-medium transition-colors relative ${
+                        className={`relative py-4 text-[15px] font-medium transition-colors ${
                           activeTab === "posts"
-                            ? "text-gray-900 font-semibold"
-                            : "text-gray-600 hover:text-gray-900"
+                            ? "text-primary"
+                            : "text-muted-foreground hover:text-foreground"
                         }`}
                       >
                         Posts
                         {activeTab === "posts" && (
-                          <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900"></span>
+                          <span className="absolute bottom-0 left-0 right-0 h-px bg-primary"></span>
                         )}
                       </button>
                       <button
                         onClick={() => setActiveTab("drafts")}
-                        className={`px-4 py-2 text-sm font-medium transition-colors relative ${
+                        className={`relative py-4 text-[15px] font-medium transition-colors ${
                           activeTab === "drafts"
-                            ? "text-gray-900 font-semibold"
-                            : "text-gray-600 hover:text-gray-900"
+                            ? "text-primary"
+                            : "text-muted-foreground hover:text-foreground"
                         }`}
                       >
                         Drafts
                         {activeTab === "drafts" && (
-                          <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900"></span>
+                          <span className="absolute bottom-0 left-0 right-0 h-px bg-primary"></span>
                         )}
                       </button>
                       <button
                         onClick={() => setActiveTab("scored")}
-                        className={`px-4 py-2 text-sm font-medium transition-colors relative ${
+                        className={`relative py-4 text-[15px] font-medium transition-colors ${
                           activeTab === "scored"
-                            ? "text-gray-900 font-semibold"
-                            : "text-gray-600 hover:text-gray-900"
+                            ? "text-primary"
+                            : "text-muted-foreground hover:text-foreground"
                         }`}
                       >
                         Scored
                         {activeTab === "scored" && (
-                          <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900"></span>
+                          <span className="absolute bottom-0 left-0 right-0 h-px bg-primary"></span>
                         )}
                       </button>
                       <button
                         onClick={() => setActiveTab("settings")}
-                        className={`px-4 py-2 text-sm font-medium transition-colors relative ${
+                        className={`relative py-4 text-[15px] font-medium transition-colors ${
                           activeTab === "settings"
-                            ? "text-gray-900 font-semibold"
-                            : "text-gray-600 hover:text-gray-900"
+                            ? "text-primary"
+                            : "text-muted-foreground hover:text-foreground"
                         }`}
                       >
                         Settings
                         {activeTab === "settings" && (
-                          <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900"></span>
+                          <span className="absolute bottom-0 left-0 right-0 h-px bg-primary"></span>
                         )}
                       </button>
                       <button
                         onClick={() => setActiveTab("wallet")}
-                        className={`px-4 py-2 text-sm font-medium transition-colors relative ${
+                        className={`relative py-4 text-[15px] font-medium transition-colors ${
                           activeTab === "wallet"
-                            ? "text-gray-900 font-semibold"
-                            : "text-gray-600 hover:text-gray-900"
+                            ? "text-primary"
+                            : "text-muted-foreground hover:text-foreground"
                         }`}
                       >
                         Wallet
                         {activeTab === "wallet" && (
-                          <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900"></span>
+                          <span className="absolute bottom-0 left-0 right-0 h-px bg-primary"></span>
                         )}
                       </button>
                     </div>
@@ -1236,7 +1221,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                                     key={post.id}
                                     href={`/post-revamp/${post.id}`}
                                   >
-                                    <article className="bg-white border-b border-gray-200 py-4 px-6 cursor-pointer">
+                                    <article className="cursor-pointer border-b border-border bg-background px-2 py-6 sm:px-4">
                                       <div className="flex items-start justify-between gap-4">
                                         {/* Main Content */}
                                         <div className="flex-1 min-w-0">
@@ -1248,7 +1233,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                                           </div>
 
                                           {/* Title */}
-                                          <h3 className="text-xl font-bold text-gray-900 mb-3 hover:text-blue-800 transition-colors">
+                                          <h3 className="mb-3 text-[24px] font-bold leading-[1.3] text-foreground transition-colors hover:text-primary">
                                             {post.title}
                                           </h3>
 
@@ -1342,7 +1327,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                                     key={draft.uuid}
                                     href={`/create-revamp?draft=${draft.uuid}`}
                                   >
-                                    <article className="bg-white border-b border-gray-200 py-4 px-6 cursor-pointer">
+                                    <article className="cursor-pointer border-b border-border bg-background px-2 py-6 sm:px-4">
                                       <div className="flex items-start justify-between gap-4">
                                         <div className="flex-1 min-w-0">
                                           <div className="flex items-center gap-2 mb-2">
@@ -1359,7 +1344,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                                               )}
                                             </span>
                                           </div>
-                                          <h3 className="text-xl font-bold text-gray-900 mb-3 hover:text-blue-800 transition-colors">
+                                          <h3 className="mb-3 text-[24px] font-bold leading-[1.3] text-foreground transition-colors hover:text-primary">
                                             {draft.title || "(Untitled)"}
                                           </h3>
                                           {draft.content && (
@@ -1424,7 +1409,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                                     key={post.id}
                                     href={`/post-revamp/${post.id}`}
                                   >
-                                    <article className="bg-white border-b border-gray-200 py-4 px-6 cursor-pointer">
+                                    <article className="cursor-pointer border-b border-border bg-background px-2 py-6 sm:px-4">
                                       <div className="flex items-start justify-between gap-4">
                                         {/* Main Content */}
                                         <div className="flex-1 min-w-0">
@@ -1436,7 +1421,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                                           </div>
 
                                           {/* Title */}
-                                          <h3 className="text-xl font-bold text-gray-900 mb-3 hover:text-blue-800 transition-colors">
+                                          <h3 className="mb-3 text-[24px] font-bold leading-[1.3] text-foreground transition-colors hover:text-primary">
                                             {post.title}
                                           </h3>
 
@@ -1712,31 +1697,31 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                   // Other user's profile - show Posts and Scored tabs
                   <div className="w-full">
                     {/* Tabs */}
-                    <div className="flex gap-1 border-b border-gray-200 mb-6">
+                    <div className="mb-8 flex gap-8 border-b border-border">
                       <button
                         onClick={() => setActiveTab("posts")}
-                        className={`px-4 py-2 text-sm font-medium transition-colors relative ${
+                        className={`relative py-4 text-[15px] font-medium transition-colors ${
                           activeTab === "posts"
-                            ? "text-gray-900 font-semibold"
-                            : "text-gray-600 hover:text-gray-900"
+                            ? "text-primary"
+                            : "text-muted-foreground hover:text-foreground"
                         }`}
                       >
                         Posts
                         {activeTab === "posts" && (
-                          <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900"></span>
+                          <span className="absolute bottom-0 left-0 right-0 h-px bg-primary"></span>
                         )}
                       </button>
                       <button
                         onClick={() => setActiveTab("scored")}
-                        className={`px-4 py-2 text-sm font-medium transition-colors relative ${
+                        className={`relative py-4 text-[15px] font-medium transition-colors ${
                           activeTab === "scored"
-                            ? "text-gray-900 font-semibold"
-                            : "text-gray-600 hover:text-gray-900"
+                            ? "text-primary"
+                            : "text-muted-foreground hover:text-foreground"
                         }`}
                       >
                         Scored
                         {activeTab === "scored" && (
-                          <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900"></span>
+                          <span className="absolute bottom-0 left-0 right-0 h-px bg-primary"></span>
                         )}
                       </button>
                     </div>
@@ -1785,7 +1770,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                                     key={post.id}
                                     href={`/post-revamp/${post.id}`}
                                   >
-                                    <article className="bg-white border-b border-gray-200 py-4 px-6 cursor-pointer">
+                                    <article className="cursor-pointer border-b border-border bg-background px-2 py-6 sm:px-4">
                                       <div className="flex items-start justify-between gap-4">
                                         {/* Main Content */}
                                         <div className="flex-1 min-w-0">
@@ -1797,7 +1782,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                                           </div>
 
                                           {/* Title */}
-                                          <h3 className="text-xl font-bold text-gray-900 mb-3 hover:text-blue-800 transition-colors">
+                                          <h3 className="mb-3 text-[24px] font-bold leading-[1.3] text-foreground transition-colors hover:text-primary">
                                             {post.title}
                                           </h3>
 
@@ -1902,7 +1887,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                                     key={post.id}
                                     href={`/post-revamp/${post.id}`}
                                   >
-                                    <article className="bg-white border-b border-gray-200 py-4 px-6 cursor-pointer">
+                                    <article className="cursor-pointer border-b border-border bg-background px-2 py-6 sm:px-4">
                                       <div className="flex items-start justify-between gap-4">
                                         {/* Main Content */}
                                         <div className="flex-1 min-w-0">
@@ -1914,7 +1899,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                                           </div>
 
                                           {/* Title */}
-                                          <h3 className="text-xl font-bold text-gray-900 mb-3 hover:text-blue-800 transition-colors">
+                                          <h3 className="mb-3 text-[24px] font-bold leading-[1.3] text-foreground transition-colors hover:text-primary">
                                             {post.title}
                                           </h3>
 

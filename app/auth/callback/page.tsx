@@ -43,7 +43,7 @@ export default function AuthCallbackPage() {
   }, [magic, mutateAsync, setToken, router]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex items-center justify-center">
+    <div className="min-h-screen bg-background flex items-center justify-center">
       <motion.div
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -51,7 +51,7 @@ export default function AuthCallbackPage() {
         className="text-center"
       >
         <motion.div
-          className="w-16 h-16 rounded-full bg-gradient-to-br from-gray-800 to-black flex items-center justify-center mx-auto mb-4"
+          className="w-16 h-16 rounded-full bg-primary flex items-center justify-center mx-auto mb-4"
           animate={{
             rotate: 360,
           }}
@@ -61,7 +61,7 @@ export default function AuthCallbackPage() {
             ease: "linear",
           }}
         >
-          <Brain className="w-8 h-8 text-white" />
+          <Brain className="w-8 h-8 text-primary-foreground" />
         </motion.div>
 
         <motion.div
@@ -69,11 +69,11 @@ export default function AuthCallbackPage() {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.2 }}
         >
-          <Loader2 className="w-8 h-8 animate-spin text-gray-600 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground mx-auto mb-4" />
+          <h2 className="text-xl font-serif font-semibold text-foreground mb-2">
             Completing Authentication
           </h2>
-          <p className="text-gray-600">
+          <p className="text-muted-foreground">
             Please wait while we verify your credentials...
           </p>
         </motion.div>
