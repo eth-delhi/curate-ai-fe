@@ -14,7 +14,7 @@ interface AuthState {
 }
 
 // Public routes that don't require authentication
-const PUBLIC_ROUTES = ["/auth", "/post-revamp", "/post/", "/home-revamp", "/"];
+const PUBLIC_ROUTES = ["/auth", "/post", "/post/", "/home", "/"];
 
 // Check if current path is a public route
 const isPublicRoute = (pathname: string): boolean => {

@@ -16,7 +16,7 @@ export type BlogPost = {
   date: string;
   score: number;
   userRating: number;
-  aiRating: number;
+  aiRating: number | null;
   ipfsHash?: string;
   transactionHash?: string;
   clapCount?: number; // Clap count from API
@@ -35,7 +35,7 @@ export interface PostResponseDto {
   ipfsHash: string;
   authorAddress: string;
   userRating?: number;
-  aiRatingId?: number;
+  aiRating?: { rating: number | null };
   internal_id?: number;
   transactionHash?: string;
   thumbnail?: string | null; // Add thumbnail field
@@ -61,6 +61,25 @@ export interface UpdatePostRequestDto {
   postUuid: string;
   transactionHash?: string;
   status?: "BLOCKCHAIN_INITIATED" | "BLOCKCHAIN_FAILED";
+}
+
+export interface PublishPostRequestDto {
+  title: string;
+  content: string;
+  userWalletAddress: string;
+  tags?: string[];
+  coverImageUrl?: string;
+  internal_id?: number;
+  referencedImageFileIds?: string[];
+}
+
+export interface PublishPostResponseDto {
+  uuid: string;
+  ipfsHash: string;
+  coverImageCid?: string;
+  status: string;
+  pinnedImages: { fileId: string; path: string; ipfsCid: string }[];
+  failedImages?: { path: string; reason: string }[];
 }
 
 export interface CreatePostResponseDto {
@@ -120,18 +139,13 @@ export interface AuthorDto {
 }
 
 export interface AIPostRatingDto {
-  rating: number;
-  sentimentAnalysisLabel: string;
-  sentimentAnalysisScore: number;
-  biasDetectionScore: number;
-  biasDetectionDirection: string;
-  originalityScore: number;
-  similarityScore: number;
-  readabilityFleschKincaid: number;
-  readabilityGunningFog: number;
-  mainTopic: string;
-  secondaryTopics: string[];
+  status: string;
+  rating: number | null;
+  hasBeenVoted: boolean;
+  transactionHash?: string | null;
+  additionalData?: any;
   createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface SinglePostResponseDto {
@@ -142,7 +156,6 @@ export interface SinglePostResponseDto {
   ipfsHash: string;
   authorAddress: string;
   userRating?: number;
-  aiRatingId?: number;
   internal_id?: number;
   transactionHash?: string;
   author?: AuthorDto;

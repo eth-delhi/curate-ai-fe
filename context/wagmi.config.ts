@@ -3,18 +3,33 @@
 import { useState, useEffect } from "react";
 import { http, createConfig, useDisconnect } from "wagmi";
 import { dedicatedWalletConnector } from "@magiclabs/wagmi-connector";
+import {
+  getNetworkUrl,
+  getChainId,
+  getNetworkName,
+  getNetworkToken,
+} from "@/lib/network";
+
+// Single source of truth for the RPC URL/chain id, shared with the Magic
+// auth SDK instance (hooks/MagicProvider.tsx) via lib/network.ts, so wagmi
+// can't end up pointed at a different network than the one used for login.
+const nativeToken = getNetworkToken();
+const explorerUrl = process.env.NEXT_PUBLIC_EXPLORER_URL;
 
 export const sonicTestnet = {
-  id: 57054,
-  name: "Sonic Testnet",
-  nativeCurrency: { decimals: 18, name: "Sonic", symbol: "S" },
-  rpcUrls: { default: { http: [process.env.NEXT_PUBLIC_RPC_URL as string] } },
-  blockExplorers: {
-    default: {
-      name: "Sonic Testnet Explorer",
-      url: process.env.NEXT_PUBLIC_EXPLORER_URL as string,
-    },
-  },
+  id: getChainId(),
+  name: getNetworkName(),
+  nativeCurrency: { decimals: 18, name: nativeToken, symbol: nativeToken },
+  rpcUrls: { default: { http: [getNetworkUrl()] } },
+  // Omit entirely when there's no explorer configured (e.g. a local node)
+  // rather than pointing at a blank/broken URL.
+  ...(explorerUrl
+    ? {
+        blockExplorers: {
+          default: { name: `${getNetworkName()} Explorer`, url: explorerUrl },
+        },
+      }
+    : {}),
   testnet: true,
 };
 
@@ -34,8 +49,8 @@ export function useWagmiConfig() {
             apiKey: process.env.NEXT_PUBLIC_MAGIC_API_KEY as string,
             magicSdkConfiguration: {
               network: {
-                rpcUrl: process.env.NEXT_PUBLIC_RPC_URL as string,
-                chainId: 57054,
+                rpcUrl: getNetworkUrl(),
+                chainId: getChainId(),
               },
             },
           },

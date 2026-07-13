@@ -74,7 +74,7 @@ export const useHomeRevampData = () => {
     if ((tab === "following" || tab === "hot") && tagFromUrl) {
       const params = new URLSearchParams(searchParams.toString());
       params.delete("tag");
-      router.push(`/home-revamp?${params.toString()}`);
+      router.push(`/home?${params.toString()}`);
     }
   };
 
@@ -84,14 +84,14 @@ export const useHomeRevampData = () => {
     setActiveTab("new"); // Switch to new tab when filtering by tag
     const params = new URLSearchParams(searchParams.toString());
     params.set("tag", tag);
-    router.push(`/home-revamp?${params.toString()}`);
+    router.push(`/home?${params.toString()}`);
   };
 
   // Function to clear tag filter
   const clearTagFilter = () => {
     const params = new URLSearchParams(searchParams.toString());
     params.delete("tag");
-    router.push(`/home-revamp?${params.toString()}`);
+    router.push(`/home?${params.toString()}`);
   };
 
   return {

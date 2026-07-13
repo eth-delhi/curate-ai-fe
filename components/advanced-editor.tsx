@@ -590,7 +590,7 @@ const AdvancedEditor = ({
           isOverLimit={isOverLimit}
           remainingCharacters={remainingCharacters}
         />
-        <div className="flex-grow overflow-auto h-full create-revamp-scrollable">
+        <div className="flex-grow overflow-auto h-full create-scrollable">
           <EditorContent editor={editor} className="h-full pb-32" />
         </div>
       </div>

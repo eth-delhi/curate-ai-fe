@@ -9,6 +9,7 @@ export enum Network {
   ZKSYNC_SEPOLIA = "zksync-sepolia",
   SONIC_TESTNET = "sonic-blaze",
   HEDERA_TESTNET = "hedera-testnet",
+  HARDHAT_LOCAL = "hardhat-local",
 }
 
 export const getNetworkUrl = () => {
@@ -30,9 +31,14 @@ export const getNetworkUrl = () => {
     case Network.ZKSYNC_SEPOLIA:
       return "https://zksync-era-sepolia.blockpi.network/v1/rpc/public";
     case Network.SONIC_TESTNET:
-      return "https://sonic-blaze.g.alchemy.com/v2/qAEksW6pFqzHzh8WDvAC5CnhfBII8fJ-";
+      // Matches curate-ai-backend's RPC_URL — the endpoint that actually
+      // signs mint/distribute transactions for the CAT token, so reads and
+      // writes hit the same network.
+      return "https://rpc.testnet.soniclabs.com";
     case Network.HEDERA_TESTNET:
       return "https://testnet.hashio.io/api";
+    case Network.HARDHAT_LOCAL:
+      return "http://127.0.0.1:8545";
     default:
       throw new Error("Network not supported");
   }
@@ -60,6 +66,8 @@ export const getChainId = () => {
       return 57054; // Sonic Testnet Chain ID
     case Network.HEDERA_TESTNET:
       return 296;
+    case Network.HARDHAT_LOCAL:
+      return 31337;
     default:
       throw new Error("Network not supported");
   }
@@ -82,6 +90,8 @@ export const getNetworkToken = () => {
       return "S";
     case Network.HEDERA_TESTNET:
       return "HBAR";
+    case Network.HARDHAT_LOCAL:
+      return "ETH";
     default:
       throw new Error("Network not supported");
   }
@@ -126,6 +136,8 @@ export const getNetworkName = () => {
       return "Sonic (Blaze Testnet)";
     case Network.HEDERA_TESTNET:
       return "Hedera (Testnet)";
+    case Network.HARDHAT_LOCAL:
+      return "Hardhat (Local)";
     default:
       throw new Error("Network not supported");
   }
@@ -151,6 +163,9 @@ export const getBlockExplorer = (address: string) => {
       return `https://sepolia.explorer.zksync.io/address/${address}`;
     case Network.SONIC_TESTNET:
       return `https://explorer.testnet.soniclabs.com/address/${address}`;
+    case Network.HARDHAT_LOCAL:
+      // No block explorer for a local node.
+      return "";
     default:
       throw new Error("Network not supported");
   }
@@ -160,6 +175,7 @@ export const isEip1559Supported = () => {
   switch (process.env.NEXT_PUBLIC_BLOCKCHAIN_NETWORK) {
     case Network.ETHEREUM_SEPOLIA:
     case Network.ETHEREUM:
+    case Network.HARDHAT_LOCAL:
       return true;
     case Network.ZKSYNC:
     case Network.ZKSYNC_SEPOLIA:

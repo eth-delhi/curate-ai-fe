@@ -152,7 +152,7 @@ const UserItem = ({ user }: { user: FollowUser }) => {
 
   return (
     <Link
-      href={`/profile-revamp/${user.uuid}`}
+      href={`/profile/${user.uuid}`}
       className="flex items-center gap-2 py-2 hover:bg-accent rounded px-1 transition-colors duration-150"
     >
       <Avatar className="w-8 h-8 flex-shrink-0">

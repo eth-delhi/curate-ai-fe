@@ -4,6 +4,8 @@ import {
   CreatePostRequestDto,
   CreatePostResponseDto,
   UpdatePostRequestDto,
+  PublishPostRequestDto,
+  PublishPostResponseDto,
 } from "@/utils/types";
 import { usePublicClient } from "wagmi";
 import { contract } from "@/constants/contract";
@@ -18,6 +20,19 @@ export const createPost = async (
 export const useCreatePost = () => {
   return useMutation({
     mutationFn: createPost,
+  });
+};
+
+export const publishPost = async (
+  data: PublishPostRequestDto
+): Promise<PublishPostResponseDto> => {
+  const res = await API.post("/posts/publish", data);
+  return res.data;
+};
+
+export const usePublishPost = () => {
+  return useMutation({
+    mutationFn: publishPost,
   });
 };
 

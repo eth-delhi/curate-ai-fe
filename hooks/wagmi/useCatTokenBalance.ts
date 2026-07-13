@@ -4,7 +4,7 @@ import { contract } from "@/constants/contract";
 
 /**
  * Custom hook to fetch CAT token balance for the connected wallet
- * Returns the raw balance value (as BigInt) matching post-revamp behavior
+ * Returns the raw balance value (as BigInt) matching the post page behavior
  */
 export const useCatTokenBalance = () => {
   const { address: userAddress } = useAccount();

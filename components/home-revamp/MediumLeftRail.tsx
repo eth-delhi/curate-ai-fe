@@ -61,29 +61,29 @@ export function MediumLeftRail({
     <aside className="fixed left-0 top-[57px] z-[100] hidden h-[calc(100vh-57px)] w-[72px] flex-col items-center border-r border-border bg-background md:flex">
       <nav className="flex w-full flex-col items-center gap-1 pt-4">
         <NavIcon
-          href="/home-revamp"
+          href="/home"
           title="Home"
           onClick={onSelectHome}
         >
           <Home className="h-6 w-6 stroke-[1.5]" />
         </NavIcon>
         <NavIcon
-          href="/home-revamp"
+          href="/home"
           title="Library"
           onClick={onSelectLibrary}
         >
           <Bookmark className="h-6 w-6 stroke-[1.5]" />
         </NavIcon>
         <NavIcon
-          href={userId ? `/profile-revamp/${userId}` : "/auth"}
+          href={userId ? `/profile/${userId}` : "/auth"}
           title="Profile"
         >
           <User className="h-6 w-6 stroke-[1.5]" />
         </NavIcon>
-        <NavIcon href="/create-revamp" title="Stories">
+        <NavIcon href="/create" title="Stories">
           <FileText className="h-6 w-6 stroke-[1.5]" />
         </NavIcon>
-        <NavIcon href="/home-revamp" title="Stats">
+        <NavIcon href="/home" title="Stats">
           <BarChart2 className="h-6 w-6 stroke-[1.5]" />
         </NavIcon>
       </nav>
@@ -103,7 +103,7 @@ export function MediumLeftRail({
               return (
                 <Link
                   key={u.uuid}
-                  href={`/profile-revamp/${u.uuid}`}
+                  href={`/profile/${u.uuid}`}
                   title={label}
                   className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-muted ring-1 ring-border"
                 >
@@ -134,7 +134,7 @@ export function MediumLeftRail({
           <Plus className="h-5 w-5" />
         </button>
         <Link
-          href="/home-revamp"
+          href="/home"
           className="text-center text-[11px] leading-tight text-primary hover:underline"
         >
           See suggestions

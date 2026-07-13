@@ -14,6 +14,7 @@ export interface DisplayPost {
   authorUuid?: string; // Author UUID for navigation
   authorFullName?: string; // Author full name
   authorProfilePic?: string; // Author profile picture IPFS hash
+  aiRating?: number | null; // AI rating (0-100), null if not yet rated
 }
 
 export interface User {

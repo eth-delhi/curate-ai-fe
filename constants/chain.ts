@@ -3,6 +3,8 @@
  * Can be changed via environment variables if needed
  */
 
+import { sonicTestnet } from "@/context/wagmi.config";
+
 // Chain identifier - defaults to "sonic-testnet" but can be changed via env
 export const CHAIN_NAME = process.env.NEXT_PUBLIC_CHAIN_NAME || "sonic-testnet";
 
@@ -14,8 +16,9 @@ export const TOKEN_CONTRACTS = {
   // Add other token addresses as needed
 };
 
-// Native token symbol based on chain
-export const NATIVE_TOKEN_SYMBOL = CHAIN_NAME === "sonic-testnet" ? "S" : "ETH";
+// Native token symbol, sourced from the actual configured wagmi chain so it
+// can't drift out of sync with CHAIN_NAME the way a string comparison could.
+export const NATIVE_TOKEN_SYMBOL = sonicTestnet.nativeCurrency.symbol;
 
 // Token display names
 export const TOKEN_DISPLAY_NAMES = {

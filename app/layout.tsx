@@ -5,6 +5,7 @@ import { Magic } from "@/context/magic.provider";
 import { Wagmi } from "@/context/wagmi.provider";
 import { QueryProvider } from "@/context/query.provider";
 import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
+import { WalletAutoConnect } from "@/components/wallet/WalletAutoConnect";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -39,6 +40,7 @@ export default function RootLayout({
         <Magic>
           <Wagmi>
             <QueryProvider>
+              <WalletAutoConnect />
               <ServiceWorkerRegistration />
               {children}
             </QueryProvider>

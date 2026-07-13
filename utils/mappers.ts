@@ -24,7 +24,7 @@ export const mapApiPostToBlogPost = (apiPost: PostResponseDto): BlogPost => {
       : new Date().toISOString(), // Use createdAt from API if available
     score: 0, // API doesn't provide score, using 0 as default
     userRating: apiPost.userRating || 0,
-    aiRating: apiPost.aiRatingId || 0, // Using aiRatingId as aiRating
+    aiRating: apiPost.aiRating?.rating ?? null,
     ipfsHash: apiPost.ipfsHash,
     transactionHash: apiPost.transactionHash,
     clapCount: apiPost.clapCount, // Pass clapCount from API

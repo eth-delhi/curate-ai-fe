@@ -53,7 +53,7 @@ const FeedPostCard = ({ post }: { post: any }) => {
     if (authorUuid) {
       e.preventDefault();
       e.stopPropagation();
-      router.push(`/profile-revamp/${authorUuid}`);
+      router.push(`/profile/${authorUuid}`);
     }
   };
 
@@ -66,7 +66,7 @@ const FeedPostCard = ({ post }: { post: any }) => {
       : null);
 
   return (
-    <Link href={`/post-revamp/${post.uuid || post.id}`}>
+    <Link href={`/post/${post.uuid || post.id}`}>
       <article className="border-b border-border py-8">
         <div className="mb-3 flex items-center gap-2.5">
           {profilePicUrl && !avatarLoadError ? (
@@ -104,9 +104,20 @@ const FeedPostCard = ({ post }: { post: any }) => {
             <h3 className="mb-2 font-serif text-[26px] font-bold leading-[1.25] tracking-tight text-foreground">
               {post.title}
             </h3>
-            <p className="mb-5 line-clamp-3 text-[17px] leading-[1.55] text-muted-foreground">
+            <p className="mb-3 line-clamp-3 text-[17px] leading-[1.55] text-muted-foreground">
               {excerptPlainText(post.content)}
             </p>
+            {typeof post.aiRating === "number" && (
+              <div
+                className="mb-3 h-1 w-16 rounded-full bg-muted overflow-hidden"
+                title={`AI rating: ${post.aiRating}/100`}
+              >
+                <div
+                  className="h-full rounded-full bg-primary/60"
+                  style={{ width: `${Math.min(100, Math.max(0, post.aiRating))}%` }}
+                />
+              </div>
+            )}
             <div className="flex items-center justify-between gap-3">
               <div className="flex min-w-0 items-center gap-3">
                 <span className="whitespace-nowrap rounded-2xl bg-muted px-[11px] py-1.5 text-[14px] text-foreground">

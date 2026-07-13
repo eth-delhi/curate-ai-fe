@@ -19,7 +19,7 @@ const FeaturedPostCard = ({ post }: { post: any }) => {
   const avatarUrl = `https://i.pravatar.cc/150?img=${imgIndex}`;
 
   return (
-    <Link href={`/post-revamp/${post.id}`}>
+    <Link href={`/post/${post.id}`}>
       <article className="flex bg-background border border-border rounded-lg overflow-hidden hover:border-foreground/20 transition-colors duration-200 group">
         <div className="relative w-[35%] md:w-[40%]">
           <Image

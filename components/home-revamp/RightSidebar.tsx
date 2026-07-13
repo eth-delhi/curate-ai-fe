@@ -121,7 +121,7 @@ const PersonToFollowItem = ({ user }: { user: PeopleToFollowDto }) => {
   return (
     <div className="mb-4 flex cursor-pointer items-center gap-3">
       <Link
-        href={`/profile-revamp/${user.uuid}`}
+        href={`/profile/${user.uuid}`}
         className="flex min-w-0 flex-1 items-center gap-3"
       >
         <img

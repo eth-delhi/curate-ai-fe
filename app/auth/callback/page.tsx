@@ -6,7 +6,8 @@ import { useMagicState } from "@/context/magic.provider";
 import { useLogin } from "@/hooks/api/auth";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Brain, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import { TypingMessage } from "@/components/auth/TypingMessage";
 
 export default function AuthCallbackPage() {
   const { magic } = useMagic();
@@ -29,7 +30,7 @@ export default function AuthCallbackPage() {
           });
 
           setToken(result.magic.idToken as string);
-          router.push("/home-revamp");
+          router.push("/home");
         } else {
           router.push("/auth");
         }
@@ -45,38 +46,15 @@ export default function AuthCallbackPage() {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center">
       <motion.div
-        initial={{ opacity: 0, scale: 0.8 }}
+        initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.5 }}
+        transition={{ duration: 0.4 }}
         className="text-center"
       >
-        <motion.div
-          className="w-16 h-16 rounded-full bg-primary flex items-center justify-center mx-auto mb-4"
-          animate={{
-            rotate: 360,
-          }}
-          transition={{
-            duration: 2,
-            repeat: Infinity,
-            ease: "linear",
-          }}
-        >
-          <Brain className="w-8 h-8 text-primary-foreground" />
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-        >
-          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground mx-auto mb-4" />
-          <h2 className="text-xl font-serif font-semibold text-foreground mb-2">
-            Completing Authentication
-          </h2>
-          <p className="text-muted-foreground">
-            Please wait while we verify your credentials...
-          </p>
-        </motion.div>
+        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground mx-auto mb-5" />
+        <h2 className="text-xl font-serif font-semibold text-foreground min-h-[1.75rem]">
+          <TypingMessage />
+        </h2>
       </motion.div>
     </div>
   );

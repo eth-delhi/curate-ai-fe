@@ -87,6 +87,29 @@ export const updateProfile = async (
   return response.data;
 };
 
+export interface UploadAvatarResponse {
+  ipfsHash: string;
+  url: string;
+}
+
+// Upload avatar: backend stores it in S3 and pins it to IPFS, returning the CID
+export const uploadAvatar = async (
+  file: File
+): Promise<UploadAvatarResponse> => {
+  const formData = new FormData();
+  formData.append("image", file);
+  const response = await API.post("/profile/avatar-upload", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return response.data;
+};
+
+export const useUploadAvatar = () => {
+  return useMutation({
+    mutationFn: uploadAvatar,
+  });
+};
+
 export const useUpdateProfile = () => {
   const queryClient = useQueryClient();
 

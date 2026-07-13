@@ -134,10 +134,10 @@ export default function LandingPage() {
           width: 6px;
         }
         ::-webkit-scrollbar-track {
-          background: #f9f9f9;
+          background: var(--muted);
         }
         ::-webkit-scrollbar-thumb {
-          background: #333;
+          background: var(--muted-foreground);
           border-radius: 3px;
         }
 
@@ -146,7 +146,7 @@ export default function LandingPage() {
           position: absolute;
           width: 2px;
           height: 2px;
-          background: rgba(255, 255, 255, 0.1);
+          background: rgba(7, 47, 95, 0.15);
           border-radius: 50%;
           pointer-events: none;
           animation: ripple 2s infinite;
@@ -163,19 +163,7 @@ export default function LandingPage() {
           }
         }
 
-        /* Glow effect */
-        .glow {
-          box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
-        }
-
-        /* Glass effect */
-        .glass {
-          background: rgba(255, 255, 255, 0.05);
-          backdrop-filter: blur(10px);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        /* Cyberpunk Effects */
+        /* Accent border: subtle brand-color edge highlight */
         .cyber-border {
           position: relative;
         }
@@ -187,77 +175,30 @@ export default function LandingPage() {
           right: 0;
           bottom: 0;
           border: 1px solid transparent;
-          background: linear-gradient(45deg, #00ff00, #0080ff, #ff0080, #00ff00)
+          background: linear-gradient(
+              45deg,
+              var(--primary),
+              var(--accent-foreground)
+            )
             border-box;
           border-radius: inherit;
           mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
           mask-composite: exclude;
-          opacity: 0.1;
+          opacity: 0.15;
         }
 
+        /* Brand-color highlight text */
         .cyber-text {
-          background: linear-gradient(45deg, #6b7280, #9ca3af, #d1d5db);
-          background-size: 200% 200%;
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-          animation: cyber-gradient 6s ease infinite;
-        }
-
-        @keyframes cyber-gradient {
-          0% {
-            background-position: 0% 50%;
-          }
-          50% {
-            background-position: 100% 50%;
-          }
-          100% {
-            background-position: 0% 50%;
-          }
+          color: var(--primary);
         }
 
         .cyber-grid {
           background-image: linear-gradient(
-              rgba(0, 255, 0, 0.1) 1px,
+              rgba(26, 26, 26, 0.05) 1px,
               transparent 1px
             ),
-            linear-gradient(90deg, rgba(0, 255, 0, 0.1) 1px, transparent 1px);
+            linear-gradient(90deg, rgba(26, 26, 26, 0.05) 1px, transparent 1px);
           background-size: 20px 20px;
-        }
-
-        .cyber-pulse {
-          animation: cyber-pulse 2s ease-in-out infinite;
-        }
-
-        @keyframes cyber-pulse {
-          0%,
-          100% {
-            box-shadow: 0 0 2px rgba(0, 255, 0, 0.1);
-          }
-          50% {
-            box-shadow: 0 0 8px rgba(0, 255, 0, 0.2),
-              0 0 12px rgba(0, 255, 0, 0.1);
-          }
-        }
-
-        .cyber-scroll {
-          background: linear-gradient(
-            90deg,
-            transparent,
-            rgba(0, 255, 0, 0.2),
-            transparent
-          );
-          background-size: 200% 100%;
-          animation: cyber-scroll 3s linear infinite;
-        }
-
-        @keyframes cyber-scroll {
-          0% {
-            background-position: -200% 0;
-          }
-          100% {
-            background-position: 200% 0;
-          }
         }
 
         /* Hide scrollbar */
@@ -383,7 +324,7 @@ export default function LandingPage() {
                     cx={50 + (i % 5) * 80}
                     cy={50 + Math.floor(i / 5) * 80}
                     r="3"
-                    fill="rgba(91,79,232,0.5)"
+                    fill="rgba(7,47,95,0.5)"
                     animate={{
                       opacity: [0.3, 1, 0.3],
                       scale: [0.8, 1.2, 0.8],
@@ -405,7 +346,7 @@ export default function LandingPage() {
                     y1={50 + Math.floor(i / 5) * 80}
                     x2={50 + ((i + 1) % 5) * 80}
                     y2={50 + Math.floor((i + 1) / 5) * 80}
-                    stroke="rgba(91,79,232,0.25)"
+                    stroke="rgba(7,47,95,0.25)"
                     strokeWidth="1"
                     animate={{
                       opacity: [0, 0.5, 0],
@@ -631,8 +572,8 @@ export default function LandingPage() {
                 x2="100%"
                 y2="100%"
               >
-                <stop offset="0%" stopColor="rgba(91,79,232,0.2)" />
-                <stop offset="100%" stopColor="rgba(91,79,232,0.05)" />
+                <stop offset="0%" stopColor="rgba(7,47,95,0.2)" />
+                <stop offset="100%" stopColor="rgba(7,47,95,0.05)" />
               </linearGradient>
             </defs>
             <path
@@ -1055,7 +996,7 @@ export default function LandingPage() {
         whileTap={{ scale: 0.95 }}
         style={{
           backdropFilter: "blur(10px)",
-          backgroundColor: "rgba(91, 79, 232, 0.9)",
+          backgroundColor: "rgba(7, 47, 95, 0.9)",
         }}
       >
         <motion.div

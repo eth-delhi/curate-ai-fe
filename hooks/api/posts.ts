@@ -11,7 +11,7 @@ export interface PostResponseDto {
   ipfsHash: string;
   authorAddress: string;
   userRating?: number;
-  aiRatingId?: number;
+  aiRating?: { rating: number | null };
   internal_id?: number;
   transactionHash?: string;
   tags?: string[]; // Tags array from API

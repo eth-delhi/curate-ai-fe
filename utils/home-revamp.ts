@@ -59,6 +59,7 @@ export const convertBlogPostToDisplayPost = (
     authorUuid: post.author?.uuid, // Pass author UUID for navigation
     authorFullName: post.author?.fullName, // Pass author full name
     authorProfilePic: post.author?.profilePic, // Pass profilePic IPFS hash
+    aiRating: post.aiRating, // Pass AI rating from BlogPost
   };
 };
 

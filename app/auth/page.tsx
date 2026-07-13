@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Brain, Mail, ArrowRight, Loader2 } from "lucide-react";
+import { Mail, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Navbar from "@/components/ui/Navbar";
+import { TypingMessage } from "@/components/auth/TypingMessage";
 import { useMagic } from "@/hooks/MagicProvider";
 import { useMagicState } from "@/context/magic.provider";
 import showToast from "@/utils/showToast";
@@ -26,7 +27,7 @@ export default function AuthRevampPage() {
   // Redirect if already authenticated
   useEffect(() => {
     if (token && token.length > 0) {
-      router.push("/home-revamp");
+      router.push("/home");
     }
   }, [token, router]);
 
@@ -40,36 +41,15 @@ export default function AuthRevampPage() {
         {/* Loading Content */}
         <div className="min-h-screen flex items-center justify-center pt-20">
           <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
+            initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5 }}
+            transition={{ duration: 0.4 }}
             className="text-center"
           >
-            <motion.div
-              className="w-16 h-16 rounded-full bg-primary flex items-center justify-center mx-auto mb-4"
-              animate={{
-                rotate: 360,
-              }}
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-                ease: "linear",
-              }}
-            >
-              <Brain className="w-8 h-8 text-primary-foreground" />
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-            >
-              <Loader2 className="w-8 h-8 animate-spin text-muted-foreground mx-auto mb-4" />
-              <h2 className="text-xl font-serif font-semibold text-foreground mb-2">
-                Already Authenticated
-              </h2>
-              <p className="text-muted-foreground">Redirecting to your dashboard...</p>
-            </motion.div>
+            <Loader2 className="w-6 h-6 animate-spin text-muted-foreground mx-auto mb-5" />
+            <h2 className="text-xl font-serif font-semibold text-foreground min-h-[1.75rem]">
+              <TypingMessage />
+            </h2>
           </motion.div>
         </div>
       </div>
@@ -83,7 +63,7 @@ export default function AuthRevampPage() {
       )
     ) {
       setEmailError(true);
-      showToast("Please enter a valid email address", "error");
+      showToast({ message: "Please enter a valid email address", type: "error" });
       return;
     }
 
@@ -102,29 +82,29 @@ export default function AuthRevampPage() {
 
       if (response.success) {
         setToken(didToken);
-        showToast("Magic Link sent! Check your email.", "success");
+        showToast({ message: "Magic Link sent! Check your email.", type: "success" });
         // Redirect will happen automatically due to useEffect
       } else {
-        showToast("Failed to create user account", "error");
+        showToast({ message: "Failed to create user account", type: "error" });
       }
     } catch (error) {
       console.error("Magic Link login error:", error);
       if (error instanceof RPCError) {
         switch (error.code) {
           case RPCErrorCode.MagicLinkFailedVerification:
-            showToast("Magic Link verification failed", "error");
+            showToast({ message: "Magic Link verification failed", type: "error" });
             break;
           case RPCErrorCode.MagicLinkExpired:
-            showToast("Magic Link has expired", "error");
+            showToast({ message: "Magic Link has expired", type: "error" });
             break;
           case RPCErrorCode.MagicLinkRateLimited:
-            showToast("Too many requests. Please try again later.", "error");
+            showToast({ message: "Too many requests. Please try again later.", type: "error" });
             break;
           default:
-            showToast("Magic Link failed. Please try again.", "error");
+            showToast({ message: "Magic Link failed. Please try again.", type: "error" });
         }
       } else {
-        showToast("An unexpected error occurred", "error");
+        showToast({ message: "An unexpected error occurred", type: "error" });
       }
     } finally {
       setLoginInProgress(false);
@@ -141,7 +121,7 @@ export default function AuthRevampPage() {
       });
     } catch (error) {
       console.error("Google login error:", error);
-      showToast("Google login failed. Please try again.", "error");
+      showToast({ message: "Google login failed. Please try again.", type: "error" });
       setGoogleLoginInProgress(false);
     }
   };
@@ -214,14 +194,8 @@ export default function AuthRevampPage() {
             {/* Left Side - Login Form */}
             <div className="w-full lg:w-5/12 p-8 md:p-16 flex flex-col justify-center">
               <div className="mb-10">
-                <div className="flex items-center gap-2 mb-8">
-                  <div className="w-7 h-7 bg-primary rounded flex items-center justify-center">
-                    <span className="text-primary-foreground text-xs font-bold">C</span>
-                  </div>
-                  <span className="text-lg font-semibold">CurateAi</span>
-                </div>
                 <h1 className="text-3xl font-serif font-semibold mb-2 text-foreground">
-                  Welcome back
+                  Welcome back!
                 </h1>
                 <p className="text-sm text-muted-foreground">
                   Sign in to continue to your account
@@ -336,6 +310,13 @@ export default function AuthRevampPage() {
                     Create account
                   </a>
                 </p>
+                <button
+                  type="button"
+                  onClick={() => router.push("/home")}
+                  className="mt-3 text-xs text-muted-foreground hover:text-foreground underline transition-colors duration-150 cursor-pointer"
+                >
+                  Continue without logging in
+                </button>
               </div>
             </div>
 

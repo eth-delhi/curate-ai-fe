@@ -21,12 +21,12 @@ export const AuthBackgroundAnimation = () => {
   useEffect(() => {
     const particleCount = 15;
     const vibrantColors = [
-      "rgba(91, 79, 232, 0.18)", // Indigo (primary)
-      "rgba(91, 79, 232, 0.12)", // Indigo (primary, softer)
+      "rgba(7, 47, 95, 0.18)", // Brand blue (primary)
+      "rgba(7, 47, 95, 0.12)", // Brand blue (primary, softer)
       "rgba(107, 107, 107, 0.12)", // Neutral
-      "rgba(91, 79, 232, 0.15)", // Indigo (primary)
+      "rgba(7, 47, 95, 0.15)", // Brand blue (primary)
       "rgba(107, 107, 107, 0.1)", // Neutral, softer
-      "rgba(91, 79, 232, 0.1)", // Indigo, soft
+      "rgba(7, 47, 95, 0.1)", // Brand blue, soft
     ];
 
     const newParticles = Array.from({ length: particleCount }, (_, i) => ({

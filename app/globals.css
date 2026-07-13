@@ -7,15 +7,15 @@
   --muted-foreground: #6B6B6B;
   --border: #E6E5E0;
   --input: #E6E5E0;
-  --primary: #5B4FE8;
+  --primary: #072F5F;
   --primary-foreground: #FFFFFF;
-  --accent: #EEECFC;
-  --accent-foreground: #4038B0;
+  --accent: #E6ECF2;
+  --accent-foreground: #051F40;
   --secondary: #F0EFEA;
   --secondary-foreground: #1A1A1A;
   --destructive: #D33A3A;
   --destructive-foreground: #FFFFFF;
-  --ring: #5B4FE8;
+  --ring: #072F5F;
   --radius: 0.5rem;
 }
 
