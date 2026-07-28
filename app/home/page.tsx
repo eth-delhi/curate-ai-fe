@@ -40,7 +40,7 @@ export default function HomeRevampPage() {
   }
 
   return (
-    <div className="home-page min-h-screen bg-background text-foreground">
+    <div className="home-page min-h-screen bg-muted text-foreground">
       <style jsx global>{`
         /* Scoped to this page subtree so we don’t change app-wide metrics after client nav. */
         .home-page {
@@ -78,15 +78,15 @@ export default function HomeRevampPage() {
         }
       `}</style>
 
-      <HomeNavbar />
+      <HomeNavbar maxWidth={1128} />
 
-      <div className="pt-[60px]">
-        <div className="max-w-[1336px] mx-auto px-6 py-6 flex gap-12">
-          <aside className="hidden lg:block w-[220px] shrink-0">
+      <div className="pt-[76px]">
+        <div className="max-w-[1128px] mx-auto px-6 py-6 flex gap-6">
+          <aside className="hidden lg:block w-[225px] shrink-0">
             <LeftSidebar />
           </aside>
 
-          <main className="flex-1 max-w-[680px]">
+          <main className="flex-1 max-w-[555px] mx-auto lg:mx-0">
             <FeedSection
               posts={feedPosts}
               activeTab={activeTab}
@@ -100,7 +100,7 @@ export default function HomeRevampPage() {
             />
           </main>
 
-          <aside className="hidden lg:block w-[320px] shrink-0">
+          <aside className="hidden lg:block w-[300px] shrink-0">
             <RightSidebar onTopicClick={handleTagClick} />
           </aside>
         </div>

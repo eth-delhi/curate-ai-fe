@@ -158,6 +158,7 @@ export interface SinglePostResponseDto {
   userRating?: number;
   internal_id?: number;
   transactionHash?: string;
+  status?: string;
   author?: AuthorDto;
   aiRating?: AIPostRatingDto;
   comments?: CommentDto[];

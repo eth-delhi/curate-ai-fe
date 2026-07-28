@@ -8,7 +8,7 @@ import {
   PublishPostResponseDto,
 } from "@/utils/types";
 import { usePublicClient } from "wagmi";
-import { contract } from "@/constants/contract";
+import { useContractAddresses } from "@/context/contractAddresses.provider";
 
 export const createPost = async (
   data: CreatePostRequestDto
@@ -52,6 +52,7 @@ export const useUpdatePost = () => {
 // Hook to get post ID from transaction hash
 export const useGetPostIdFromTransaction = () => {
   const publicClient = usePublicClient();
+  const { contracts } = useContractAddresses();
 
   const getPostIdFromTransaction = async (
     txHash: string
@@ -59,6 +60,10 @@ export const useGetPostIdFromTransaction = () => {
     try {
       if (!publicClient) {
         console.error("Public client not available");
+        return null;
+      }
+      if (!contracts) {
+        console.error("Contract addresses not loaded yet");
         return null;
       }
 
@@ -70,7 +75,7 @@ export const useGetPostIdFromTransaction = () => {
       // Find the PostCreated event in the logs
       const postCreatedEvent = receipt.logs.find((log: any) => {
         // Check if this log is from our contract and contains PostCreated event
-        return log.address.toLowerCase() === contract.post.toLowerCase();
+        return log.address.toLowerCase() === contracts.post.toLowerCase();
       });
 
       if (postCreatedEvent && postCreatedEvent.topics[1]) {

@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { Mail, Loader2 } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { motion, useMotionValue, useSpring } from "framer-motion";
+import { Mail, Loader2, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Logo } from "@/components/ui/Logo";
 import Navbar from "@/components/ui/Navbar";
 import { TypingMessage } from "@/components/auth/TypingMessage";
 import { useMagic } from "@/hooks/MagicProvider";
@@ -13,6 +14,34 @@ import showToast from "@/utils/showToast";
 import { RPCError, RPCErrorCode } from "magic-sdk";
 import { useLogin } from "@/hooks/api/auth";
 import { useRouter } from "next/navigation";
+
+/** Follows the cursor and nudges toward it — used on the primary CTA. */
+function Magnetic({ children }: { children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  const springX = useSpring(x, { stiffness: 200, damping: 14, mass: 0.3 });
+  const springY = useSpring(y, { stiffness: 200, damping: 14, mass: 0.3 });
+
+  return (
+    <motion.div
+      ref={ref}
+      onMouseMove={(e) => {
+        const rect = ref.current?.getBoundingClientRect();
+        if (!rect) return;
+        x.set((e.clientX - rect.left - rect.width / 2) * 0.2);
+        y.set((e.clientY - rect.top - rect.height / 2) * 0.3);
+      }}
+      onMouseLeave={() => {
+        x.set(0);
+        y.set(0);
+      }}
+      style={{ x: springX, y: springY }}
+    >
+      {children}
+    </motion.div>
+  );
+}
 
 export default function AuthRevampPage() {
   const { token, setToken } = useMagicState();
@@ -67,17 +96,29 @@ export default function AuthRevampPage() {
       return;
     }
 
+    if (!magic) {
+      showToast({ message: "Still connecting — try again in a moment.", type: "error" });
+      return;
+    }
+
     setEmailError(false);
     setLoginInProgress(true);
 
     try {
       const didToken = await magic.auth.loginWithMagicLink({ email });
+      if (!didToken) {
+        showToast({ message: "Magic Link failed. Please try again.", type: "error" });
+        return;
+      }
       console.log("Magic Link sent successfully");
+
+      const metadata = await magic.user.getInfo();
 
       // Create user in backend
       const response = await mutateAsync({
         token: didToken,
         email: email,
+        walletAddress: metadata?.publicAddress as string,
       });
 
       if (response.success) {
@@ -112,10 +153,15 @@ export default function AuthRevampPage() {
   };
 
   const handleGoogleLogin = async () => {
+    if (!magic) {
+      showToast({ message: "Still connecting — try again in a moment.", type: "error" });
+      return;
+    }
+
     setGoogleLoginInProgress(true);
 
     try {
-      const didToken = await magic.oauth.loginWithRedirect({
+      await magic.oauth.loginWithRedirect({
         provider: "google",
         redirectURI: `${window.location.origin}/auth/callback`,
       });
@@ -128,77 +174,24 @@ export default function AuthRevampPage() {
 
   return (
     <div className="min-h-screen bg-background overflow-hidden relative">
-      <style jsx global>{`
-        /* Bubble animations */
-        @keyframes bubbleFloat1 {
-          0%,
-          100% {
-            transform: translateY(0px) translateX(0px);
-          }
-          25% {
-            transform: translateY(-10px) translateX(5px);
-          }
-          50% {
-            transform: translateY(-5px) translateX(-3px);
-          }
-          75% {
-            transform: translateY(-15px) translateX(8px);
-          }
-        }
-
-        @keyframes bubbleFloat2 {
-          0%,
-          100% {
-            transform: translateY(0px) translateX(0px);
-          }
-          33% {
-            transform: translateY(-8px) translateX(-4px);
-          }
-          66% {
-            transform: translateY(-12px) translateX(6px);
-          }
-        }
-
-        @keyframes bubbleFloat3 {
-          0%,
-          100% {
-            transform: translateY(0px) translateX(0px);
-          }
-          50% {
-            transform: translateY(-6px) translateX(3px);
-          }
-        }
-
-        .bubble-animate-1 {
-          animation: bubbleFloat1 8s ease-in-out infinite;
-        }
-
-        .bubble-animate-2 {
-          animation: bubbleFloat2 6s ease-in-out infinite;
-          animation-delay: -2s;
-        }
-
-        .bubble-animate-3 {
-          animation: bubbleFloat3 10s ease-in-out infinite;
-          animation-delay: -4s;
-        }
-      `}</style>
-
       {/* Navbar */}
       <Navbar />
 
       {/* Main Content */}
       <div className="pt-20 min-h-screen flex items-center justify-center">
         <div className="w-full px-4 sm:px-8 lg:px-16">
-          <div className="w-full bg-background border border-border rounded-lg shadow-sm overflow-hidden flex min-h-[700px]">
+          <div className="w-full bg-background border border-border rounded-3xl shadow-sm overflow-hidden flex min-h-[700px]">
             {/* Left Side - Login Form */}
             <div className="w-full lg:w-5/12 p-8 md:p-16 flex flex-col justify-center">
               <div className="mb-10">
-                <h1 className="text-3xl font-serif font-semibold mb-2 text-foreground">
-                  Welcome back!
+                <span className="font-mono text-xs tracking-widest text-primary uppercase">
+                  Curate AI
+                </span>
+                <h1 className="text-3xl font-serif font-black mt-3 mb-2 text-foreground">
+                  Welcome back.
                 </h1>
                 <p className="text-sm text-muted-foreground">
-                  Sign in to continue to your account
+                  Sign in to keep curating, fairly.
                 </p>
               </div>
 
@@ -283,26 +276,29 @@ export default function AuthRevampPage() {
                   )}
                 </div>
 
-                <Button
-                  onClick={handleEmailLogin}
-                  disabled={isLoginInProgress}
-                  className="w-full h-11 bg-primary hover:bg-primary/90 text-primary-foreground font-medium mt-6 transition-colors duration-150 cursor-pointer"
-                >
-                  {isLoginInProgress ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                  ) : (
-                    <>
-                      <Mail className="w-5 h-5 mr-2" />
-                      Send Magic Link
-                    </>
-                  )}
-                </Button>
+                <Magnetic>
+                  <Button
+                    onClick={handleEmailLogin}
+                    disabled={isLoginInProgress}
+                    className="w-full h-11 bg-primary hover:bg-primary/90 text-primary-foreground font-medium mt-6 transition-colors duration-150 cursor-pointer rounded-full group"
+                  >
+                    {isLoginInProgress ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <>
+                        <Mail className="w-5 h-5 mr-2" />
+                        Send Magic Link
+                        <ArrowRight className="ml-1 w-4 h-4 transition-transform group-hover:translate-x-1" />
+                      </>
+                    )}
+                  </Button>
+                </Magnetic>
               </div>
 
               {/* Footer */}
               <div className="mt-8 text-center">
                 <p className="text-sm text-muted-foreground">
-                  New to CurateAi?{" "}
+                  New to Curate AI?{" "}
                   <a
                     href="#"
                     className="text-primary font-medium hover:underline transition-colors duration-150"
@@ -320,132 +316,87 @@ export default function AuthRevampPage() {
               </div>
             </div>
 
-            <div className="hidden lg:block lg:w-7/12 relative overflow-hidden bg-background">
-              {/* Halftone pattern background */}
-              <div className="absolute inset-0">
-                <svg
-                  className="w-full h-full"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <defs>
-                    {/* Create varying dot sizes for halftone effect */}
-                    <radialGradient id="dotGrad1" cx="50%" cy="50%">
-                      <stop offset="0%" stopColor="var(--primary)" stopOpacity="1" />
-                      <stop offset="100%" stopColor="var(--primary)" stopOpacity="0" />
-                    </radialGradient>
-                    <radialGradient id="dotGrad2" cx="50%" cy="50%">
-                      <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.8" />
-                      <stop offset="100%" stopColor="var(--primary)" stopOpacity="0" />
-                    </radialGradient>
-                    <radialGradient id="dotGrad3" cx="50%" cy="50%">
-                      <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.5" />
-                      <stop offset="100%" stopColor="var(--primary)" stopOpacity="0" />
-                    </radialGradient>
-                  </defs>
+            <div className="hidden lg:block lg:w-7/12 relative overflow-hidden bg-muted">
+              {/* Fine dot grid */}
+              <div
+                className="absolute inset-0 opacity-40"
+                style={{
+                  backgroundImage:
+                    "radial-gradient(rgba(7,47,95,0.18) 1px, transparent 1px)",
+                  backgroundSize: "22px 22px",
+                }}
+              />
 
-                  {/* Top left cluster - sparse */}
-                  <g className="bubble-animate-1">
-                    {Array.from({ length: 6 }).map((_, i) =>
-                      Array.from({ length: 6 }).map((_, j) => {
-                        const size = Math.random() * 6 + 3;
-                        const opacity = Math.random() * 0.3 + 0.2;
-                        return (
-                          <circle
-                            key={`tl-${i}-${j}`}
-                            cx={i * 60 + Math.random() * 20}
-                            cy={j * 60 + Math.random() * 20}
-                            r={size}
-                            fill="var(--primary)"
-                            opacity={opacity}
-                          />
-                        );
-                      })
-                    )}
-                  </g>
+              {/* Ambient drifting glow */}
+              <motion.div
+                className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-primary/10 blur-3xl"
+                animate={{ x: [0, -30, 0], y: [0, 20, 0] }}
+                transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+              />
+              <motion.div
+                className="absolute bottom-0 left-0 w-72 h-72 rounded-full bg-primary/10 blur-3xl"
+                animate={{ x: [0, 20, 0], y: [0, -20, 0] }}
+                transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+              />
 
-                  {/* Center - minimal dots */}
-                  <g className="bubble-animate-2">
-                    {Array.from({ length: 4 }).map((_, i) =>
-                      Array.from({ length: 6 }).map((_, j) => {
-                        const size = Math.random() * 8 + 4;
-                        const opacity = Math.random() * 0.2 + 0.1;
-                        return (
-                          <circle
-                            key={`c-${i}-${j}`}
-                            cx={200 + i * 80 + Math.random() * 30}
-                            cy={j * 80 + Math.random() * 30}
-                            r={size}
-                            fill="var(--primary)"
-                            opacity={opacity}
+              {/* Quadratic voting mock — reinforces what makes the platform different */}
+              <div className="absolute top-16 left-12 right-12">
+                <div className="bg-background/90 backdrop-blur-sm border border-border rounded-2xl p-6 shadow-sm">
+                  <div className="flex items-center justify-between mb-5">
+                    <span className="font-mono text-[11px] tracking-widest text-muted-foreground uppercase">
+                      Live vote weight
+                    </span>
+                    <span className="flex items-center gap-1.5 font-mono text-[11px] text-primary">
+                      <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse-dot" />
+                      Fair by design
+                    </span>
+                  </div>
+                  <div className="space-y-3">
+                    {[
+                      { label: "1 vote", cost: "1 CAT", width: "8%" },
+                      { label: "5 votes", cost: "25 CAT", width: "42%" },
+                      { label: "10 votes", cost: "100 CAT", width: "100%" },
+                    ].map((row) => (
+                      <div key={row.label} className="flex items-center gap-3 text-xs">
+                        <span className="w-16 text-muted-foreground shrink-0">
+                          {row.label}
+                        </span>
+                        <div className="flex-1 h-1.5 bg-border rounded-full overflow-hidden">
+                          <motion.div
+                            className="h-full bg-primary rounded-full"
+                            initial={{ width: 0 }}
+                            animate={{ width: row.width }}
+                            transition={{ duration: 1.2, ease: "easeOut" }}
                           />
-                        );
-                      })
-                    )}
-                  </g>
-
-                  {/* Right side - very minimal */}
-                  <g className="bubble-animate-3">
-                    {Array.from({ length: 3 }).map((_, i) =>
-                      Array.from({ length: 4 }).map((_, j) => {
-                        const size = Math.random() * 12 + 6;
-                        const opacity = Math.random() * 0.15 + 0.05;
-                        return (
-                          <circle
-                            key={`r-${i}-${j}`}
-                            cx={450 + i * 120 + Math.random() * 40}
-                            cy={j * 120 + Math.random() * 40}
-                            r={size}
-                            fill="var(--primary)"
-                            opacity={opacity}
-                          />
-                        );
-                      })
-                    )}
-                  </g>
-
-                  {/* Bottom accent - minimal */}
-                  <g className="bubble-animate-1">
-                    {Array.from({ length: 6 }).map((_, i) =>
-                      Array.from({ length: 3 }).map((_, j) => {
-                        const size = Math.random() * 6 + 3;
-                        const opacity = Math.random() * 0.2 + 0.1;
-                        return (
-                          <circle
-                            key={`b-${i}-${j}`}
-                            cx={i * 100 + Math.random() * 30}
-                            cy={500 + j * 80 + Math.random() * 30}
-                            r={size}
-                            fill="var(--primary)"
-                            opacity={opacity}
-                          />
-                        );
-                      })
-                    )}
-                  </g>
-                </svg>
+                        </div>
+                        <span className="w-16 text-right font-mono text-foreground shrink-0">
+                          {row.cost}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
 
-              {/* Subtle gradient overlay for depth */}
-              <div className="absolute inset-0 bg-gradient-to-br from-transparent via-background/30 to-background/60 pointer-events-none" />
-
-              {/* Minimal content overlay */}
+              {/* Manifesto quote — grounded in the product's actual positioning */}
               <div className="absolute bottom-12 left-12 right-12">
-                <div className="bg-background/80 backdrop-blur-sm border border-border rounded-2xl p-8 shadow-sm">
+                <div className="bg-background/90 backdrop-blur-sm border border-border rounded-2xl p-8 shadow-sm">
                   <blockquote className="space-y-4">
-                    <p className="text-lg text-foreground leading-relaxed font-light">
-                      "CurateAi has transformed how we discover and organize
-                      content. The AI recommendations are incredibly accurate."
+                    <p className="text-lg text-foreground leading-relaxed font-serif">
+                      &ldquo;First platform where my following didn&apos;t
+                      matter — the work did. Quadratic voting means one whale
+                      account can&apos;t bury a hundred honest readers.&rdquo;
                     </p>
                     <footer className="flex items-center gap-3 pt-2">
-                      <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold text-sm">
-                        SK
+                      <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground">
+                        <Logo className="h-5 w-5" />
                       </div>
                       <div>
                         <div className="text-sm font-medium text-foreground">
-                          Sarah Kim
+                          devansh.cat
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          Content Director, TechFlow
+                          Early creator, Curate AI
                         </div>
                       </div>
                     </footer>

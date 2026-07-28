@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { useEffect, useRef, useState } from "react";
 import { getIpfsUrl } from "@/utils/ipfs";
+import { AnimatePresence, motion } from "framer-motion";
 
 function formatEngagement(n: number): string {
   if (n >= 1000) {
@@ -31,9 +32,6 @@ function excerptPlainText(htmlOrText: string | undefined): string {
     .replace(/\s+/g, " ")
     .trim();
 }
-
-const tabActiveBar =
-  "pointer-events-none absolute bottom-0 left-0 right-0 h-[3px] bg-primary";
 
 const FeedPostCard = ({ post }: { post: any }) => {
   const router = useRouter();
@@ -66,122 +64,149 @@ const FeedPostCard = ({ post }: { post: any }) => {
       : null);
 
   return (
-    <Link href={`/post/${post.uuid || post.id}`}>
-      <article className="border-b border-border py-8">
-        <div className="mb-3 flex items-center gap-2.5">
-          {profilePicUrl && !avatarLoadError ? (
-            <img
-              src={profilePicUrl}
-              alt={authorName}
-              className="h-7 w-7 shrink-0 rounded-full object-cover"
-              onError={() => setAvatarLoadError(true)}
-            />
-          ) : (
-            <span
-              className={`h-7 w-7 shrink-0 rounded-full ${gradientClass}`}
-            />
-          )}
-          <span className="text-[15px] font-medium text-foreground">
-            {authorUuid ? (
-              <button
-                type="button"
-                onClick={handleAuthorClick}
-                className="font-medium text-foreground hover:underline"
-              >
-                {authorName}
-              </button>
+    <motion.article
+      initial={{ opacity: 0, y: 16 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-40px" }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+      className="group mb-3 overflow-hidden rounded-xl border border-border bg-background shadow-sm transition-shadow duration-200 hover:shadow-md"
+    >
+      <Link href={`/post/${post.uuid || post.id}`}>
+        <div className="p-4 pb-3">
+          <div className="mb-3 flex items-start gap-2.5">
+            {profilePicUrl && !avatarLoadError ? (
+              <img
+                src={profilePicUrl}
+                alt={authorName}
+                className="h-12 w-12 shrink-0 rounded-full object-cover"
+                onError={() => setAvatarLoadError(true)}
+              />
             ) : (
-              <span>{authorName}</span>
+              <span
+                className={`h-12 w-12 shrink-0 rounded-full ${gradientClass}`}
+              />
             )}
-          </span>
-          <span className="text-[15px] text-muted-foreground">
-            · {post.timeAgo || "Recently"}
-          </span>
-        </div>
-
-        <div className="flex gap-8">
-          <div className="min-w-0 flex-1">
-            <h3 className="mb-2 font-serif text-[26px] font-bold leading-[1.25] tracking-tight text-foreground">
-              {post.title}
-            </h3>
-            <p className="mb-3 line-clamp-3 text-[17px] leading-[1.55] text-muted-foreground">
-              {excerptPlainText(post.content)}
-            </p>
-            {typeof post.aiRating === "number" && (
-              <div
-                className="mb-3 h-1 w-16 rounded-full bg-muted overflow-hidden"
-                title={`AI rating: ${post.aiRating}/100`}
-              >
-                <div
-                  className="h-full rounded-full bg-primary/60"
-                  style={{ width: `${Math.min(100, Math.max(0, post.aiRating))}%` }}
-                />
+            <div className="min-w-0 flex-1">
+              <div className="text-[15px] font-semibold text-foreground">
+                {authorUuid ? (
+                  <button
+                    type="button"
+                    onClick={handleAuthorClick}
+                    className="font-semibold text-foreground hover:underline"
+                  >
+                    {authorName}
+                  </button>
+                ) : (
+                  <span>{authorName}</span>
+                )}
               </div>
-            )}
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex min-w-0 items-center gap-3">
-                <span className="whitespace-nowrap rounded-2xl bg-muted px-[11px] py-1.5 text-[14px] text-foreground">
-                  {(tags[0] || "#General").replace("#", "")}
-                </span>
-                <span className="whitespace-nowrap text-[14px] text-muted-foreground">
-                  {post.readTime || "3 min read"}
-                </span>
-                <div className="flex items-center gap-4 text-[14px] text-muted-foreground">
-                  <span className="flex items-center gap-1.5">
-                    <PiHandsClappingThin className="h-5 w-5 shrink-0" />
-                    {formatEngagement(clapCount)}
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <MessageCircle className="h-5 w-5 shrink-0" />
-                    {commentCount}
-                  </span>
-                </div>
-              </div>
-              <div className="flex shrink-0 items-center gap-5 text-muted-foreground">
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                  }}
-                  aria-label="Bookmark"
-                  className="hover:text-foreground transition-colors duration-150"
-                >
-                  <Bookmark className="h-6 w-6" />
-                </button>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                  }}
-                  aria-label="More"
-                  className="text-lg hover:text-foreground transition-colors duration-150"
-                >
-                  <MoreHorizontal className="h-6 w-6" />
-                </button>
+              <div className="text-[13px] text-muted-foreground">
+                {post.readTime || "3 min read"} · {post.timeAgo || "Recently"}
               </div>
             </div>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+              aria-label="More"
+              className="shrink-0 rounded-full p-1.5 text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground"
+            >
+              <MoreHorizontal className="h-5 w-5" />
+            </button>
           </div>
-          {post.imageUrl ? (
-          <div className="h-[118px] w-44 shrink-0 overflow-hidden rounded-md">
+
+          <h3 className="mb-1.5 text-[16px] font-semibold leading-snug text-foreground">
+            {post.title}
+          </h3>
+          <p className="mb-2 line-clamp-3 text-[14px] leading-relaxed text-muted-foreground">
+            {excerptPlainText(post.content)}
+          </p>
+
+          {typeof post.aiRating === "number" && (
+            <div
+              className="mb-1 h-1 w-16 rounded-full bg-muted overflow-hidden"
+              title={`AI rating: ${post.aiRating}/100`}
+            >
+              <motion.div
+                className="h-full rounded-full bg-primary/60"
+                initial={{ width: 0 }}
+                whileInView={{
+                  width: `${Math.min(100, Math.max(0, post.aiRating))}%`,
+                }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.8, ease: "easeOut", delay: 0.15 }}
+              />
+            </div>
+          )}
+
+          {tags.length > 0 && (
+            <span className="inline-block text-[13px] text-primary">
+              {tags[0]}
+            </span>
+          )}
+        </div>
+
+        {post.imageUrl && (
+          <div className="w-full overflow-hidden bg-muted">
             <img
               src={post.imageUrl}
               alt=""
-              className="h-full w-full object-cover"
+              className="max-h-[420px] w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
             />
           </div>
-          ) : null}
-        </div>
-      </article>
-    </Link>
+        )}
+      </Link>
+
+      <div className="flex items-center justify-between px-4 pt-2.5 text-[13px] text-muted-foreground">
+        <span className="flex items-center gap-1.5">
+          <PiHandsClappingThin className="h-4 w-4 shrink-0" />
+          {formatEngagement(clapCount)}
+        </span>
+        <span>{commentCount} comments</span>
+      </div>
+
+      <div className="mt-1 flex items-center border-t border-border px-1">
+        <motion.button
+          type="button"
+          whileTap={{ scale: 0.92 }}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          className="flex flex-1 items-center justify-center gap-2 py-2.5 text-[14px] font-medium text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground"
+        >
+          <PiHandsClappingThin className="h-5 w-5" />
+          Applaud
+        </motion.button>
+        <Link
+          href={`/post/${post.uuid || post.id}`}
+          className="flex flex-1 items-center justify-center gap-2 py-2.5 text-[14px] font-medium text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground"
+        >
+          <MessageCircle className="h-5 w-5" />
+          Comment
+        </Link>
+        <motion.button
+          type="button"
+          whileTap={{ scale: 0.92 }}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          aria-label="Bookmark"
+          className="flex flex-1 items-center justify-center gap-2 py-2.5 text-[14px] font-medium text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground"
+        >
+          <Bookmark className="h-5 w-5" />
+          Save
+        </motion.button>
+      </div>
+    </motion.article>
   );
 };
 
 export const FeedSection = ({
   posts,
-  activeTab,
-  onTabChange,
   isLoading,
   selectedTag,
   onClearTagFilter,
@@ -227,15 +252,18 @@ export const FeedSection = ({
         {Array.from({ length: 5 }).map((_, index) => (
           <div
             key={index}
-            className="animate-pulse border-b border-border py-8"
+            className="mb-3 rounded-xl border border-border bg-background p-4 shadow-sm"
           >
-            <div className="mb-3 flex gap-2">
-              <div className="h-5 w-5 rounded bg-muted" />
-              <div className="h-4 w-48 rounded bg-muted" />
+            <div className="mb-3 flex gap-2.5">
+              <div className="h-12 w-12 shimmer rounded-full bg-muted" />
+              <div className="flex-1 space-y-2 pt-1">
+                <div className="h-3.5 w-32 shimmer rounded bg-muted" />
+                <div className="h-3 w-24 shimmer rounded bg-muted" />
+              </div>
             </div>
-            <div className="mb-3 h-7 w-3/4 rounded bg-muted" />
-            <div className="mb-2 h-4 w-full rounded bg-muted" />
-            <div className="h-4 w-2/3 rounded bg-muted" />
+            <div className="mb-2 h-4 w-3/4 shimmer rounded bg-muted" />
+            <div className="mb-1 h-3.5 w-full shimmer rounded bg-muted" />
+            <div className="h-3.5 w-2/3 shimmer rounded bg-muted" />
           </div>
         ))}
       </div>
@@ -244,69 +272,37 @@ export const FeedSection = ({
 
   return (
     <div>
-      <div className="mb-10 flex gap-10 border-b border-border">
-        <button
-          type="button"
-          onClick={() => onTabChange("new")}
-          className={`relative flex items-center gap-2 py-5 text-[16px] font-medium leading-snug transition-colors duration-150 ${
-            activeTab === "new"
-              ? "text-primary"
-              : "border-transparent text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          <span className="text-[20px] font-normal leading-none">+</span>
-          For you
-          {activeTab === "new" && <span className={tabActiveBar} />}
-        </button>
-        <button
-          type="button"
-          onClick={() => onTabChange("following")}
-          className={`relative py-5 text-[16px] font-medium leading-snug transition-colors duration-150 ${
-            activeTab === "following"
-              ? "text-primary"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          Following
-          {activeTab === "following" && <span className={tabActiveBar} />}
-        </button>
-        <button
-          type="button"
-          onClick={() => onTabChange("hot")}
-          className={`relative py-5 text-[16px] font-medium leading-snug transition-colors duration-150 ${
-            activeTab === "hot"
-              ? "text-primary"
-              : "border-transparent text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          Hot
-          {activeTab === "hot" && <span className={tabActiveBar} />}
-        </button>
-      </div>
-
-      {selectedTag && (
-        <div className="mb-4 border-b border-border pb-3">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Filtered by:</span>
-            <Badge
-              variant="secondary"
-              className="bg-muted px-3 py-1 text-sm font-medium text-foreground"
-            >
-              #{selectedTag}
-            </Badge>
-            {onClearTagFilter && (
-              <button
-                type="button"
-                onClick={onClearTagFilter}
-                className="ml-2 rounded p-1 transition-colors duration-150 hover:bg-accent"
-                aria-label="Clear tag filter"
+      <AnimatePresence>
+        {selectedTag && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2 }}
+            className="mb-3 overflow-hidden rounded-xl border border-border bg-background p-3 shadow-sm"
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Filtered by:</span>
+              <Badge
+                variant="secondary"
+                className="bg-muted px-3 py-1 text-sm font-medium text-foreground"
               >
-                <X className="h-4 w-4 text-muted-foreground" />
-              </button>
-            )}
-          </div>
-        </div>
-      )}
+                #{selectedTag}
+              </Badge>
+              {onClearTagFilter && (
+                <button
+                  type="button"
+                  onClick={onClearTagFilter}
+                  className="ml-2 rounded p-1 transition-colors duration-150 hover:bg-accent"
+                  aria-label="Clear tag filter"
+                >
+                  <X className="h-4 w-4 text-muted-foreground" />
+                </button>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div>
         {posts.length > 0 ? (
@@ -328,18 +324,27 @@ export const FeedSection = ({
               </div>
             )}
             {!hasNextPage && posts.length > 0 && (
-              <div className="px-6 py-8 text-center">
+              <motion.div
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                viewport={{ once: true }}
+                className="px-6 py-8 text-center"
+              >
                 <p className="text-sm text-muted-foreground">You&apos;ve reached the end</p>
-              </div>
+              </motion.div>
             )}
           </>
         ) : (
-          <div className="px-6 py-12 text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="rounded-xl border border-border bg-background px-6 py-12 text-center shadow-sm"
+          >
             <p className="text-lg text-muted-foreground">No posts available</p>
             <p className="mt-2 text-sm text-muted-foreground">
               Be the first to create a post!
             </p>
-          </div>
+          </motion.div>
         )}
       </div>
     </div>

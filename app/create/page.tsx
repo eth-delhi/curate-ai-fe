@@ -3,20 +3,27 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import axios from "axios";
-import { useAccount, useBalance } from "wagmi";
+import { useAccount, useBalance, useBlock } from "wagmi";
 import { formatUnits } from "viem";
 import { ConfirmActionModal } from "@/components/modal/confirmActionModal";
 import {
+  useReadCurateAiPostsLastPostTime,
   useReadCurateAiPostsPostCounter,
   useWriteCurateAiPostsCreatePost,
+  useReadCurateAiRoleManagerCuratorRole,
+  useReadCurateAiRoleManagerHasRole,
 } from "@/hooks/wagmi/contracts";
 import {
   usePublishPost,
   useUpdatePost,
   useGetPostIdFromTransaction,
 } from "@/hooks/api/create";
-import { contract } from "@/constants/contract";
-import { TOKEN_DISPLAY_NAMES } from "@/constants/chain";
+import { useContractAddresses } from "@/context/contractAddresses.provider";
+import {
+  TOKEN_DISPLAY_NAMES,
+  RPC_POLL_INTERVAL_MS,
+  RPC_BLOCK_POLL_INTERVAL_MS,
+} from "@/constants/chain";
 import { useSaveDraft, useGetDraft } from "@/hooks/api/drafts";
 import MarkdownIt from "markdown-it";
 import AdvancedEditor from "@/components/advanced-editor";
@@ -89,7 +96,14 @@ export default function CreateRevampPage() {
   const searchParams = useSearchParams();
   const draftUuidFromUrl = searchParams.get("draft");
   const { address: account } = useAccount();
-  const { data: nativeBalance } = useBalance({ address: account });
+  const { contracts } = useContractAddresses();
+  const { data: nativeBalance } = useBalance({
+    address: account,
+    query: {
+      refetchInterval: RPC_POLL_INTERVAL_MS,
+      staleTime: RPC_POLL_INTERVAL_MS,
+    },
+  });
   const tagInputRef = useRef<HTMLInputElement>(null);
   const { mutateAsync: saveDraftMutation } = useSaveDraft();
 
@@ -107,7 +121,83 @@ export default function CreateRevampPage() {
   const { mutateAsync: apiUpdatePost } = useUpdatePost();
   const { getPostIdFromTransaction } = useGetPostIdFromTransaction();
 
+  // The post contract requires CURATOR_ROLE to post at all — check it
+  // up front so we don't send unapproved users into a doomed transaction.
+  const { data: curatorRole } = useReadCurateAiRoleManagerCuratorRole({
+    address: contracts?.role as `0x${string}`,
+    query: { enabled: !!contracts },
+  });
+  const { data: isCurator, isLoading: isCuratorRoleLoading } =
+    useReadCurateAiRoleManagerHasRole({
+      address: contracts?.role as `0x${string}`,
+      args:
+        account && curatorRole ? [curatorRole, account] : undefined,
+      query: {
+        enabled: !!account && !!contracts && !!curatorRole,
+        refetchInterval: RPC_POLL_INTERVAL_MS,
+        staleTime: RPC_POLL_INTERVAL_MS,
+      },
+    });
+  // While the role check is still loading, don't block — avoids a flash of
+  // "not approved" for a user who actually is approved.
+  const isNotApprovedToPost =
+    !!account && !isCuratorRoleLoading && isCurator === false;
+
+  // The post contract only allows one post per rolling 24h window:
+  // block.timestamp >= lastPostTime[author] + 1 days.
+  const { data: lastPostTime } = useReadCurateAiPostsLastPostTime({
+    address: contracts?.post as `0x${string}`,
+    args: account ? [account] : undefined,
+    query: {
+      enabled: !!account && !!contracts,
+      refetchInterval: RPC_POLL_INTERVAL_MS,
+      staleTime: RPC_POLL_INTERVAL_MS,
+    },
+  });
+  // Chain time can drift from wall-clock time (e.g. a local node after
+  // evm_increaseTime, or a stale latest block), so take the later of the two.
+  const { data: latestBlock } = useBlock({
+    query: {
+      refetchInterval: RPC_BLOCK_POLL_INTERVAL_MS,
+      staleTime: RPC_BLOCK_POLL_INTERVAL_MS,
+    },
+  });
+  // Ticks every 30s so the countdown on the publish button stays current.
+  const [clockTick, setClockTick] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setClockTick(Date.now()), 30_000);
+    return () => clearInterval(id);
+  }, []);
+  const nowSeconds = Math.max(
+    Math.floor(clockTick / 1000),
+    Number(latestBlock?.timestamp ?? 0)
+  );
+  const nextPostAllowedAt = lastPostTime ? Number(lastPostTime) + 86_400 : 0;
+  const hasPostedToday = !!lastPostTime && nowSeconds < nextPostAllowedAt;
+  const remainingMinutes = hasPostedToday
+    ? Math.ceil((nextPostAllowedAt - nowSeconds) / 60)
+    : 0;
+  const remainingLabel = `${Math.floor(remainingMinutes / 60)}:${String(
+    remainingMinutes % 60
+  ).padStart(2, "0")}`;
+
   const handlePublish = () => {
+    if (isNotApprovedToPost) {
+      showToast({
+        message:
+          "Your account is not yet approved to post. Please contact support.",
+        type: "error",
+      });
+      return;
+    }
+    if (hasPostedToday) {
+      showToast({
+        message:
+          "You've already posted today. You can publish again 24 hours after your last post.",
+        type: "error",
+      });
+      return;
+    }
     if (!title.trim()) {
       showToast({ message: "Add a title before publishing", type: "error" });
       return;
@@ -150,7 +240,8 @@ export default function CreateRevampPage() {
   };
 
   const { data: postCount } = useReadCurateAiPostsPostCounter({
-    address: contract.post as `0x${string}`,
+    address: contracts?.post as `0x${string}`,
+    query: { enabled: !!contracts },
   });
 
   const handleContractWrite = async () => {
@@ -159,6 +250,9 @@ export default function CreateRevampPage() {
     try {
       if (!account) {
         throw new Error("User wallet address not available");
+      }
+      if (!contracts) {
+        throw new Error("Contract addresses not loaded yet. Please wait.");
       }
 
       // Remove markdown formatting (** for bold and # for headings) before sending to AI
@@ -174,7 +268,9 @@ export default function CreateRevampPage() {
         userWalletAddress: account,
         tags: tags.length > 0 ? tags : undefined,
         coverImageUrl: coverImage || undefined,
-        internal_id: Number(postCount) + 1 || 0,
+        // post.sol: `postId = postCounter++` is a post-increment, so the new
+        // post's on-chain id equals the counter's current value, not +1.
+        internal_id: Number(postCount) || 0,
       });
 
       const ipfsHash = publishResult.ipfsHash;
@@ -192,7 +288,7 @@ export default function CreateRevampPage() {
 
       try {
         const result = await writeContractAsync({
-          address: contract.post as `0x${string}`,
+          address: contracts.post as `0x${string}`,
           args: [ipfsHash, tags.join(",") || "general"],
         });
 
@@ -606,14 +702,37 @@ export default function CreateRevampPage() {
                         </span>
                         <Button
                           onClick={handlePublish}
-                          disabled={!title.trim() || isOverLimit}
+                          disabled={
+                            !title.trim() ||
+                            isOverLimit ||
+                            hasPostedToday ||
+                            isNotApprovedToPost
+                          }
                           size="sm"
                           className="bg-primary hover:bg-primary/90 text-primary-foreground"
                         >
-                          Publish
+                          {isNotApprovedToPost
+                            ? "Not approved to post"
+                            : hasPostedToday
+                              ? `You can publish after ${remainingLabel} hrs`
+                              : "Publish"}
                         </Button>
                       </div>
                     </div>
+                    {isNotApprovedToPost ? (
+                      <p className="pb-3 text-xs text-muted-foreground">
+                        Your account is not yet approved to post. Please
+                        contact support.
+                      </p>
+                    ) : (
+                      hasPostedToday && (
+                        <p className="pb-3 text-xs text-muted-foreground">
+                          You&apos;ve already posted today. Keep writing —
+                          your work is auto-saved as a draft, so you can
+                          publish it once the timer runs out.
+                        </p>
+                      )
+                    )}
                   </div>
                 </div>
 
@@ -627,7 +746,12 @@ export default function CreateRevampPage() {
                         markdownContent={markdownContent}
                         onPublish={handlePublish}
                         isPublishing={isPublishing}
-                        canPublish={!!title && !isOverLimit}
+                        canPublish={
+                          !!title &&
+                          !isOverLimit &&
+                          !hasPostedToday &&
+                          !isNotApprovedToPost
+                        }
                         maxContentLength={MAX_CONTENT_LENGTH}
                         currentContentLength={markdownContent.length}
                         tagsLength={tags.join(",").length}

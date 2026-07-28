@@ -10,9 +10,9 @@ export const CHAIN_NAME = process.env.NEXT_PUBLIC_CHAIN_NAME || "sonic-testnet";
 
 // Token contract addresses
 export const TOKEN_CONTRACTS = {
-  CAT:
-    process.env.NEXT_PUBLIC_CAT_TOKEN_ADDRESS ||
-    "0xAdba82bc3B5170B272E4c17C52572c2C142d42A0",
+  // Contract addresses now come from the backend (GET /settings/contracts,
+  // via useContractAddresses()) rather than a hardcoded fallback here.
+  CAT: process.env.NEXT_PUBLIC_CAT_TOKEN_ADDRESS,
   // Add other token addresses as needed
 };
 
@@ -25,3 +25,15 @@ export const TOKEN_DISPLAY_NAMES = {
   CAT: "CAT",
   SONIC: NATIVE_TOKEN_SYMBOL,
 };
+
+// Default polling cadence for on-chain reads (balances, votes, scores, etc).
+// Kept deliberately conservative — the RPC endpoint is tunneled through
+// ngrok in local dev, and short intervals across many mounted components
+// exhaust ngrok's request limit quickly.
+export const RPC_POLL_INTERVAL_MS =
+  Number(process.env.NEXT_PUBLIC_RPC_POLL_INTERVAL_MS) || 60000;
+
+// Slower cadence for reads only used as a rare correction/edge case (e.g.
+// comparing chain time to wall-clock time), not for anything user-visible.
+export const RPC_BLOCK_POLL_INTERVAL_MS =
+  Number(process.env.NEXT_PUBLIC_RPC_BLOCK_POLL_INTERVAL_MS) || 300000;

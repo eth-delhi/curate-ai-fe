@@ -14,6 +14,14 @@ import { useAuth } from "@/hooks/useAuth";
  * with. This connects the wagmi connector once we're authenticated; the
  * connector's own isAuthorized() check means it resolves immediately from
  * the existing Magic session rather than prompting a new login.
+ *
+ * `attempted` is intentionally never reset on failure. `isConnecting` flips
+ * false -> true -> false around every attempt, which re-runs this effect —
+ * resetting the guard in onError previously meant a single failed connect
+ * (e.g. an unreachable/stale RPC URL) retried instantly and indefinitely,
+ * hammering the RPC endpoint in a tight loop. One attempt per mount; a
+ * failed connect stays failed until something explicit (re-auth, reload)
+ * tries again.
  */
 export function WalletAutoConnect() {
   const { isAuthenticated } = useAuth();
@@ -33,7 +41,6 @@ export function WalletAutoConnect() {
       {
         onError: (error) => {
           console.error("Wallet auto-connect failed:", error);
-          attempted.current = false;
         },
       }
     );

@@ -17,12 +17,14 @@ import { useRouter } from "next/navigation";
 import { useAccount, useBalance } from "wagmi";
 import { formatUnits } from "viem";
 import { useCatTokenBalance } from "@/hooks/wagmi/useCatTokenBalance";
-import { useReadCuratAiTokenDecimals } from "@/hooks/wagmi/contracts";
-import { contract } from "@/constants/contract";
-import { TOKEN_DISPLAY_NAMES } from "@/constants/chain";
+import { TOKEN_DISPLAY_NAMES, RPC_POLL_INTERVAL_MS } from "@/constants/chain";
 
 interface HomeNavbarProps {
   className?: string;
+  // Matches the max-width of the page's main body container so the navbar's
+  // left/right edges line up with the content below it at every breakpoint
+  // (LinkedIn-style). Defaults to the width used by the home/post feed.
+  maxWidth?: number;
 }
 
 // Helper function to get user UUID from JWT token
@@ -98,20 +100,21 @@ const WalletBalance = () => {
   const { address } = useAccount();
   const { balance: catBalance, isLoading: isCatBalanceLoading } =
     useCatTokenBalance();
-  const { data: catDecimals } = useReadCuratAiTokenDecimals({
-    address: contract.token as `0x${string}`,
-  });
   const { data: nativeBalance, isLoading: isNativeBalanceLoading } =
-    useBalance({ address });
+    useBalance({
+      address,
+      query: {
+        refetchInterval: RPC_POLL_INTERVAL_MS,
+        staleTime: RPC_POLL_INTERVAL_MS,
+      },
+    });
 
-  const formattedCatBalance = useMemo(() => {
-    if (!catBalance || !catDecimals) return "0.00";
-    try {
-      return parseFloat(formatUnits(catBalance, catDecimals)).toFixed(2);
-    } catch {
-      return "0.00";
-    }
-  }, [catBalance, catDecimals]);
+  // CAT amounts are whole base units — the token contract mints/distributes
+  // unscaled values, so the ERC20's 18 decimals must not be applied.
+  const formattedCatBalance = useMemo(
+    () => (catBalance !== undefined ? Number(catBalance).toLocaleString() : "0"),
+    [catBalance]
+  );
 
   const formattedNativeBalance = useMemo(() => {
     if (!nativeBalance?.value) return "0.0000";
@@ -127,7 +130,7 @@ const WalletBalance = () => {
   const isLoading = isCatBalanceLoading || isNativeBalanceLoading;
 
   return (
-    <div className="hidden items-center gap-2 rounded-full border border-border bg-muted/50 px-3 py-1.5 text-xs font-medium text-foreground sm:flex">
+    <div className="hidden shrink-0 items-center gap-2 whitespace-nowrap rounded-full border border-border bg-muted/50 px-3 py-1.5 text-xs font-medium text-foreground sm:flex">
       {isLoading ? (
         <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
       ) : (
@@ -145,7 +148,10 @@ const WalletBalance = () => {
   );
 };
 
-export default function HomeNavbar({ className = "" }: HomeNavbarProps) {
+export default function HomeNavbar({
+  className = "",
+  maxWidth = 1336,
+}: HomeNavbarProps) {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
@@ -231,8 +237,11 @@ export default function HomeNavbar({ className = "" }: HomeNavbarProps) {
     <nav
       className={`fixed top-0 left-0 right-0 w-full bg-background border-b border-border z-[9999] ${className}`}
     >
-      <div className="w-full px-6">
-        <div className="mx-auto grid h-[60px] w-full max-w-[1600px] grid-cols-1 grid-rows-[auto_auto] items-center gap-3 md:grid-cols-[1fr_minmax(0,520px)_1fr] md:grid-rows-1">
+      <div className="w-full">
+        <div
+          className="mx-auto grid h-[60px] w-full grid-cols-1 grid-rows-[auto_auto] items-center gap-3 px-6 md:grid-cols-[auto_1fr_auto] md:grid-rows-1"
+          style={{ maxWidth: `${maxWidth}px` }}
+        >
           {/* Logo */}
           <div className="flex min-w-0 items-center justify-between gap-3 md:justify-start">
             <Link
@@ -248,7 +257,7 @@ export default function HomeNavbar({ className = "" }: HomeNavbarProps) {
 
           {/* Search */}
           <div className="flex min-w-0 justify-center px-0 md:px-4">
-            <div className="flex w-full max-w-[520px] items-center gap-3 rounded-[24px] bg-muted px-5 py-2.5">
+            <div className="flex w-full max-w-[360px] items-center gap-3 rounded-[24px] bg-muted px-5 py-2.5">
               <Search className="h-5 w-5 shrink-0 text-muted-foreground" />
               <input
                 type="text"
@@ -259,7 +268,7 @@ export default function HomeNavbar({ className = "" }: HomeNavbarProps) {
           </div>
 
           {/* Right actions */}
-          <div className="flex shrink-0 items-center justify-end gap-6 justify-self-end md:justify-self-auto">
+          <div className="flex shrink-0 items-center justify-end gap-5 justify-self-end md:justify-self-auto">
             {!isAuthenticated ? (
               <>
                 <Link
@@ -281,14 +290,14 @@ export default function HomeNavbar({ className = "" }: HomeNavbarProps) {
 
                 <Link
                   href="/create"
-                  className="flex items-center gap-2.5 text-[15px] font-medium text-muted-foreground transition-colors duration-150 hover:text-foreground"
+                  className="flex shrink-0 items-center gap-2.5 whitespace-nowrap text-[15px] font-medium text-muted-foreground transition-colors duration-150 hover:text-foreground"
                   aria-label="Write"
                 >
                   <PenSquare className="h-6 w-6 stroke-[1.5]" />
                   <span>Write</span>
                 </Link>
 
-                <div className="relative">
+                <div className="relative shrink-0">
                   <button
                     ref={notificationButtonRef}
                     onClick={async () => {
@@ -307,7 +316,7 @@ export default function HomeNavbar({ className = "" }: HomeNavbarProps) {
                         }
                       }
                     }}
-                    className="relative flex h-9 w-9 items-center justify-center"
+                    className="relative flex h-9 w-9 shrink-0 items-center justify-center"
                     aria-label="Notifications"
                   >
                     <Bell className="h-5 w-5 stroke-[1.5] text-muted-foreground" />
@@ -425,10 +434,10 @@ export default function HomeNavbar({ className = "" }: HomeNavbarProps) {
                     setIsProfileOpen(!isProfileOpen);
                     setIsNotificationsOpen(false);
                   }}
-                  className="flex h-8 w-8 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-primary"
+                  className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-primary"
                   aria-label="Profile menu"
                 >
-                  <Avatar className="h-8 w-8 rounded-full">
+                  <Avatar className="h-9 w-9 shrink-0 rounded-full">
                     <AvatarImage
                       src={profilePicUrl || undefined}
                       alt="Profile"

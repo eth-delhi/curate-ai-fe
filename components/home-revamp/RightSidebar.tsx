@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { DUMMY_DISCUSSIONS } from "@/constants/home-revamp";
 import {
   usePeopleToFollow,
@@ -14,7 +15,6 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { useUserProfile } from "@/hooks/api/profile";
 import { getIpfsUrl } from "@/utils/ipfs";
-import { useTopTags } from "@/hooks/api/tags";
 
 const linkGreen = "text-[14px] text-primary hover:underline";
 
@@ -144,8 +144,9 @@ const PersonToFollowItem = ({ user }: { user: PeopleToFollowDto }) => {
         </div>
       </Link>
       {isAuthenticated && (
-        <button
+        <motion.button
           type="button"
+          whileTap={{ scale: 0.93 }}
           className={`shrink-0 whitespace-nowrap rounded-full border px-4 py-[7px] text-[14px] transition-colors duration-150 ${
             isFollowing
               ? "border-primary bg-primary text-primary-foreground"
@@ -161,7 +162,7 @@ const PersonToFollowItem = ({ user }: { user: PeopleToFollowDto }) => {
           ) : (
             "Follow"
           )}
-        </button>
+        </motion.button>
       )}
     </div>
   );
@@ -198,29 +199,15 @@ export const RightSidebar = ({
     isLoading: isPeopleLoading,
     error: peopleError,
   } = usePeopleToFollow({ enabled: isAuthenticated });
-  const { data: tagsData } = useTopTags(
-    { limit: 12 },
-    { enabled: isAuthenticated }
-  );
-  const topicTags = useMemo(
-    () =>
-      tagsData?.length
-        ? tagsData.map((t) => t.name)
-        : [
-            "Self Improvement",
-            "Writing",
-            "Relationships",
-            "Technology",
-            "Productivity",
-            "Python",
-            "Money",
-          ],
-    [tagsData]
-  );
 
   return (
-    <div className="sticky top-[73px]">
-      <div className="mb-9">
+    <motion.div
+      initial={{ opacity: 0, x: 12 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: 0.4 }}
+      className="sticky top-[100px] space-y-3"
+    >
+      <div className="rounded-xl border border-border bg-background p-4 shadow-sm">
         <h3 className="font-serif mb-4 text-base font-semibold text-foreground">
           Staff Picks
         </h3>
@@ -242,32 +229,7 @@ export const RightSidebar = ({
         </span>
       </div>
 
-      <div className="mb-8 h-px bg-border" />
-
-      <div className="mb-9">
-        <h3 className="font-serif mb-4 text-base font-semibold text-foreground">
-          Recommended topics
-        </h3>
-        <div className="flex flex-wrap gap-2">
-          {topicTags.map((tag) => (
-            <button
-              key={tag}
-              type="button"
-              onClick={() => onTopicClick?.(tag)}
-              className="cursor-pointer rounded-full bg-muted px-4 py-2 text-[14px] text-foreground transition-colors duration-150 hover:bg-accent hover:text-accent-foreground"
-            >
-              {tag}
-            </button>
-          ))}
-        </div>
-        <span className={`mt-3 inline-block cursor-pointer ${linkGreen}`}>
-          See more topics
-        </span>
-      </div>
-
-      <div className="mb-8 h-px bg-border" />
-
-      <div className="mb-9">
+      <div className="rounded-xl border border-border bg-background p-4 shadow-sm">
         <h3 className="font-serif mb-4 text-base font-semibold text-foreground">
           Who to follow
         </h3>
@@ -299,9 +261,7 @@ export const RightSidebar = ({
         </span>
       </div>
 
-      <div className="mb-6 h-px bg-border" />
-
-      <div className="flex flex-wrap gap-x-4 gap-y-2.5">
+      <div className="flex flex-wrap gap-x-4 gap-y-2.5 px-1">
         {[
           "Help",
           "Status",
@@ -320,6 +280,6 @@ export const RightSidebar = ({
           </span>
         ))}
       </div>
-    </div>
+    </motion.div>
   );
 };

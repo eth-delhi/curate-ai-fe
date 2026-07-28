@@ -1,554 +1,619 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import Image from "next/image";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Logo } from "@/components/ui/Logo";
 import Navbar from "@/components/ui/Navbar";
-import { motion, useScroll, useTransform, useInView } from "framer-motion";
+import {
+  motion,
+  useInView,
+  useMotionValue,
+  useScroll,
+  useSpring,
+  useTransform,
+  type MotionValue,
+} from "framer-motion";
 import {
   ArrowRight,
-  Users,
-  Shield,
-  Zap,
-  Globe,
-  CheckCircle,
+  ArrowUpRight,
   Github,
-  Twitter,
   MessageCircle,
-  TrendingUp,
-  Award,
-  Brain,
-  Lock,
-  Star,
-  Play,
-  ChevronDown,
-  AlertTriangle,
-  Target,
-  Eye,
-  Layers,
+  Twitter,
   ChevronUp,
 } from "lucide-react";
 
-export default function LandingPage() {
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const [showScrollTop, setShowScrollTop] = useState(false);
-  const { scrollYProgress } = useScroll();
-  const y = useTransform(scrollYProgress, [0, 1], ["0%", "50%"]);
+// ---------------------------------------------------------------------------
+// Small reusable interaction primitives
+// ---------------------------------------------------------------------------
+
+/** Follows the cursor and nudges toward it — used on primary CTAs. */
+function Magnetic({
+  children,
+  strength = 0.35,
+}: {
+  children: React.ReactNode;
+  strength?: number;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  const springX = useSpring(x, { stiffness: 200, damping: 14, mass: 0.3 });
+  const springY = useSpring(y, { stiffness: 200, damping: 14, mass: 0.3 });
+
+  return (
+    <motion.div
+      ref={ref}
+      onMouseMove={(e) => {
+        const rect = ref.current?.getBoundingClientRect();
+        if (!rect) return;
+        x.set((e.clientX - rect.left - rect.width / 2) * strength);
+        y.set((e.clientY - rect.top - rect.height / 2) * strength);
+      }}
+      onMouseLeave={() => {
+        x.set(0);
+        y.set(0);
+      }}
+      style={{ x: springX, y: springY }}
+      className="inline-block"
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+/** Tilts its contents toward the mouse in 3D — used for the hero card stack. */
+function TiltCard({
+  children,
+  className = "",
+  style,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  style?: React.CSSProperties;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const rx = useMotionValue(0);
+  const ry = useMotionValue(0);
+  const rotateX = useSpring(rx, { stiffness: 160, damping: 18 });
+  const rotateY = useSpring(ry, { stiffness: 160, damping: 18 });
+
+  return (
+    <motion.div
+      ref={ref}
+      onMouseMove={(e) => {
+        const rect = ref.current?.getBoundingClientRect();
+        if (!rect) return;
+        const px = (e.clientX - rect.left) / rect.width - 0.5;
+        const py = (e.clientY - rect.top) / rect.height - 0.5;
+        ry.set(px * 16);
+        rx.set(py * -16);
+      }}
+      onMouseLeave={() => {
+        rx.set(0);
+        ry.set(0);
+      }}
+      style={{ rotateX, rotateY, transformStyle: "preserve-3d", ...style }}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+/** Counts up from 0 once it scrolls into view. */
+function CountUp({
+  target,
+  suffix = "",
+  prefix = "",
+  duration = 1.4,
+}: {
+  target: number;
+  suffix?: string;
+  prefix?: string;
+  duration?: number;
+}) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-80px" });
+  const [value, setValue] = useState(0);
 
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      setMousePosition({ x: e.clientX, y: e.clientY });
+    if (!inView) return;
+    let raf: number;
+    let start: number | null = null;
+    const step = (t: number) => {
+      if (start === null) start = t;
+      const progress = Math.min((t - start) / (duration * 1000), 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setValue(Math.floor(eased * target));
+      if (progress < 1) raf = requestAnimationFrame(step);
+      else setValue(target);
     };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [inView, target, duration]);
 
-    const handleScroll = () => {
-      const scrollTop = window.scrollY;
-      const windowHeight = window.innerHeight;
-      // Show scroll to top button when scrolled past first page (100vh)
-      setShowScrollTop(scrollTop > windowHeight);
-    };
+  return (
+    <span ref={ref}>
+      {prefix}
+      {value.toLocaleString()}
+      {suffix}
+    </span>
+  );
+}
 
-    window.addEventListener("mousemove", handleMouseMove);
+/** Word-by-word opacity wipe scrubbed by scroll position, not viewport entry. */
+function ScrollRevealText({
+  text,
+  className = "",
+}: {
+  text: string;
+  className?: string;
+}) {
+  const ref = useRef<HTMLParagraphElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ["start 0.85", "start 0.35"],
+  });
+  const words = text.split(" ");
+
+  return (
+    <p ref={ref} className={className}>
+      {words.map((word, i) => {
+        const start = i / words.length;
+        const end = start + 1 / words.length;
+        return (
+          <RevealWord
+            key={i}
+            word={word}
+            progress={scrollYProgress}
+            range={[start, end]}
+          />
+        );
+      })}
+    </p>
+  );
+}
+
+function RevealWord({
+  word,
+  progress,
+  range,
+}: {
+  word: string;
+  progress: MotionValue<number>;
+  range: [number, number];
+}) {
+  const opacity = useTransform(progress, range, [0.12, 1]);
+  return (
+    <motion.span style={{ opacity }} className="mr-[0.28em] inline-block">
+      {word}
+    </motion.span>
+  );
+}
+
+/** Pins a card in place while the next one scrolls over it, shrinking behind. */
+function StackCard({
+  index,
+  children,
+}: {
+  index: number;
+  children: React.ReactNode;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ["start start", "end start"],
+  });
+  const scale = useTransform(scrollYProgress, [0, 1], [1, 0.9]);
+  const opacity = useTransform(scrollYProgress, [0, 0.8, 1], [1, 1, 0.4]);
+
+  return (
+    <div
+      ref={ref}
+      className="sticky"
+      style={{ top: `${104 + index * 14}px` }}
+    >
+      <motion.div style={{ scale, opacity }}>{children}</motion.div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Data
+// ---------------------------------------------------------------------------
+
+const problems = [
+  {
+    tag: "01 — WHALES",
+    title: "Whale-dominated rewards",
+    description:
+      "In a one-token-one-vote system, a handful of large holders decide what everyone else sees. Genuine creators get drowned out by capital, not merit.",
+  },
+  {
+    tag: "02 — SYBILS",
+    title: "Sybil-farmed engagement",
+    description:
+      "Bot networks and throwaway accounts inflate signal cheaply. Platforms end up optimizing for whoever can spin up the most fake identities.",
+  },
+  {
+    tag: "03 — VOTE RINGS",
+    title: "Low-quality vote circles",
+    description:
+      "Reciprocal upvote groups reward participation in the ring, not the work. Quality content with no clique gets buried on page one.",
+  },
+  {
+    tag: "04 — FRICTION",
+    title: "Wallets before words",
+    description:
+      "Seed phrases and gas fees before a single post. Most creators bounce before they ever get to make something.",
+  },
+  {
+    tag: "05 — BLACK BOX",
+    title: "Opaque AI moderation",
+    description:
+      "Scores appear from nowhere, with no way to see the reasoning or challenge the call. Trust erodes when the machine won't show its work.",
+  },
+];
+
+const solutions = [
+  {
+    n: "01",
+    title: "Quadratic voting",
+    description:
+      "Vote cost scales with the square of vote weight, so out-shouting the crowd gets exponentially expensive. Conviction matters more than balance.",
+    span: "lg:col-span-2",
+  },
+  {
+    n: "02",
+    title: "Reputation-based identity",
+    description: "BrightID-verified humans. One person, one voice.",
+    span: "",
+  },
+  {
+    n: "03",
+    title: "Transparent scoring",
+    description: "Open-source AI models. Every score is inspectable.",
+    span: "",
+  },
+  {
+    n: "04",
+    title: "Effortless onboarding",
+    description:
+      "Sign in like it's 2015. Web3 guarantees run underneath without ever asking for a seed phrase up front.",
+    span: "lg:col-span-2",
+  },
+];
+
+const flowSteps = [
+  {
+    step: "01",
+    title: "Create",
+    subtitle: "Upload & tokenize",
+    description:
+      "Publish content that's secured on-chain from the first draft, with AI-assisted tagging so it finds the right audience immediately.",
+  },
+  {
+    step: "02",
+    title: "Curate",
+    subtitle: "AI + human signal",
+    description:
+      "A transparent scoring model reads the work while real, reputation-checked humans weigh in — no black box, no bot farms.",
+  },
+  {
+    step: "03",
+    title: "Earn",
+    subtitle: "Fair distribution",
+    description:
+      "Quadratic-weighted rewards flow to whoever earned the attention, not whoever bought the most votes.",
+  },
+];
+
+const tickerWords = [
+  "FAIRNESS",
+  "TRANSPARENCY",
+  "QUADRATIC VOTING",
+  "OPEN SCORING",
+  "NO WHALES",
+  "NO BOTS",
+  "SONIC TESTNET",
+  "CAT TOKEN",
+];
+
+// ---------------------------------------------------------------------------
+// Page
+// ---------------------------------------------------------------------------
+
+export default function LandingPage() {
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const [spotlight, setSpotlight] = useState({ x: 0, y: 0 });
+  const { scrollYProgress } = useScroll();
+  const progressBarWidth = useSpring(scrollYProgress, {
+    stiffness: 120,
+    damping: 30,
+    restDelta: 0.001,
+  });
+
+  useEffect(() => {
+    const handleMove = (e: MouseEvent) =>
+      setSpotlight({ x: e.clientX, y: e.clientY });
+    const handleScroll = () => setShowScrollTop(window.scrollY > window.innerHeight * 0.6);
+    window.addEventListener("mousemove", handleMove);
     window.addEventListener("scroll", handleScroll);
-
     return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mousemove", handleMove);
       window.removeEventListener("scroll", handleScroll);
     };
   }, []);
 
-  const scrollToTop = () => {
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
-  };
-
-  const problems = [
-    {
-      icon: <TrendingUp className="w-8 h-8" />,
-      title: "Whale Dominance",
-      description:
-        "Large token holders manipulate rewards, drowning out genuine creators",
-    },
-    {
-      icon: <Users className="w-8 h-8" />,
-      title: "Sybil Attacks",
-      description: "Fake accounts and bot networks exploit voting mechanisms",
-    },
-    {
-      icon: <Star className="w-8 h-8" />,
-      title: "Low-Quality Content",
-      description: "Voting circles and spam degrade platform quality",
-    },
-    {
-      icon: <Lock className="w-8 h-8" />,
-      title: "Technical Barriers",
-      description: "Complex onboarding prevents mainstream adoption",
-    },
-    {
-      icon: <Brain className="w-8 h-8" />,
-      title: "Opaque AI Governance",
-      description: "Black-box algorithms create trust and fairness issues",
-    },
-  ];
-
-  const solutions = [
-    {
-      icon: <Target className="w-6 h-6" />,
-      title: "Quadratic Voting",
-      description:
-        "Prevents whale manipulation by making votes exponentially expensive",
-    },
-    {
-      icon: <Shield className="w-6 h-6" />,
-      title: "Reputation-Based Identity",
-      description: "BrightID integration ensures one person, one vote",
-    },
-    {
-      icon: <Eye className="w-6 h-6" />,
-      title: "Transparent AI Scoring",
-      description: "Open-source algorithms with explainable decision-making",
-    },
-    {
-      icon: <Zap className="w-6 h-6" />,
-      title: "Effortless Onboarding",
-      description: "Web2-style login with Web3 benefits under the hood",
-    },
-  ];
-
-  const tickerTexts = [
-    "Fairness",
-    "Transparency",
-    "Community",
-    "AI",
-    "Decentralized",
-    "Trust",
-    "Equilibrium",
-  ];
-
   return (
-    <div className="min-h-screen bg-background overflow-hidden">
-      <style jsx global>{`
-        /* Custom scrollbar */
-        ::-webkit-scrollbar {
-          width: 6px;
-        }
-        ::-webkit-scrollbar-track {
-          background: var(--muted);
-        }
-        ::-webkit-scrollbar-thumb {
-          background: var(--muted-foreground);
-          border-radius: 3px;
-        }
+    <div className="min-h-screen bg-background overflow-x-hidden">
+      {/* Scroll progress bar */}
+      <motion.div
+        className="fixed top-0 left-0 right-0 h-[3px] bg-primary origin-left z-[10000]"
+        style={{ scaleX: progressBarWidth }}
+      />
 
-        /* Neural wave effect */
-        .neural-wave {
-          position: absolute;
-          width: 2px;
-          height: 2px;
-          background: rgba(7, 47, 95, 0.15);
-          border-radius: 50%;
-          pointer-events: none;
-          animation: ripple 2s infinite;
-        }
+      {/* Cursor-following spotlight wash */}
+      <div
+        className="fixed inset-0 pointer-events-none z-[1] transition-opacity duration-300"
+        style={{
+          background: `radial-gradient(500px circle at ${spotlight.x}px ${spotlight.y}px, rgba(7,47,95,0.05), transparent 70%)`,
+        }}
+      />
 
-        @keyframes ripple {
-          0% {
-            transform: scale(0);
-            opacity: 1;
-          }
-          100% {
-            transform: scale(20);
-            opacity: 0;
-          }
-        }
-
-        /* Accent border: subtle brand-color edge highlight */
-        .cyber-border {
-          position: relative;
-        }
-        .cyber-border::before {
-          content: "";
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          border: 1px solid transparent;
-          background: linear-gradient(
-              45deg,
-              var(--primary),
-              var(--accent-foreground)
-            )
-            border-box;
-          border-radius: inherit;
-          mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
-          mask-composite: exclude;
-          opacity: 0.15;
-        }
-
-        /* Brand-color highlight text */
-        .cyber-text {
-          color: var(--primary);
-        }
-
-        .cyber-grid {
-          background-image: linear-gradient(
-              rgba(26, 26, 26, 0.05) 1px,
-              transparent 1px
-            ),
-            linear-gradient(90deg, rgba(26, 26, 26, 0.05) 1px, transparent 1px);
-          background-size: 20px 20px;
-        }
-
-        /* Hide scrollbar */
-        .scrollbar-hide {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-        .scrollbar-hide::-webkit-scrollbar {
-          display: none;
-        }
-
-        /* Added amoeba morphing animation */
-        @keyframes amoeba-morph {
-          0%,
-          100% {
-            border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
-          }
-          25% {
-            border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%;
-          }
-          50% {
-            border-radius: 50% 60% 30% 60% / 30% 60% 70% 40%;
-          }
-          75% {
-            border-radius: 60% 40% 60% 40% / 70% 30% 50% 60%;
-          }
-        }
-
-        .amoeba-shape {
-          animation: amoeba-morph 20s ease-in-out infinite;
-        }
-
-        /* Ensure navbar stays fixed */
-        nav {
-          position: fixed !important;
-          top: 0 !important;
-          left: 0 !important;
-          right: 0 !important;
-          z-index: 9999 !important;
-        }
-      `}</style>
-
-      {/* Neural Wave Background Effect */}
-      <div className="fixed inset-0 pointer-events-none z-0">
-        <div
-          className="neural-wave"
-          style={{
-            left: mousePosition.x,
-            top: mousePosition.y,
-          }}
-        />
-      </div>
-
-      {/* Navigation */}
       <Navbar />
 
-      {/* Hero Section - Split Diagonal Layout */}
-      <section className="min-h-screen flex flex-col lg:flex-row items-center relative overflow-hidden cyber-grid pt-8">
-        {/* Left Half - Text */}
-        <div className="w-full lg:w-1/2 h-full flex items-center justify-center px-4 sm:px-8 lg:px-16 py-16 lg:py-0">
-          <motion.div
-            initial={{ opacity: 0, x: -50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8 }}
-            className="max-w-2xl text-center lg:text-left"
-          >
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
+      {/* ---------------------------------------------------------------- */}
+      {/* HERO */}
+      {/* ---------------------------------------------------------------- */}
+      <section className="relative pt-40 pb-24 lg:pt-48 lg:pb-32 px-4 sm:px-8 lg:px-16">
+        <div className="max-w-7xl mx-auto grid lg:grid-cols-[1.1fr_0.9fr] gap-16 items-center">
+          <div>
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-              className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-serif font-black text-foreground leading-tight mb-6"
+              transition={{ duration: 0.6 }}
+              className="inline-flex items-center gap-2 font-mono text-xs tracking-widest text-muted-foreground mb-8 uppercase"
             >
-              Rebuilding Trust in Content —{" "}
-              <span className="cyber-text">With Blockchain and AI</span>
-            </motion.h1>
+              <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse-dot" />
+              Live on Sonic testnet — v0.9 beta
+              <span className="animate-blink-caret">_</span>
+            </motion.div>
+
+            <h1 className="font-serif font-black text-foreground leading-[0.95] text-5xl sm:text-6xl lg:text-7xl xl:text-[5.5rem] tracking-tight">
+              {["Content has", "a trust"].map((line, i) => (
+                <motion.span
+                  key={line}
+                  initial={{ opacity: 0, y: 40 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.7, delay: 0.1 + i * 0.1 }}
+                  className="block"
+                >
+                  {line}
+                </motion.span>
+              ))}
+              <motion.span
+                initial={{ opacity: 0, y: 40 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.7, delay: 0.3 }}
+                className="block text-primary"
+              >
+                problem.
+              </motion.span>
+            </h1>
 
             <motion.p
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.4 }}
-              className="text-lg sm:text-xl text-muted-foreground mb-8 sm:mb-12 leading-relaxed"
+              transition={{ duration: 0.6, delay: 0.5 }}
+              className="mt-8 text-lg sm:text-xl text-muted-foreground max-w-xl leading-relaxed"
             >
-              A fair and transparent platform where every vote and creation
-              matters.
+              We&apos;re fixing it with math, not marketing. Quadratic voting
+              and open-source AI scoring decide what rises — not whale
+              wallets, not bot farms.
             </motion.p>
 
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.6 }}
-              className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center lg:justify-start"
+              transition={{ duration: 0.6, delay: 0.65 }}
+              className="mt-10 flex flex-wrap gap-4"
             >
-              <Button
-                size="lg"
-                className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-md px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold transition-all duration-300"
-              >
-                Join Waitlist
-                <ArrowRight className="ml-2 w-4 h-4 sm:w-5 sm:h-5" />
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                className="border-2 border-border text-foreground hover:border-primary hover:text-primary rounded-md px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold transition-all duration-300"
-              >
-                Explore the Vision
-              </Button>
+              <Magnetic>
+                <Button
+                  size="lg"
+                  className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-8 py-6 text-base font-semibold group"
+                >
+                  Join Waitlist
+                  <ArrowRight className="ml-1 w-4 h-4 transition-transform group-hover:translate-x-1" />
+                </Button>
+              </Magnetic>
+              <Magnetic strength={0.25}>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="border-2 border-border text-foreground hover:border-primary hover:text-primary rounded-full px-8 py-6 text-base font-semibold"
+                  onClick={() =>
+                    document
+                      .getElementById("problems")
+                      ?.scrollIntoView({ behavior: "smooth" })
+                  }
+                >
+                  See the fix
+                </Button>
+              </Magnetic>
             </motion.div>
-          </motion.div>
-        </div>
 
-        <div className="w-full lg:w-1/2 h-screen relative flex items-center justify-center overflow-hidden p-8 lg:p-16">
-          {/* Amoeba-shaped container */}
-          <div className="relative w-full h-full max-w-2xl max-h-[800px]">
-            <div className="absolute inset-0 amoeba-shape bg-muted border border-border overflow-hidden">
-              {/* Neural Network Background */}
-              <svg
-                className="absolute inset-0 w-full h-full opacity-20"
-                viewBox="0 0 400 400"
-              >
-                {[...Array(15)].map((_, i) => (
-                  <motion.circle
-                    key={`node-${i}`}
-                    cx={50 + (i % 5) * 80}
-                    cy={50 + Math.floor(i / 5) * 80}
-                    r="3"
-                    fill="rgba(7,47,95,0.5)"
-                    animate={{
-                      opacity: [0.3, 1, 0.3],
-                      scale: [0.8, 1.2, 0.8],
-                    }}
-                    transition={{
-                      duration: 2,
-                      repeat: Number.POSITIVE_INFINITY,
-                      ease: "easeInOut",
-                      delay: i * 0.1,
-                    }}
-                  />
-                ))}
-
-                {/* Connection Lines */}
-                {[...Array(20)].map((_, i) => (
-                  <motion.line
-                    key={`line-${i}`}
-                    x1={50 + (i % 5) * 80}
-                    y1={50 + Math.floor(i / 5) * 80}
-                    x2={50 + ((i + 1) % 5) * 80}
-                    y2={50 + Math.floor((i + 1) / 5) * 80}
-                    stroke="rgba(7,47,95,0.25)"
-                    strokeWidth="1"
-                    animate={{
-                      opacity: [0, 0.5, 0],
-                    }}
-                    transition={{
-                      duration: 3,
-                      repeat: Number.POSITIVE_INFINITY,
-                      ease: "easeInOut",
-                      delay: i * 0.15,
-                    }}
-                  />
-                ))}
-              </svg>
-
-              {/* Central AI Core */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <motion.div
-                  className="relative z-20"
-                  animate={{
-                    scale: [1, 1.2, 1],
-                    rotate: [0, 360],
-                  }}
-                  transition={{
-                    duration: 6,
-                    repeat: Number.POSITIVE_INFINITY,
-                    ease: "easeInOut",
-                  }}
-                >
-                  <div className="relative">
-                    {/* Outer Ring */}
-                    <motion.div
-                      className="w-24 h-24 border-2 border-primary/40 rounded-full"
-                      animate={{
-                        rotate: [0, -360],
-                      }}
-                      transition={{
-                        duration: 8,
-                        repeat: Number.POSITIVE_INFINITY,
-                        ease: "linear",
-                      }}
-                    />
-
-                    {/* Inner Core */}
-                    <div className="absolute inset-2 w-20 h-20 bg-primary/10 rounded-full">
-                      <div className="absolute inset-3 bg-primary/20 rounded-full">
-                        <div className="absolute inset-2 bg-primary/30 rounded-full flex items-center justify-center">
-                          <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.9 }}
+              className="mt-16 grid grid-cols-3 gap-6 max-w-lg border-t border-border pt-8"
+            >
+              <div>
+                <div className="font-mono text-2xl sm:text-3xl font-bold text-foreground">
+                  <CountUp target={1204} suffix="+" />
+                </div>
+                <div className="text-xs text-muted-foreground mt-1 uppercase tracking-wide">
+                  Waitlisted
+                </div>
               </div>
-
-              {/* Data Streams */}
-              {[...Array(12)].map((_, i) => (
-                <motion.div
-                  key={`stream-${i}`}
-                  className="absolute w-1 h-8 bg-gradient-to-t from-transparent to-primary/40"
-                  style={{
-                    left: `${20 + i * 5}%`,
-                    top: `${10 + i * 7}%`,
-                  }}
-                  animate={{
-                    y: [0, 300, 0],
-                    opacity: [0, 1, 0],
-                    scale: [0.5, 1, 0.5],
-                  }}
-                  transition={{
-                    duration: 4,
-                    repeat: Number.POSITIVE_INFINITY,
-                    ease: "easeInOut",
-                    delay: i * 0.2,
-                  }}
-                />
-              ))}
-
-              {/* Floating Emotional Words */}
-              {["FAIR", "EQUALITY", "TRUST", "FREEDOM", "JUSTICE", "HOPE"].map(
-                (word, i) => (
-                  <motion.div
-                    key={`word-${i}`}
-                    className="absolute text-muted-foreground font-bold text-sm opacity-70"
-                    style={{
-                      left: `${15 + i * 15}%`,
-                      top: `${20 + i * 12}%`,
-                    }}
-                    animate={{
-                      y: [0, -30, 0],
-                      opacity: [0.3, 0.9, 0.3],
-                      rotate: [0, 3, 0],
-                      scale: [0.9, 1.1, 0.9],
-                    }}
-                    transition={{
-                      duration: 4,
-                      repeat: Number.POSITIVE_INFINITY,
-                      ease: "easeInOut",
-                      delay: i * 0.5,
-                    }}
-                  >
-                    {word}
-                  </motion.div>
-                )
-              )}
-
-              {/* Background Grid */}
-              <div className="absolute inset-0 opacity-5">
-                <div
-                  className="w-full h-full"
-                  style={{
-                    backgroundImage: `
-                    linear-gradient(rgba(0,0,0,0.08) 1px, transparent 1px),
-                    linear-gradient(90deg, rgba(0,0,0,0.08) 1px, transparent 1px)
-                  `,
-                    backgroundSize: "30px 30px",
-                  }}
-                ></div>
+              <div>
+                <div className="font-mono text-2xl sm:text-3xl font-bold text-foreground">
+                  <CountUp target={0} prefix="$" />
+                </div>
+                <div className="text-xs text-muted-foreground mt-1 uppercase tracking-wide">
+                  Gas to vote
+                </div>
               </div>
-            </div>
-
-            <div className="absolute inset-0 amoeba-shape bg-primary/10 blur-xl -z-10 scale-105"></div>
+              <div>
+                <div className="font-mono text-2xl sm:text-3xl font-bold text-foreground">
+                  <CountUp target={100} suffix="%" />
+                </div>
+                <div className="text-xs text-muted-foreground mt-1 uppercase tracking-wide">
+                  Open scoring
+                </div>
+              </div>
+            </motion.div>
           </div>
+
+          {/* Tilting mock product-card stack */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.8, delay: 0.3 }}
+            className="relative h-[420px] sm:h-[480px] hidden sm:block"
+            style={{ perspective: 1200 }}
+          >
+            <TiltCard
+              className="absolute inset-x-6 top-16 bg-background border border-border rounded-2xl p-6 shadow-sm z-10"
+              style={{ rotate: "-4deg" }}
+            >
+              <PostMock
+                title="On-chain identity without the headache"
+                author="mira.eth"
+                score={92}
+                votes={341}
+              />
+            </TiltCard>
+            <TiltCard
+              className="absolute inset-x-2 top-4 bg-background border border-border rounded-2xl p-6 shadow-md z-20"
+              style={{ rotate: "2deg" }}
+            >
+              <PostMock
+                title="Why quadratic voting kills whale dominance"
+                author="devansh.cat"
+                score={97}
+                votes={812}
+                featured
+              />
+            </TiltCard>
+            <TiltCard
+              className="absolute inset-x-10 top-32 bg-background border border-border rounded-2xl p-6 shadow-sm z-0"
+              style={{ rotate: "-8deg" }}
+            >
+              <PostMock
+                title="A field guide to Sybil resistance"
+                author="0x_ren"
+                score={88}
+                votes={205}
+              />
+            </TiltCard>
+          </motion.div>
         </div>
       </section>
 
-      {/* The Problem - Cinematic Scroll Section */}
-      <section
-        id="problems"
-        className="py-32 bg-background relative overflow-hidden"
-      >
-        {/* Background Texture */}
-        <div className="absolute inset-0 opacity-30">
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-muted/40 to-transparent"></div>
+      {/* ---------------------------------------------------------------- */}
+      {/* MARQUEE */}
+      {/* ---------------------------------------------------------------- */}
+      <div className="border-y border-border py-4 -rotate-1 bg-muted overflow-hidden marquee-group">
+        <div className="flex whitespace-nowrap animate-marquee-left w-max">
+          {[...tickerWords, ...tickerWords].map((word, i) => (
+            <span
+              key={i}
+              className="mx-6 font-mono text-sm tracking-widest text-muted-foreground uppercase"
+            >
+              {word} <span className="text-primary">•</span>
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* ---------------------------------------------------------------- */}
+      {/* PROBLEMS — stacked scroll cards */}
+      {/* ---------------------------------------------------------------- */}
+      <section id="problems" className="relative py-32 px-4 sm:px-8 lg:px-16">
+        <div className="max-w-4xl mx-auto mb-20">
+          <span className="font-mono text-xs tracking-widest text-primary uppercase">
+            The problem
+          </span>
+          <h2 className="font-serif font-black text-4xl sm:text-5xl lg:text-6xl text-foreground mt-4 leading-[1.05]">
+            Where Web3 content platforms went wrong.
+          </h2>
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-            className="text-center mb-20"
-          >
-            <h2 className="text-4xl lg:text-6xl font-serif font-black text-foreground mb-6">
-              Where Web3 Content Platforms Went Wrong
-            </h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              System glitches that broke the promise of decentralized creativity
-            </p>
-          </motion.div>
-
-          {/* Horizontal Scrolling Cards */}
-          <div className="flex gap-8 overflow-x-auto pb-8 scrollbar-hide">
-            {problems.map((problem, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, x: 100 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-                viewport={{ once: true }}
-                className="flex-shrink-0 w-80 h-64 bg-background border border-border shadow-sm hover:shadow-md transition-all duration-300 p-8 relative overflow-hidden group cyber-border"
-                style={{
-                  transform: `rotate(${Math.sin(index) * 2}deg)`,
-                  borderRadius: "30px 15px 30px 15px",
-                  clipPath: "polygon(0% 0%, 100% 0%, 90% 100%, 10% 100%)",
-                }}
-                whileHover={{
-                  scale: 1.02,
-                  rotate: 0,
-                  transition: { duration: 0.2 },
-                }}
-              >
-                {/* Glitch Effect Background */}
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-300">
-                  <div className="absolute top-0 left-0 w-full h-full bg-muted transform skew-x-12"></div>
+        <div className="max-w-4xl mx-auto space-y-10 pb-20">
+          {problems.map((p, i) => (
+            <StackCard key={p.title} index={i}>
+              <div className="bg-background border border-border rounded-3xl p-8 sm:p-12 shadow-[0_1px_0_rgba(0,0,0,0.02)]">
+                <div className="flex items-start justify-between gap-6 mb-6">
+                  <span className="font-mono text-xs tracking-widest text-muted-foreground">
+                    {p.tag}
+                  </span>
+                  <span className="font-mono text-xs text-border">
+                    {String(i + 1).padStart(2, "0")} / {String(problems.length).padStart(2, "0")}
+                  </span>
                 </div>
+                <h3 className="font-serif font-bold text-3xl sm:text-4xl text-foreground mb-4">
+                  {p.title}
+                </h3>
+                <p className="text-muted-foreground text-lg leading-relaxed max-w-2xl">
+                  {p.description}
+                </p>
+              </div>
+            </StackCard>
+          ))}
+        </div>
+      </section>
 
-                <div className="relative z-10">
-                  {/* Creative Visual Indicator */}
-                  <div className="mb-6">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-xs font-bold">
-                        {index + 1}
-                      </div>
-                      <div className="flex-1 h-px bg-gradient-to-r from-border to-transparent"></div>
-                    </div>
-                  </div>
+      {/* ---------------------------------------------------------------- */}
+      {/* SOLUTIONS — bento grid */}
+      {/* ---------------------------------------------------------------- */}
+      <section id="solutions" className="py-32 px-4 sm:px-8 lg:px-16 bg-muted">
+        <div className="max-w-6xl mx-auto">
+          <div className="max-w-2xl mb-16">
+            <span className="font-mono text-xs tracking-widest text-primary uppercase">
+              The fix
+            </span>
+            <h2 className="font-serif font-black text-4xl sm:text-5xl lg:text-6xl text-foreground mt-4 leading-[1.05]">
+              Restoring balance in creation.
+            </h2>
+          </div>
 
-                  <h3 className="text-2xl font-black text-foreground mb-4 leading-tight">
-                    {problem.title.split(" ").slice(0, 2).join(" ")}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {solutions.map((s, i) => (
+              <motion.div
+                key={s.n}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-80px" }}
+                transition={{ duration: 0.5, delay: i * 0.08 }}
+                whileHover={{ y: -4 }}
+                className={`${s.span} bg-background border border-border rounded-3xl p-8 flex flex-col justify-between min-h-[220px] group transition-shadow hover:shadow-lg`}
+              >
+                <div className="flex items-start justify-between">
+                  <span className="font-mono text-4xl font-bold text-border group-hover:text-primary/30 transition-colors">
+                    {s.n}
+                  </span>
+                  <ArrowUpRight className="w-5 h-5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
+                <div>
+                  <h3 className="font-serif font-bold text-2xl text-foreground mb-2">
+                    {s.title}
                   </h3>
-                  <p className="text-muted-foreground leading-relaxed text-sm">
-                    {problem.description}
+                  <p className="text-muted-foreground leading-relaxed">
+                    {s.description}
                   </p>
-
-                  {/* Subtle Status Indicator */}
-                  <div className="mt-4 flex items-center gap-2">
-                    <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
-                    <span className="text-xs text-muted-foreground font-medium">
-                      SYSTEM ERROR
-                    </span>
-                  </div>
                 </div>
               </motion.div>
             ))}
@@ -556,483 +621,314 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* The Solution - Contrast Reveal Section */}
-      <section
-        id="solutions"
-        className="py-32 bg-muted relative overflow-hidden"
-      >
-        {/* Neural Web Background */}
-        <div className="absolute inset-0 opacity-20">
-          <svg className="w-full h-full" viewBox="0 0 1000 1000" fill="none">
-            <defs>
-              <linearGradient
-                id="neuralGradient"
-                x1="0%"
-                y1="0%"
-                x2="100%"
-                y2="100%"
-              >
-                <stop offset="0%" stopColor="rgba(7,47,95,0.2)" />
-                <stop offset="100%" stopColor="rgba(7,47,95,0.05)" />
-              </linearGradient>
-            </defs>
-            <path
-              d="M100 100 L300 200 L500 150 L700 250 L900 200"
-              stroke="url(#neuralGradient)"
-              strokeWidth="1"
-              fill="none"
-            />
-            <path
-              d="M100 300 L250 400 L400 350 L600 450 L800 400"
-              stroke="url(#neuralGradient)"
-              strokeWidth="1"
-              fill="none"
-            />
-            <path
-              d="M100 500 L200 600 L350 550 L500 650 L700 600"
-              stroke="url(#neuralGradient)"
-              strokeWidth="1"
-              fill="none"
-            />
-          </svg>
-        </div>
+      {/* ---------------------------------------------------------------- */}
+      {/* EXPERIENCE FLOW — scroll-jacked horizontal panels */}
+      {/* ---------------------------------------------------------------- */}
+      <HorizontalFlow />
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-            className="text-center mb-20"
-          >
-            <h2 className="text-4xl lg:text-6xl font-serif font-black text-foreground mb-6">
-              Our Fix — Restoring Balance in Creation
-            </h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Interconnected solutions that restore fairness and transparency
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {solutions.map((solution, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, scale: 0.8 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-                viewport={{ once: true }}
-                className="relative group"
-              >
-                {/* Connecting Lines */}
-                {index < solutions.length - 1 && (
-                  <div className="hidden lg:block absolute top-1/2 -right-4 w-8 h-px bg-gradient-to-r from-border to-transparent z-0"></div>
-                )}
-
-                <div
-                  className="bg-background border border-border p-8 hover:shadow-md transition-all duration-300 relative z-10 overflow-hidden h-80 flex flex-col cyber-border"
-                  style={{
-                    borderRadius: "40px 20px 40px 20px",
-                    clipPath: "polygon(0% 0%, 100% 0%, 95% 100%, 5% 100%)",
-                  }}
-                >
-                  {/* Animated Background Pattern */}
-                  <div className="absolute top-0 right-0 w-32 h-32 opacity-10 group-hover:opacity-20 transition-opacity duration-500">
-                    <div className="w-full h-full bg-gradient-to-br from-primary/10 to-transparent rounded-full transform translate-x-8 -translate-y-8"></div>
-                  </div>
-
-                  {/* Solution Badge */}
-                  <div className="relative mb-6">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-accent rounded-full border border-border">
-                      <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
-                      <span className="text-xs text-accent-foreground font-medium tracking-wider">
-                        SOLUTION
-                      </span>
-                    </div>
-                  </div>
-
-                  <h3 className="text-xl font-bold text-foreground mb-4 leading-tight">
-                    {solution.title}
-                  </h3>
-                  <p className="text-muted-foreground leading-relaxed text-sm mb-6 flex-1">
-                    {solution.description}
-                  </p>
-
-                  {/* Progress Indicator */}
-                  <div className="flex items-center gap-3 mt-auto">
-                    <div className="flex-1 h-1 bg-border rounded-full overflow-hidden">
-                      <motion.div
-                        className="h-full bg-primary rounded-full"
-                        initial={{ width: "0%" }}
-                        whileInView={{ width: "100%" }}
-                        transition={{ duration: 1.5, delay: index * 0.2 }}
-                        viewport={{ once: true }}
-                      />
-                    </div>
-                    <span className="text-xs text-muted-foreground font-mono">
-                      ACTIVE
-                    </span>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* The Platform Experience - Immersive Flow */}
-      <section
-        id="experience"
-        className="py-32 bg-background relative overflow-hidden cyber-grid"
-      >
-        {/* Background Grid */}
-        <div className="absolute inset-0 opacity-10">
-          <div
-            className="absolute inset-0"
-            style={{
-              backgroundImage: `radial-gradient(circle at 1px 1px, rgba(0,0,0,0.15) 1px, transparent 0)`,
-              backgroundSize: "40px 40px",
-            }}
-          ></div>
-        </div>
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-            className="text-center mb-20"
-          >
-            <h2 className="text-4xl lg:text-6xl font-serif font-black text-foreground mb-6">
-              The Experience Flow
-            </h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Three seamless steps that redefine content creation
-            </p>
-          </motion.div>
-
-          {/* Flow Steps */}
-          <div className="space-y-16">
-            {[
-              {
-                step: "01",
-                title: "Create",
-                subtitle: "Upload & Tokenize",
-                description:
-                  "Transform your ideas into blockchain-secured content with AI-powered suggestions",
-                color: "bg-accent",
-                icon: "✍️",
-              },
-              {
-                step: "02",
-                title: "Curate",
-                subtitle: "AI + Human Intelligence",
-                description:
-                  "Our transparent AI analyzes content while community members provide authentic feedback",
-                color: "bg-muted",
-                icon: "🧠",
-              },
-              {
-                step: "03",
-                title: "Earn",
-                subtitle: "Fair Distribution",
-                description:
-                  "Quadratic voting ensures rewards flow to genuine creators, not whales",
-                color: "bg-primary/10",
-                icon: "⚡",
-              },
-            ].map((item, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, x: index % 2 === 0 ? -100 : 100 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.8, delay: index * 0.2 }}
-                viewport={{ once: true }}
-                className={`flex flex-col ${
-                  index % 2 === 0 ? "lg:flex-row" : "lg:flex-row-reverse"
-                } items-center gap-12`}
-              >
-                {/* Content */}
-                <div className="flex-1">
-                  <div className="flex items-center gap-4 mb-6">
-                    <div
-                      className={`w-16 h-16 ${item.color} rounded-2xl flex items-center justify-center text-2xl`}
-                    >
-                      {item.icon}
-                    </div>
-                    <div>
-                      <div className="text-sm text-muted-foreground font-mono tracking-wider mb-1">
-                        STEP {item.step}
-                      </div>
-                      <h3 className="text-3xl font-black text-foreground">
-                        {item.title}
-                      </h3>
-                      <p className="text-lg text-muted-foreground font-medium">
-                        {item.subtitle}
-                      </p>
-                    </div>
-                  </div>
-                  <p className="text-muted-foreground leading-relaxed text-lg">
-                    {item.description}
-                  </p>
-                </div>
-
-                {/* Visual Element */}
-                <div className="flex-1 relative">
-                  <div
-                    className={`aspect-square ${item.color} border border-border rounded-3xl relative overflow-hidden cyber-border`}
-                  >
-                    {/* Animated Elements */}
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <motion.div
-                        className="w-32 h-32 bg-primary/20 rounded-full"
-                        animate={{
-                          scale: [1, 1.2, 1],
-                          opacity: [0.3, 0.6, 0.3],
-                        }}
-                        transition={{
-                          duration: 3,
-                          repeat: Infinity,
-                          ease: "easeInOut",
-                        }}
-                      />
-                    </div>
-
-                    {/* Floating Particles */}
-                    {[...Array(6)].map((_, i) => (
-                      <motion.div
-                        key={i}
-                        className="absolute w-2 h-2 bg-primary/40 rounded-full"
-                        style={{
-                          left: `${20 + i * 15}%`,
-                          top: `${30 + i * 10}%`,
-                        }}
-                        animate={{
-                          y: [0, -20, 0],
-                          opacity: [0.4, 1, 0.4],
-                        }}
-                        transition={{
-                          duration: 2 + i * 0.3,
-                          repeat: Infinity,
-                          ease: "easeInOut",
-                          delay: i * 0.2,
-                        }}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* The Vision - Typography + Minimal Motion */}
-      <section className="py-32 bg-muted relative overflow-hidden cyber-grid">
-        {/* Moving Light Gradient */}
-        <div className="absolute inset-0 opacity-20">
-          <motion.div
-            className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/10 to-transparent"
-            animate={{
-              x: ["-100%", "100%"],
-            }}
-            transition={{
-              duration: 8,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
+      {/* ---------------------------------------------------------------- */}
+      {/* VISION — scroll-scrubbed manifesto */}
+      {/* ---------------------------------------------------------------- */}
+      <section className="py-40 px-4 sm:px-8 lg:px-16">
+        <div className="max-w-4xl mx-auto text-center">
+          <span className="font-mono text-xs tracking-widest text-primary uppercase">
+            Our ethos
+          </span>
+          <ScrollRevealText
+            text="We think the internet got the incentives backwards. Attention should follow quality, not capital. Trust should be earned through transparency, not assumed through branding. So we built a platform where every score can be inspected, every vote costs what it should, and every creator starts on equal footing — fairness, transparency, and equity, wired directly into the protocol."
+            className="font-serif font-bold text-3xl sm:text-4xl lg:text-5xl text-foreground leading-tight mt-10"
           />
         </div>
+      </section>
 
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-            className="mb-12"
-          >
-            <h3 className="text-sm font-semibold text-muted-foreground mb-8 tracking-widest uppercase">
-              Our Ethos
+      {/* ---------------------------------------------------------------- */}
+      {/* QUADRATIC VOTING EXPLAINER */}
+      {/* ---------------------------------------------------------------- */}
+      <section className="py-24 px-4 sm:px-8 lg:px-16 bg-muted">
+        <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-12 items-center">
+          <div>
+            <span className="font-mono text-xs tracking-widest text-primary uppercase">
+              The math
+            </span>
+            <h3 className="font-serif font-black text-3xl sm:text-4xl text-foreground mt-4 mb-6">
+              Why one whale can&apos;t outvote a hundred creators.
             </h3>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            transition={{ duration: 1, delay: 0.2 }}
-            viewport={{ once: true }}
-            className="space-y-8"
-          >
-            <motion.h2
-              className="text-6xl lg:text-8xl font-serif font-black text-foreground leading-none cyber-text"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-              viewport={{ once: true }}
-            >
-              FAIRNESS.
-            </motion.h2>
-
-            <motion.h2
-              className="text-6xl lg:text-8xl font-serif font-black text-foreground leading-none cyber-text"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.5 }}
-              viewport={{ once: true }}
-            >
-              TRANSPARENCY.
-            </motion.h2>
-
-            <motion.h2
-              className="text-6xl lg:text-8xl font-serif font-black text-foreground leading-none cyber-text"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.7 }}
-              viewport={{ once: true }}
-            >
-              EQUITY.
-            </motion.h2>
-
-            <motion.h2
-              className="text-6xl lg:text-8xl font-serif font-black text-foreground leading-none cyber-text"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.9 }}
-              viewport={{ once: true }}
-            >
-              THE INTERNET, RESET.
-            </motion.h2>
-          </motion.div>
+            <p className="text-muted-foreground text-lg leading-relaxed">
+              Vote cost grows with the square of your voting weight. Casting
+              10x the votes doesn&apos;t cost 10x — it costs 100x. That single
+              rule is what keeps reward distribution honest.
+            </p>
+          </div>
+          <div className="bg-background border border-border rounded-3xl p-10 font-mono">
+            <div className="flex items-baseline justify-center gap-3 text-3xl sm:text-4xl text-foreground mb-8">
+              <span>cost</span>
+              <span className="text-primary">=</span>
+              <span>
+                votes<sup className="text-primary">2</sup>
+              </span>
+            </div>
+            <div className="space-y-3">
+              {[
+                { votes: 1, cost: 1 },
+                { votes: 5, cost: 25 },
+                { votes: 10, cost: 100 },
+              ].map((row) => (
+                <div
+                  key={row.votes}
+                  className="flex items-center gap-4 text-sm"
+                >
+                  <span className="w-16 text-muted-foreground">
+                    {row.votes} vote{row.votes > 1 ? "s" : ""}
+                  </span>
+                  <div className="flex-1 h-2 bg-border rounded-full overflow-hidden">
+                    <motion.div
+                      className="h-full bg-primary rounded-full"
+                      initial={{ width: 0 }}
+                      whileInView={{ width: `${(row.cost / 100) * 100}%` }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 1, ease: "easeOut" }}
+                    />
+                  </div>
+                  <span className="w-20 text-right text-foreground">
+                    {row.cost} CAT
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* Call to Action - Architectural Footer */}
-      <section className="py-32 bg-muted text-foreground relative overflow-hidden">
-        {/* Vertical Dividers */}
-        <div className="absolute inset-0">
-          <div className="absolute left-1/4 top-0 bottom-0 w-px bg-border"></div>
-          <div className="absolute left-1/2 top-0 bottom-0 w-px bg-border"></div>
-          <div className="absolute right-1/4 top-0 bottom-0 w-px bg-border"></div>
-        </div>
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
+      {/* ---------------------------------------------------------------- */}
+      {/* CTA / FOOTER */}
+      {/* ---------------------------------------------------------------- */}
+      <section className="py-32 px-4 sm:px-8 lg:px-16 relative overflow-hidden">
+        <div className="max-w-4xl mx-auto text-center relative z-10">
+          <motion.h2
+            initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
             viewport={{ once: true }}
+            transition={{ duration: 0.7 }}
+            className="font-serif font-black text-4xl sm:text-6xl lg:text-7xl text-foreground leading-[1.02] mb-8"
           >
-            <h2 className="text-5xl lg:text-7xl font-serif font-black mb-6">
-              Join the Rebalance
-            </h2>
-            <p className="text-xl text-muted-foreground mb-12 max-w-2xl mx-auto">
-              Help redefine how AI and humans value creativity
-            </p>
+            Join the rebalance.
+          </motion.h2>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.7, delay: 0.1 }}
+            className="text-xl text-muted-foreground mb-12 max-w-xl mx-auto"
+          >
+            Help redefine how AI and humans value creativity — together.
+          </motion.p>
 
-            <div className="flex flex-col sm:flex-row gap-6 justify-center mb-16">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.7, delay: 0.2 }}
+            className="flex flex-col sm:flex-row gap-4 justify-center mb-20"
+          >
+            <Magnetic>
               <Button
                 size="lg"
-                className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-md px-12 py-4 text-lg font-semibold"
+                className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-10 py-6 text-base font-semibold"
               >
                 Join Waitlist
-                <ArrowRight className="ml-2 w-5 h-5" />
+                <ArrowRight className="ml-1 w-4 h-4" />
               </Button>
+            </Magnetic>
+            <Magnetic strength={0.25}>
               <Button
                 size="lg"
                 variant="outline"
-                className="border-2 border-border text-foreground hover:bg-background rounded-md px-12 py-4 text-lg font-semibold"
+                className="border-2 border-border text-foreground hover:bg-background rounded-full px-10 py-6 text-base font-semibold"
               >
                 Read Whitepaper
               </Button>
-            </div>
-
-            {/* Social Icons */}
-            <div className="flex justify-center space-x-8 mb-12">
-              <a
-                href="#"
-                className="text-muted-foreground hover:text-primary transition-colors"
-              >
-                <Github className="w-6 h-6" />
-              </a>
-              <a
-                href="#"
-                className="text-muted-foreground hover:text-primary transition-colors"
-              >
-                <Twitter className="w-6 h-6" />
-              </a>
-              <a
-                href="#"
-                className="text-muted-foreground hover:text-primary transition-colors"
-              >
-                <MessageCircle className="w-6 h-6" />
-              </a>
-            </div>
-
-            {/* Copyright */}
-            <div className="text-muted-foreground text-sm">
-              © 2025 Curate AI — v0.9 (Beta)
-            </div>
+            </Magnetic>
           </motion.div>
+
+          <div className="flex justify-center gap-8 mb-10">
+            <a
+              href="#"
+              className="text-muted-foreground hover:text-primary transition-colors"
+              aria-label="Github"
+            >
+              <Github className="w-5 h-5" />
+            </a>
+            <a
+              href="#"
+              className="text-muted-foreground hover:text-primary transition-colors"
+              aria-label="Twitter"
+            >
+              <Twitter className="w-5 h-5" />
+            </a>
+            <a
+              href="#"
+              className="text-muted-foreground hover:text-primary transition-colors"
+              aria-label="Discord"
+            >
+              <MessageCircle className="w-5 h-5" />
+            </a>
+          </div>
+
+          <div className="flex items-center justify-center gap-2 text-muted-foreground text-sm">
+            <Logo className="h-4 w-4" />
+            Curate AI — v0.9 (Beta)
+          </div>
         </div>
       </section>
 
-      {/* Scroll to Top Button */}
+      {/* Scroll to top */}
       <motion.button
-        onClick={scrollToTop}
-        className="fixed bottom-6 right-6 z-[9999] bg-primary hover:bg-primary/90 text-primary-foreground p-4 rounded-full shadow-sm border border-border transition-all duration-300 group"
-        initial={{ opacity: 0, y: 20, scale: 0.8 }}
+        onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+        className="fixed bottom-6 right-6 z-[9999] bg-primary text-primary-foreground p-4 rounded-full shadow-md"
+        initial={{ opacity: 0, scale: 0.8 }}
         animate={{
           opacity: showScrollTop ? 1 : 0,
-          y: showScrollTop ? 0 : 20,
           scale: showScrollTop ? 1 : 0.8,
+          pointerEvents: showScrollTop ? "auto" : "none",
         }}
-        transition={{ duration: 0.4, ease: "easeOut" }}
-        whileHover={{
-          scale: 1.05,
-          y: -2,
-          boxShadow: "0 10px 25px rgba(0,0,0,0.15)",
-        }}
-        whileTap={{ scale: 0.95 }}
-        style={{
-          backdropFilter: "blur(10px)",
-          backgroundColor: "rgba(7, 47, 95, 0.9)",
-        }}
+        whileHover={{ scale: 1.08 }}
+        whileTap={{ scale: 0.94 }}
+        aria-label="Scroll to top"
       >
-        <motion.div
-          animate={{
-            y: [0, -1, 0],
-            rotate: [0, -2, 0],
-          }}
-          transition={{
-            duration: 2,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        >
-          <ChevronUp className="w-5 h-5" />
-        </motion.div>
-
-        {/* Subtle glow effect */}
-        <motion.div
-          className="absolute inset-0 rounded-full bg-primary-foreground opacity-0 group-hover:opacity-10"
-          animate={{
-            scale: [1, 1.1, 1],
-            opacity: [0, 0.05, 0],
-          }}
-          transition={{
-            duration: 2,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
-
-        {/* Tooltip */}
-        <div className="absolute bottom-full right-0 mb-3 px-3 py-2 bg-foreground text-background text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-300 whitespace-nowrap pointer-events-none">
-          Scroll to top
-          <div className="absolute top-full right-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-foreground"></div>
-        </div>
+        <ChevronUp className="w-5 h-5" />
       </motion.button>
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Sub-components
+// ---------------------------------------------------------------------------
+
+function PostMock({
+  title,
+  author,
+  score,
+  votes,
+  featured = false,
+}: {
+  title: string;
+  author: string;
+  score: number;
+  votes: number;
+  featured?: boolean;
+}) {
+  return (
+    <div className="w-64 sm:w-72">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-full bg-accent flex items-center justify-center">
+            <Logo className="h-3.5 w-3.5 text-accent-foreground" />
+          </div>
+          <span className="font-mono text-xs text-muted-foreground">
+            {author}
+          </span>
+        </div>
+        {featured && (
+          <span className="font-mono text-[10px] uppercase tracking-wide bg-primary text-primary-foreground px-2 py-0.5 rounded-full">
+            Trending
+          </span>
+        )}
+      </div>
+      <h4 className="font-serif font-semibold text-base text-foreground leading-snug mb-4">
+        {title}
+      </h4>
+      <div className="flex items-center gap-3">
+        <div className="flex-1 h-1.5 bg-border rounded-full overflow-hidden">
+          <div
+            className="h-full bg-primary rounded-full"
+            style={{ width: `${score}%` }}
+          />
+        </div>
+        <span className="font-mono text-xs text-foreground">{score}</span>
+      </div>
+      <div className="font-mono text-[11px] text-muted-foreground mt-2">
+        {votes} weighted votes
+      </div>
+    </div>
+  );
+}
+
+function HorizontalFlow() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start start", "end end"],
+  });
+  const x = useTransform(
+    scrollYProgress,
+    [0, 1],
+    ["0%", `-${(flowSteps.length - 1) * 100}%`]
+  );
+
+  return (
+    <section
+      id="experience"
+      ref={containerRef}
+      className="relative bg-background"
+      style={{ height: `${flowSteps.length * 100}vh` }}
+    >
+      <div className="sticky top-0 h-screen overflow-hidden flex flex-col justify-center">
+        <div className="px-4 sm:px-8 lg:px-16 mb-10">
+          <span className="font-mono text-xs tracking-widest text-primary uppercase">
+            The experience flow
+          </span>
+          <h2 className="font-serif font-black text-4xl sm:text-5xl text-foreground mt-4">
+            Three steps. No shortcuts for whales.
+          </h2>
+        </div>
+        <motion.div style={{ x }} className="flex">
+          {flowSteps.map((item) => (
+            <div
+              key={item.step}
+              className="w-screen shrink-0 px-4 sm:px-8 lg:px-16"
+            >
+              <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-12 items-center">
+                <div>
+                  <div className="font-mono text-7xl sm:text-8xl font-bold text-border mb-6">
+                    {item.step}
+                  </div>
+                  <h3 className="font-serif font-black text-4xl sm:text-5xl text-foreground mb-2">
+                    {item.title}
+                  </h3>
+                  <p className="text-lg text-muted-foreground font-medium mb-6">
+                    {item.subtitle}
+                  </p>
+                  <p className="text-muted-foreground text-lg leading-relaxed max-w-md">
+                    {item.description}
+                  </p>
+                </div>
+                <div className="aspect-square bg-muted border border-border rounded-3xl relative overflow-hidden flex items-center justify-center">
+                  <motion.div
+                    className="w-40 h-40 rounded-full border-2 border-primary/30"
+                    animate={{ scale: [1, 1.15, 1] }}
+                    transition={{
+                      duration: 3,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
+                  />
+                  <motion.div
+                    className="absolute w-24 h-24 rounded-full bg-primary/10"
+                    animate={{ scale: [1, 1.3, 1], opacity: [0.6, 0.2, 0.6] }}
+                    transition={{
+                      duration: 3,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                      delay: 0.3,
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
+        </motion.div>
+      </div>
+    </section>
   );
 }

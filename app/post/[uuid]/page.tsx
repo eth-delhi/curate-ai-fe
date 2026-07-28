@@ -34,14 +34,19 @@ import Link from "next/link";
 import { useSinglePost } from "@/hooks/api/posts";
 import { useUserProfile } from "@/hooks/api/profile";
 import { useAccount } from "wagmi";
-import { contract } from "@/constants/contract";
+import { useContractAddresses } from "@/context/contractAddresses.provider";
 import {
   useWriteCurateAiVoteVote,
   useReadCurateAiPostsGetPostScore,
 } from "@/hooks/wagmi/contracts";
 import { useCatTokenBalance } from "@/hooks/wagmi/useCatTokenBalance";
+import { RPC_POLL_INTERVAL_MS } from "@/constants/chain";
 import { CommentsSection } from "@/components/comments/CommentsSection";
-import { useCreateScore, useUpdateScore } from "@/hooks/api/scores";
+import {
+  useCreateScore,
+  useUpdateScore,
+  useVerifyScore,
+} from "@/hooks/api/scores";
 import { useAddFlag, useRemoveFlag, useFlagStatus } from "@/hooks/api/flags";
 import {
   useAddClap,
@@ -88,6 +93,7 @@ interface BlogPostViewProps {
 export default function BlogPostView({ params }: BlogPostViewProps) {
   const { uuid } = use(params);
   const { address: userAddress } = useAccount();
+  const { contracts } = useContractAddresses();
   const router = useRouter();
 
   // Fetch post data from API
@@ -119,14 +125,24 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
   // Fetch user token balance
   const { balance: tokenBalance } = useCatTokenBalance();
 
-  // Fetch post score from blockchain
-  const { data: postScore } = useReadCurateAiPostsGetPostScore({
-    address: contract.post as `0x${string}`,
-    args: [BigInt(cid)],
-    query: {
-      enabled: !!postData && postData.internal_id !== undefined && cid > 0,
-    },
-  });
+  // Vote count shown here comes straight from the chain (post.sol's
+  // totalScore), not the backend's score rows — this page needs the exact,
+  // currently-enforced number. Polls so it stays live, and is refetched
+  // explicitly right after a vote confirms below.
+  const { data: postScore, refetch: refetchPostScore } =
+    useReadCurateAiPostsGetPostScore({
+      address: contracts?.post as `0x${string}`,
+      args: [BigInt(cid)],
+      query: {
+        enabled:
+          !!contracts &&
+          !!postData &&
+          postData.internal_id !== undefined &&
+          cid > 0,
+        refetchInterval: RPC_POLL_INTERVAL_MS,
+        staleTime: RPC_POLL_INTERVAL_MS,
+      },
+    });
 
   // Voting contract interaction
   const { writeContractAsync, isPending: isScorePending } =
@@ -135,6 +151,7 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
   // API hooks for scoring
   const createScoreMutation = useCreateScore();
   const updateScoreMutation = useUpdateScore();
+  const verifyScoreMutation = useVerifyScore();
 
   // API hooks for flags
   const addFlagMutation = useAddFlag();
@@ -208,9 +225,22 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
     }
   }, [voteWeight, tokenBalance]);
 
+  // Posts that never made it on-chain can't be voted on (no internal_id to
+  // reference in the vote contract).
+  const isPostOnChainFailed = postData?.status === "BLOCKCHAIN_FAILED";
+
   // Handle voting with API integration
   const handleVote = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (isPostOnChainFailed) {
+      showToast({
+        message:
+          "This post has failed to update to the blockchain. It will be added in some time.",
+        type: "error",
+      });
+      return;
+    }
 
     if (!userAddress) {
       showToast({
@@ -232,13 +262,17 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
       return;
     }
 
+    if (!contracts) {
+      showToast({
+        message: "Contract addresses not loaded yet. Please wait...",
+        type: "error",
+      });
+      return;
+    }
+
     try {
       console.log("Starting scoring process...");
 
-      // Step 1: Create score in database
-      console.log("Step 1: Creating score in database...");
-      console.log("Vote percentage:", voteWeight);
-      console.log("Vote quantity:", Number(voteValue));
       const scoreData = await createScoreMutation.mutateAsync({
         postUuid: uuid,
         userWalletAddress: userAddress,
@@ -246,17 +280,15 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
         votePercentage: voteWeight,
       });
       console.log("Score created:", scoreData);
-
-      // Step 2: Execute blockchain transaction
       console.log("Step 2: Executing blockchain transaction...");
-      console.log("Contract address:", contract.post);
+      console.log("Contract address:", contracts.post);
       console.log("Arguments:", [BigInt(cid), voteValue]);
 
       let txResult;
       let blockchainError = false;
       try {
         txResult = await writeContractAsync({
-          address: contract.vote as `0x${string}`,
+          address: contracts.vote as `0x${string}`,
           args: [BigInt(cid), voteValue],
         });
         console.log("Transaction result:", txResult);
@@ -284,19 +316,13 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
         txHash = undefined;
       }
 
-      console.log("Transaction hash:", txHash);
-
-      // Step 3: Update score with transaction hash or mark as failed
-      console.log("Step 3: Updating score...");
-      console.log("Score UUID:", scoreData.uuid);
-      console.log("Transaction hash:", txHash);
-      console.log("Status:", txHash ? "VERIFIED" : "BLOCKCHAIN_FAILED");
-
       try {
+        // The backend only lets clients set BLOCKCHAIN_INITIATED/BLOCKCHAIN_FAILED;
+        // VERIFIED is reached via the verify endpoint after an on-chain check.
         await updateScoreMutation.mutateAsync({
           scoreUuid: scoreData.uuid,
           txHash,
-          status: txHash ? "VERIFIED" : "BLOCKCHAIN_FAILED",
+          status: txHash ? "BLOCKCHAIN_INITIATED" : "BLOCKCHAIN_FAILED",
         });
         console.log("Update score API call completed");
       } catch (updateError) {
@@ -304,8 +330,20 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
         throw updateError;
       }
 
+      // Step 4: Verify the transaction on-chain so the score reaches
+      // verified state. Non-fatal: the vote is already recorded.
+      if (txHash) {
+        try {
+          await verifyScoreMutation.mutateAsync(scoreData.uuid);
+          console.log("Score verified on-chain");
+        } catch (verifyError) {
+          console.error("Score verification failed:", verifyError);
+        }
+      }
+
       if (txHash) {
         console.log("Score updated successfully with transaction hash");
+        refetchPostScore();
       } else {
         console.log("Score marked as BLOCKCHAIN_FAILED");
       }
@@ -1267,10 +1305,19 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
                         </span>
                       </button>
 
-                      <div className="relative" ref={scorePopoverRef}>
+                      <div className="group relative" ref={scorePopoverRef}>
                         <button
-                          onClick={() => setShowScorePopover(!showScorePopover)}
-                          className="flex items-center gap-1.5 text-[14px] text-muted-foreground transition-colors hover:text-foreground"
+                          onClick={() => {
+                            if (!isPostOnChainFailed) {
+                              setShowScorePopover(!showScorePopover);
+                            }
+                          }}
+                          aria-disabled={isPostOnChainFailed}
+                          className={`flex items-center gap-1.5 text-[14px] text-muted-foreground transition-colors ${
+                            isPostOnChainFailed
+                              ? "cursor-not-allowed opacity-50"
+                              : "hover:text-foreground"
+                          }`}
                         >
                           <IoChevronUpCircle className="h-5 w-5" />
                           <span className="text-[14px] font-medium">
@@ -1278,7 +1325,14 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
                           </span>
                         </button>
 
-                        {showScorePopover && (
+                        {isPostOnChainFailed && (
+                          <span className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 hidden w-60 -translate-x-1/2 rounded-md border border-border bg-background px-2.5 py-1.5 text-center text-xs leading-relaxed text-muted-foreground shadow-md group-hover:block">
+                            This post has failed to update to the blockchain.
+                            It will be added in some time.
+                          </span>
+                        )}
+
+                        {showScorePopover && !isPostOnChainFailed && (
                           <div className="upvote-popover absolute bottom-full left-0 z-50 mb-2 w-64 rounded-lg border border-border bg-background p-3 shadow-lg">
                             <div className="space-y-2.5">
                               <div className="flex items-center justify-between">

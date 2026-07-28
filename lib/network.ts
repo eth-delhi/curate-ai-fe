@@ -12,7 +12,7 @@ export enum Network {
   HARDHAT_LOCAL = "hardhat-local",
 }
 
-export const getNetworkUrl = () => {
+export const getNetworkUrl = (dbRpcUrl?: string) => {
   switch (process.env.NEXT_PUBLIC_BLOCKCHAIN_NETWORK) {
     case Network.POLYGON:
       return "https://polygon-rpc.com/";
@@ -38,7 +38,13 @@ export const getNetworkUrl = () => {
     case Network.HEDERA_TESTNET:
       return "https://testnet.hashio.io/api";
     case Network.HARDHAT_LOCAL:
-      return "http://127.0.0.1:8545";
+      // The tunnel URL (e.g. ngrok) rotates, so it's DB-backed
+      // (GET /settings/rpc-url, see context/rpcUrl.provider.tsx) rather than
+      // a build-time env var. NEXT_PUBLIC_RPC_URL is kept only as an
+      // offline/rollback fallback if the DB value hasn't loaded yet.
+      return (
+        dbRpcUrl || process.env.NEXT_PUBLIC_RPC_URL || "http://127.0.0.1:8545"
+      );
     default:
       throw new Error("Network not supported");
   }

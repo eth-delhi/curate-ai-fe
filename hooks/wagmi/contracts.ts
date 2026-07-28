@@ -317,7 +317,7 @@ export const curateAiPostsAbi = [
       { name: 'tags', internalType: 'string', type: 'string' },
     ],
     name: 'createPost',
-    outputs: [],
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
     stateMutability: 'nonpayable',
   },
   {
@@ -349,6 +349,13 @@ export const curateAiPostsAbi = [
         ],
       },
     ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '', internalType: 'address', type: 'address' }],
+    name: 'lastPostTime',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
     stateMutability: 'view',
   },
   {
@@ -1515,6 +1522,15 @@ export const useReadCurateAiPostsGetPostScore =
 export const useReadCurateAiPostsGetPosts = /*#__PURE__*/ createUseReadContract(
   { abi: curateAiPostsAbi, functionName: 'getPosts' },
 )
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link curateAiPostsAbi}__ and `functionName` set to `"lastPostTime"`
+ */
+export const useReadCurateAiPostsLastPostTime =
+  /*#__PURE__*/ createUseReadContract({
+    abi: curateAiPostsAbi,
+    functionName: 'lastPostTime',
+  })
 
 /**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link curateAiPostsAbi}__ and `functionName` set to `"postCounter"`

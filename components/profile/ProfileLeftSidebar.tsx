@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { motion } from "framer-motion";
 import {
   Wallet,
   Loader2,
@@ -13,8 +14,13 @@ import {
 } from "lucide-react";
 import { useAccount, useBalance } from "wagmi";
 import { useCatTokenBalance } from "@/hooks/wagmi/useCatTokenBalance";
-import { useReadCuratAiTokenDecimals } from "@/hooks/wagmi/contracts";
-import { contract } from "@/constants/contract";
+import {
+  useReadCurateAiSettlementGetClaimableAmount,
+  useWriteCurateAiSettlementClaimRewards,
+} from "@/hooks/wagmi/contracts";
+import { useContractAddresses } from "@/context/contractAddresses.provider";
+import { RPC_POLL_INTERVAL_MS } from "@/constants/chain";
+import { showToast } from "@/utils/showToast";
 import { formatUnits } from "viem";
 import { useMemo } from "react";
 import Link from "next/link";
@@ -29,13 +35,18 @@ import { useUserProfile } from "@/hooks/api/profile";
 // Wallet Widget Component
 const WalletWidget = () => {
   const { address, isConnected } = useAccount();
-  const { balance: catBalance, isLoading: isCatBalanceLoading } =
-    useCatTokenBalance();
-  const { data: catDecimals } = useReadCuratAiTokenDecimals({
-    address: contract.token as `0x${string}`,
-  });
+  const { contracts } = useContractAddresses();
+  const {
+    balance: catBalance,
+    isLoading: isCatBalanceLoading,
+    refetch: refetchCatBalance,
+  } = useCatTokenBalance();
   const { data: sonicBalance, isLoading: isSonicBalanceLoading } = useBalance({
     address: address,
+    query: {
+      refetchInterval: RPC_POLL_INTERVAL_MS,
+      staleTime: RPC_POLL_INTERVAL_MS,
+    },
   });
 
   // Mock conversion rates
@@ -44,15 +55,18 @@ const WalletWidget = () => {
 
   const isLoading = isCatBalanceLoading || isSonicBalanceLoading;
 
-  const formattedCatBalance = useMemo(() => {
-    if (!catBalance || !catDecimals) return "0.00";
-    try {
-      const formatted = formatUnits(catBalance, catDecimals);
-      return parseFloat(formatted).toFixed(2);
-    } catch {
-      return "0.00";
-    }
-  }, [catBalance, catDecimals]);
+  // CAT amounts are whole base units — the token contract mints/distributes
+  // unscaled values (INITIAL_SUPPLY = 1_000_000_000, DAILY_MINT_AMOUNT =
+  // 100_000), so the ERC20's 18 decimals are never used and must not be
+  // applied when displaying.
+  const catBalanceNumber = useMemo(
+    () => (catBalance !== undefined ? Number(catBalance) : 0),
+    [catBalance]
+  );
+  const formattedCatBalance = useMemo(
+    () => catBalanceNumber.toLocaleString(),
+    [catBalanceNumber]
+  );
 
   const formattedSonicBalance = useMemo(() => {
     if (!sonicBalance?.value) return "0.00";
@@ -65,31 +79,83 @@ const WalletWidget = () => {
   }, [sonicBalance]);
 
   const catUsdValue = useMemo(() => {
-    const value = parseFloat(formattedCatBalance) * MOCK_CAT_USD_RATE;
-    return value.toFixed(2);
-  }, [formattedCatBalance]);
+    const value = catBalanceNumber * MOCK_CAT_USD_RATE;
+    return value.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  }, [catBalanceNumber]);
 
   const sonicUsdValue = useMemo(() => {
     const value = parseFloat(formattedSonicBalance) * MOCK_SONIC_USD_RATE;
     return value.toFixed(2);
   }, [formattedSonicBalance]);
 
+  // Pending settlement rewards for this wallet. getClaimableAmount returns a
+  // wei-scale (1e18) precision value; claimRewards() divides by 1e18 before
+  // distributing, so mirror that here to show what would actually be paid out.
+  const {
+    data: claimableRaw,
+    isLoading: isClaimableLoading,
+    refetch: refetchClaimable,
+  } = useReadCurateAiSettlementGetClaimableAmount({
+    address: contracts?.settle as `0x${string}`,
+    args: address ? [address] : undefined,
+    query: {
+      enabled: !!address && !!contracts,
+      refetchInterval: RPC_POLL_INTERVAL_MS,
+      staleTime: RPC_POLL_INTERVAL_MS,
+    },
+  });
+  const { writeContractAsync: claimRewardsAsync, isPending: isClaiming } =
+    useWriteCurateAiSettlementClaimRewards();
+
+  const claimableTokenUnits =
+    claimableRaw !== undefined
+      ? claimableRaw / BigInt(10) ** BigInt(18)
+      : BigInt(0);
+
+  // Like the balances above, the distributed amount is whole CAT base units.
+  const formattedClaimable = useMemo(
+    () => Number(claimableTokenUnits).toLocaleString(),
+    [claimableTokenUnits]
+  );
+
+  const handleClaim = async () => {
+    if (!contracts) {
+      showToast({
+        message: "Contract addresses not loaded yet. Please wait...",
+        type: "error",
+      });
+      return;
+    }
+    try {
+      await claimRewardsAsync({ address: contracts.settle as `0x${string}` });
+      showToast({ message: "Rewards claimed successfully!", type: "success" });
+      refetchClaimable();
+      refetchCatBalance();
+    } catch (error) {
+      console.error("Claim rewards failed:", error);
+      showToast({
+        message: "Failed to claim rewards. Please try again.",
+        type: "error",
+      });
+    }
+  };
+
   if (!isConnected || !address) {
     return (
-      <div className="mb-6">
-        <div className="bg-muted rounded-lg p-3 border border-border">
-          <p className="text-xs text-muted-foreground">
-            Connect your wallet to view balances
-          </p>
-        </div>
+      <div className="bg-muted rounded-lg p-3 border border-border">
+        <p className="text-xs text-muted-foreground">
+          Connect your wallet to view balances
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="mb-6">
-      <div className="bg-muted rounded-lg p-3 border border-border">
-        {isLoading ? (
+    <div className="bg-muted rounded-lg p-3 border border-border">
+      {isLoading ? (
           <div className="flex items-center justify-center py-2">
             <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
           </div>
@@ -120,10 +186,29 @@ const WalletWidget = () => {
                 {formattedSonicBalance} SONIC
               </p>
             </div>
+
+            {/* Claimable Rewards */}
+            <div className="space-y-1.5 border-t border-border pt-2.5">
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-muted-foreground">
+                  Claimable rewards
+                </p>
+                <p className="text-sm font-bold text-foreground">
+                  {isClaimableLoading ? "…" : `${formattedClaimable} CAT`}
+                </p>
+              </div>
+              <button
+                onClick={handleClaim}
+                disabled={isClaiming || !claimableRaw}
+                className="flex w-full items-center justify-center gap-1.5 rounded-md bg-primary px-2 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isClaiming && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                {isClaiming ? "Claiming..." : "Claim Rewards"}
+              </button>
+            </div>
           </div>
         )}
       </div>
-    </div>
   );
 };
 
@@ -260,119 +345,133 @@ export const ProfileLeftSidebar = ({ userUuid }: ProfileLeftSidebarProps) => {
   const totalClaps = 42; // Static value as requested
 
   return (
-    <div className="w-80 bg-background border-r border-border p-6 overflow-y-auto h-full flex flex-col">
-      {/* Wallet Widget */}
-      <WalletWidget />
+    <motion.aside
+      initial={{ opacity: 0, x: -12 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: 0.4 }}
+      className="hidden lg:block w-[280px] shrink-0"
+    >
+      <div className="sticky top-[100px] space-y-3">
+        {/* Wallet + Stats card */}
+        <div className="rounded-xl border border-border bg-background p-4 shadow-sm">
+          <WalletWidget />
 
-      {/* Stats Section */}
-      <div className="mb-6 pb-6 border-b border-border">
-        <div className="space-y-1">
-          <StatItem
-            icon={FileText}
-            label="Total posts"
-            value={totalPosts}
-            small={true}
-          />
-          <StatItem
-            icon={Trophy}
-            label="Total scores"
-            value={totalScores}
-            small={true}
-          />
-          <StatItem
-            icon={MessageSquare}
-            label="Comments"
-            value={totalComments}
-            small={true}
-          />
-          <StatItem icon={Flag} label="Flags" value={totalFlags} small={true} />
-          <StatItem icon={Hand} label="Claps" value={totalClaps} small={true} />
-        </div>
-      </div>
-
-      {/* Followers/Following Section */}
-      <div className="flex-1 flex flex-col">
-        {/* Tabs */}
-        <div className="flex gap-1 mb-4 border-b border-border">
-          <button
-            onClick={() => setActiveTab("followers")}
-            className={`flex-1 py-2 px-3 text-sm font-medium transition-colors duration-150 relative ${
-              activeTab === "followers"
-                ? "text-foreground"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            Followers
-            {activeTab === "followers" && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"></div>
-            )}
-          </button>
-          <button
-            onClick={() => setActiveTab("following")}
-            className={`flex-1 py-2 px-3 text-sm font-medium transition-colors duration-150 relative ${
-              activeTab === "following"
-                ? "text-foreground"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            Following
-            {activeTab === "following" && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"></div>
-            )}
-          </button>
-        </div>
-
-        {/* Count Display */}
-        <div className="mb-4">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Users className="w-4 h-4" />
-            <span>
-              {activeTab === "followers"
-                ? `${followersCount} ${
-                    followersCount === 1 ? "follower" : "followers"
-                  }`
-                : `${followingCount} ${
-                    followingCount === 1 ? "following" : "following"
-                  }`}
-            </span>
+          <div className="mt-4 space-y-1">
+            <StatItem
+              icon={FileText}
+              label="Total posts"
+              value={totalPosts}
+              small={true}
+            />
+            <StatItem
+              icon={Trophy}
+              label="Total scores"
+              value={totalScores}
+              small={true}
+            />
+            <StatItem
+              icon={MessageSquare}
+              label="Comments"
+              value={totalComments}
+              small={true}
+            />
+            <StatItem icon={Flag} label="Flags" value={totalFlags} small={true} />
+            <StatItem icon={Hand} label="Claps" value={totalClaps} small={true} />
           </div>
         </div>
 
-        {/* List */}
-        <div className="flex-1 overflow-y-auto">
-          {activeTab === "followers" ? (
-            isFollowersLoading ? (
+        {/* Followers/Following card */}
+        <div className="rounded-xl border border-border bg-background p-4 shadow-sm">
+          {/* Tabs */}
+          <div className="flex gap-1 mb-4 border-b border-border">
+            <button
+              onClick={() => setActiveTab("followers")}
+              className={`flex-1 py-2 px-3 text-sm font-medium transition-colors duration-150 relative ${
+                activeTab === "followers"
+                  ? "text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Followers
+              {activeTab === "followers" && (
+                <motion.div
+                  layoutId="profile-sidebar-tab-indicator"
+                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"
+                  transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                />
+              )}
+            </button>
+            <button
+              onClick={() => setActiveTab("following")}
+              className={`flex-1 py-2 px-3 text-sm font-medium transition-colors duration-150 relative ${
+                activeTab === "following"
+                  ? "text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Following
+              {activeTab === "following" && (
+                <motion.div
+                  layoutId="profile-sidebar-tab-indicator"
+                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"
+                  transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                />
+              )}
+            </button>
+          </div>
+
+          {/* Count Display */}
+          <div className="mb-4">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Users className="w-4 h-4" />
+              <span>
+                {activeTab === "followers"
+                  ? `${followersCount} ${
+                      followersCount === 1 ? "follower" : "followers"
+                    }`
+                  : `${followingCount} ${
+                      followingCount === 1 ? "following" : "following"
+                    }`}
+              </span>
+            </div>
+          </div>
+
+          {/* List */}
+          <div className="max-h-80 overflow-y-auto">
+            {activeTab === "followers" ? (
+              isFollowersLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                </div>
+              ) : followers.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-sm text-muted-foreground">No followers yet</p>
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  {followers.map((user) => (
+                    <UserItem key={user.uuid} user={user} />
+                  ))}
+                </div>
+              )
+            ) : isFollowingLoading ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
               </div>
-            ) : followers.length === 0 ? (
+            ) : following.length === 0 ? (
               <div className="text-center py-8">
-                <p className="text-sm text-muted-foreground">No followers yet</p>
+                <p className="text-sm text-muted-foreground">Not following anyone yet</p>
               </div>
             ) : (
               <div className="space-y-1">
-                {followers.map((user) => (
+                {following.map((user) => (
                   <UserItem key={user.uuid} user={user} />
                 ))}
               </div>
-            )
-          ) : isFollowingLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-            </div>
-          ) : following.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-sm text-muted-foreground">Not following anyone yet</p>
-            </div>
-          ) : (
-            <div className="space-y-1">
-              {following.map((user) => (
-                <UserItem key={user.uuid} user={user} />
-              ))}
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </motion.aside>
   );
 };

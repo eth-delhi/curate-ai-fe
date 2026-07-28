@@ -35,13 +35,21 @@ import {
   useReadCuratAiTokenDecimals,
   useWriteCuratAiTokenTransfer,
 } from "@/hooks/wagmi/contracts";
-import { contract } from "@/constants/contract";
+import { useContractAddresses } from "@/context/contractAddresses.provider";
 import { useCatTokenBalance } from "@/hooks/wagmi/useCatTokenBalance";
+import { useWalletByUsername, useUsernameByWallet } from "@/hooks/api/users";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Upload, X } from "lucide-react";
 import {
   TOKEN_CONTRACTS,
   TOKEN_DISPLAY_NAMES,
   NATIVE_TOKEN_SYMBOL,
+  RPC_POLL_INTERVAL_MS,
 } from "@/constants/chain";
 import {
   Edit2,
@@ -54,6 +62,8 @@ import {
   FileText,
   BarChart2,
   Wallet,
+  Copy,
+  Check,
   Heart,
   MessageSquare,
   MessageCircle,
@@ -62,7 +72,9 @@ import {
   MoreHorizontal,
   Loader2,
   AlertCircle,
+  AlertTriangle,
   Send,
+  ChevronDown,
   Wallet as WalletIcon,
   UserPlus,
   UserMinus,
@@ -71,23 +83,69 @@ import {
 // Wallet Tab Component
 function WalletTab() {
   const { address: userAddress } = useAccount();
+  const { contracts } = useContractAddresses();
   const [activeTokenTab, setActiveTokenTab] = useState<"CAT" | "SONIC">("CAT");
+  const [sendMode, setSendMode] = useState<"address" | "username">("address");
   const [recipientAddress, setRecipientAddress] = useState("");
+  const [recipientUsername, setRecipientUsername] = useState("");
+  const [debouncedAddress, setDebouncedAddress] = useState("");
+  const [debouncedUsername, setDebouncedUsername] = useState("");
   const [transferAmount, setTransferAmount] = useState("");
   const [isTransferring, setIsTransferring] = useState(false);
+
+  // Debounce recipient inputs before firing lookup queries
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setDebouncedAddress(recipientAddress);
+    }, 400);
+    return () => clearTimeout(timeoutId);
+  }, [recipientAddress]);
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setDebouncedUsername(recipientUsername);
+    }, 400);
+    return () => clearTimeout(timeoutId);
+  }, [recipientUsername]);
+
+  // Address mode: check whether this address belongs to a CurateAI user
+  const {
+    data: usernameLookup,
+    isLoading: isUsernameLookupLoading,
+  } = useUsernameByWallet(debouncedAddress, {
+    enabled: sendMode === "address" && isAddress(debouncedAddress),
+  });
+
+  // Username mode: resolve the wallet address for the given username
+  const {
+    data: walletLookup,
+    isLoading: isWalletLookupLoading,
+  } = useWalletByUsername(debouncedUsername, {
+    enabled: sendMode === "username" && debouncedUsername.trim().length > 0,
+  });
+
+  // The address that will actually receive the transfer
+  const resolvedRecipient =
+    sendMode === "address" ? recipientAddress : walletLookup?.walletAddress;
 
   // Fetch CAT token balance
   const { balance: catBalance, refetch: refetchCatBalance } =
     useCatTokenBalance();
 
-  // Fetch CAT token decimals
+  // Fetch CAT token decimals — immutable once deployed, so fetch once and
+  // never re-poll rather than riding the default polling cadence.
   const { data: catDecimals } = useReadCuratAiTokenDecimals({
-    address: contract.token as `0x${string}`,
+    address: contracts?.token as `0x${string}`,
+    query: { staleTime: Infinity },
   });
 
   // Fetch SONIC (native) balance
   const { data: sonicBalance, refetch: refetchSonicBalance } = useBalance({
     address: userAddress,
+    query: {
+      refetchInterval: RPC_POLL_INTERVAL_MS,
+      staleTime: RPC_POLL_INTERVAL_MS,
+    },
   });
 
   // Token transfer hook for CAT
@@ -127,9 +185,26 @@ function WalletTab() {
       return;
     }
 
-    if (!recipientAddress || !isAddress(recipientAddress)) {
+    if (sendMode === "address" && (!recipientAddress || !isAddress(recipientAddress))) {
       showToast({
         message: "Please enter a valid recipient address",
+        type: "error",
+      });
+      return;
+    }
+
+    if (sendMode === "username" && !walletLookup?.walletAddress) {
+      showToast({
+        message: "Please enter a valid, existing username",
+        type: "error",
+      });
+      return;
+    }
+
+    const recipient = resolvedRecipient as `0x${string}` | undefined;
+    if (!recipient || !isAddress(recipient)) {
+      showToast({
+        message: "Unable to resolve a valid recipient address",
         type: "error",
       });
       return;
@@ -167,9 +242,18 @@ function WalletTab() {
           return;
         }
 
+        if (!contracts) {
+          showToast({
+            message: "Contract addresses not loaded yet. Please wait...",
+            type: "error",
+          });
+          setIsTransferring(false);
+          return;
+        }
+
         await transferCatToken({
-          address: contract.token as `0x${string}`,
-          args: [recipientAddress as `0x${string}`, amount],
+          address: contracts.token as `0x${string}`,
+          args: [recipient, amount],
         });
 
         showToast({
@@ -193,7 +277,7 @@ function WalletTab() {
         }
 
         await sendSonicTransaction({
-          to: recipientAddress as `0x${string}`,
+          to: recipient,
           value: amount,
         });
 
@@ -208,6 +292,7 @@ function WalletTab() {
 
       // Reset form
       setRecipientAddress("");
+      setRecipientUsername("");
       setTransferAmount("");
     } catch (error: any) {
       console.error("Transfer error:", error);
@@ -222,12 +307,39 @@ function WalletTab() {
 
   const isLoading = isCatTransferPending || isSonicTransferPending;
 
+  // TEMP DEBUG — remove after diagnosing disabled-button issue
+  useEffect(() => {
+    console.log("[WalletTab debug]", {
+      sendMode,
+      userAddress,
+      isLoading,
+      isTransferring,
+      recipientAddress,
+      isAddressValid: isAddress(recipientAddress || ""),
+      walletLookup,
+      transferButtonDisabled:
+        isLoading ||
+        isTransferring ||
+        !userAddress ||
+        (sendMode === "address"
+          ? !isAddress(recipientAddress)
+          : !walletLookup?.walletAddress),
+    });
+  }, [
+    sendMode,
+    userAddress,
+    isLoading,
+    isTransferring,
+    recipientAddress,
+    walletLookup,
+  ]);
+
   return (
     <div className="space-y-6">
       {/* Balance Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* CAT Balance Card */}
-        <div className="bg-background rounded-xl p-6 border border-border">
+        <div className="bg-background rounded-xl p-6 border border-border shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center">
               <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center mr-3">
@@ -246,7 +358,7 @@ function WalletTab() {
         </div>
 
         {/* SONIC Balance Card */}
-        <div className="bg-background rounded-xl p-6 border border-border">
+        <div className="bg-background rounded-xl p-6 border border-border shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center">
               <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center mr-3">
@@ -266,7 +378,7 @@ function WalletTab() {
       </div>
 
       {/* Transfer Form */}
-      <div className="bg-background rounded-xl p-6 border border-border">
+      <div className="bg-background rounded-xl p-6 border border-border shadow-sm">
         <h2 className="text-xl font-bold text-foreground mb-6">
           Transfer Tokens
         </h2>
@@ -300,20 +412,99 @@ function WalletTab() {
         {/* Transfer Form */}
         <div className="space-y-4">
           <div>
-            <label
-              htmlFor="recipient"
-              className="block text-sm font-medium text-foreground mb-2"
-            >
-              Recipient Address
-            </label>
-            <Input
-              id="recipient"
-              type="text"
-              placeholder="0x..."
-              value={recipientAddress}
-              onChange={(e) => setRecipientAddress(e.target.value)}
-              className="border-border font-mono text-sm"
-            />
+            <div className="flex items-center justify-between mb-2">
+              <label
+                htmlFor="recipient"
+                className="block text-sm font-medium text-foreground"
+              >
+                Send by
+              </label>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    className="flex items-center gap-1 text-sm font-medium text-primary hover:text-primary/80"
+                  >
+                    {sendMode === "address" ? "Wallet Address" : "Username"}
+                    <ChevronDown className="w-4 h-4" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setSendMode("address")}>
+                    Wallet Address
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSendMode("username")}>
+                    Username
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+
+            {sendMode === "address" ? (
+              <>
+                <Input
+                  id="recipient"
+                  type="text"
+                  placeholder="0x..."
+                  value={recipientAddress}
+                  onChange={(e) => setRecipientAddress(e.target.value)}
+                  className="border-border font-mono text-sm"
+                />
+                {isAddress(debouncedAddress) && (
+                  <div className="mt-2 text-sm">
+                    {isUsernameLookupLoading ? (
+                      <span className="flex items-center gap-1 text-muted-foreground">
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        Checking address...
+                      </span>
+                    ) : usernameLookup ? (
+                      <span className="flex items-center gap-1 text-green-600">
+                        <Check className="w-3.5 h-3.5" />
+                        Sending to @{usernameLookup.username}
+                      </span>
+                    ) : (
+                      <span className="flex items-start gap-1 text-amber-600">
+                        <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                        This wallet isn&apos;t part of the CurateAI ecosystem
+                        yet, but you can still send — it&apos;s a standard
+                        ERC20 transfer.
+                      </span>
+                    )}
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                <Input
+                  id="recipient"
+                  type="text"
+                  placeholder="username"
+                  value={recipientUsername}
+                  onChange={(e) => setRecipientUsername(e.target.value)}
+                  className="border-border text-sm"
+                />
+                {debouncedUsername.trim().length > 0 && (
+                  <div className="mt-2 text-sm">
+                    {isWalletLookupLoading ? (
+                      <span className="flex items-center gap-1 text-muted-foreground">
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        Looking up user...
+                      </span>
+                    ) : walletLookup ? (
+                      <span className="flex items-center gap-1 text-green-600 font-mono">
+                        <Check className="w-3.5 h-3.5 shrink-0" />
+                        Sending to {walletLookup.walletAddress}
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1 text-destructive">
+                        <AlertCircle className="w-3.5 h-3.5" />
+                        No user found with that username.
+                      </span>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
           </div>
 
           <div>
@@ -356,7 +547,14 @@ function WalletTab() {
 
           <Button
             onClick={handleTransfer}
-            disabled={isLoading || isTransferring || !userAddress}
+            disabled={
+              isLoading ||
+              isTransferring ||
+              !userAddress ||
+              (sendMode === "address"
+                ? !isAddress(recipientAddress)
+                : !walletLookup?.walletAddress)
+            }
             className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
           >
             {isLoading || isTransferring ? (
@@ -416,6 +614,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
   const [isUploadingProfilePic, setIsUploadingProfilePic] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [isAddressCopied, setIsAddressCopied] = useState(false);
 
   // Get current user ID from token
   useEffect(() => {
@@ -535,6 +734,16 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
     return `https://gateway.pinata.cloud/ipfs/${hash}`;
   };
 
+  const handleCopyWalletAddress = async (address: string) => {
+    try {
+      await navigator.clipboard.writeText(address);
+      setIsAddressCopied(true);
+      setTimeout(() => setIsAddressCopied(false), 2000);
+    } catch {
+      showToast({ message: "Failed to copy address", type: "error" });
+    }
+  };
+
   const userData = profileData
     ? {
         name:
@@ -566,6 +775,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
           profileData.stats?.postsCount ||
           postsData?.pagination?.total ||
           userPosts.length,
+        walletAddress: profileData.walletAddress || "",
       }
     : {
         name: "Loading...",
@@ -580,6 +790,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
         followers: 0,
         following: 0,
         posts: 0,
+        walletAddress: "",
       };
 
   // Initialize form data with profileData when it's loaded or refetched after update
@@ -872,7 +1083,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
     followUserMutation.isPending || unfollowUserMutation.isPending;
 
   return (
-    <div className="profile-page flex h-screen flex-col bg-background text-foreground">
+    <div className="profile-page min-h-screen bg-muted text-foreground">
       <style jsx global>{`
         .profile-page {
           font-family: var(--font-sans), system-ui, sans-serif;
@@ -911,19 +1122,17 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
       `}</style>
 
       {/* Top Navbar */}
-      <HomeNavbar />
+      <HomeNavbar maxWidth={1128} />
 
       {/* Main Content Area - Below Navbar */}
-      <div className="flex flex-1 overflow-hidden pt-[60px]">
-        {/* Content Area */}
-        <div className="flex flex-1 overflow-hidden bg-background">
+      <div className="pt-[76px]">
+        <div className="mx-auto flex w-full max-w-[1128px] gap-6 px-6 py-6">
           <ProfileLeftSidebar userUuid={id} />
           {/* Main Content */}
-          <div className="flex-1 overflow-y-auto">
-            <div className="mx-auto w-full max-w-[1040px] px-6 py-6">
+          <main className="min-w-0 flex-1">
               {/* Profile Header */}
               {isProfileLoading ? (
-                <div className="mb-8">
+                <div className="mb-6 rounded-xl border border-border bg-background p-8 shadow-sm">
                   <div className="flex items-center justify-center py-12">
                     <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
                     <span className="ml-3 text-muted-foreground">
@@ -932,7 +1141,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                   </div>
                 </div>
               ) : isProfileError ? (
-                <div className="mb-8">
+                <div className="mb-6 rounded-xl border border-border bg-background p-8 shadow-sm">
                   <div className="flex flex-col items-center justify-center py-12">
                     <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
                     <p className="text-muted-foreground">Failed to load profile</p>
@@ -943,7 +1152,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5 }}
-                  className="mb-8 pt-8"
+                  className="mb-6 rounded-xl border border-border bg-background p-6 shadow-sm sm:p-8"
                 >
                   <div className="flex flex-col md:flex-row gap-8 items-start">
                     <div className="flex-shrink-0 relative group">
@@ -1005,6 +1214,26 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                             {userData.name}
                           </h1>
                           <p className="text-muted-foreground">@{userData.username}</p>
+                          {userData.walletAddress && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleCopyWalletAddress(userData.walletAddress)
+                              }
+                              title={userData.walletAddress}
+                              className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                            >
+                              <Wallet className="h-3.5 w-3.5" />
+                              <span className="font-mono">
+                                {`${userData.walletAddress.slice(0, 6)}...${userData.walletAddress.slice(-4)}`}
+                              </span>
+                              {isAddressCopied ? (
+                                <Check className="h-3.5 w-3.5 text-primary" />
+                              ) : (
+                                <Copy className="h-3.5 w-3.5" />
+                              )}
+                            </button>
+                          )}
                         </div>
 
                         {userData.bio && (
@@ -1112,72 +1341,33 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                 {isOwnProfile ? (
                   <div className="w-full">
                     {/* Tabs */}
-                    <div className="mb-8 flex gap-8 border-b border-border">
-                      <button
-                        onClick={() => setActiveTab("posts")}
-                        className={`relative py-4 text-[15px] font-medium transition-colors ${
-                          activeTab === "posts"
-                            ? "text-primary"
-                            : "text-muted-foreground hover:text-foreground"
-                        }`}
-                      >
-                        Posts
-                        {activeTab === "posts" && (
-                          <span className="absolute bottom-0 left-0 right-0 h-px bg-primary"></span>
-                        )}
-                      </button>
-                      <button
-                        onClick={() => setActiveTab("drafts")}
-                        className={`relative py-4 text-[15px] font-medium transition-colors ${
-                          activeTab === "drafts"
-                            ? "text-primary"
-                            : "text-muted-foreground hover:text-foreground"
-                        }`}
-                      >
-                        Drafts
-                        {activeTab === "drafts" && (
-                          <span className="absolute bottom-0 left-0 right-0 h-px bg-primary"></span>
-                        )}
-                      </button>
-                      <button
-                        onClick={() => setActiveTab("scored")}
-                        className={`relative py-4 text-[15px] font-medium transition-colors ${
-                          activeTab === "scored"
-                            ? "text-primary"
-                            : "text-muted-foreground hover:text-foreground"
-                        }`}
-                      >
-                        Scored
-                        {activeTab === "scored" && (
-                          <span className="absolute bottom-0 left-0 right-0 h-px bg-primary"></span>
-                        )}
-                      </button>
-                      <button
-                        onClick={() => setActiveTab("settings")}
-                        className={`relative py-4 text-[15px] font-medium transition-colors ${
-                          activeTab === "settings"
-                            ? "text-primary"
-                            : "text-muted-foreground hover:text-foreground"
-                        }`}
-                      >
-                        Settings
-                        {activeTab === "settings" && (
-                          <span className="absolute bottom-0 left-0 right-0 h-px bg-primary"></span>
-                        )}
-                      </button>
-                      <button
-                        onClick={() => setActiveTab("wallet")}
-                        className={`relative py-4 text-[15px] font-medium transition-colors ${
-                          activeTab === "wallet"
-                            ? "text-primary"
-                            : "text-muted-foreground hover:text-foreground"
-                        }`}
-                      >
-                        Wallet
-                        {activeTab === "wallet" && (
-                          <span className="absolute bottom-0 left-0 right-0 h-px bg-primary"></span>
-                        )}
-                      </button>
+                    <div className="mb-6 flex gap-8 rounded-xl border border-border bg-background px-6 shadow-sm">
+                      {[
+                        { key: "posts", label: "Posts" },
+                        { key: "drafts", label: "Drafts" },
+                        { key: "scored", label: "Scored" },
+                        { key: "settings", label: "Settings" },
+                        { key: "wallet", label: "Wallet" },
+                      ].map((tab) => (
+                        <button
+                          key={tab.key}
+                          onClick={() => setActiveTab(tab.key)}
+                          className={`relative py-4 text-[15px] font-medium transition-colors ${
+                            activeTab === tab.key
+                              ? "text-primary"
+                              : "text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          {tab.label}
+                          {activeTab === tab.key && (
+                            <motion.span
+                              layoutId="profile-tab-indicator-own"
+                              className="absolute bottom-0 left-0 right-0 h-[2px] bg-primary"
+                              transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                            />
+                          )}
+                        </button>
+                      ))}
                     </div>
 
                     {/* Tab Content */}
@@ -1205,7 +1395,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                               <p className="text-muted-foreground">No posts found</p>
                             </div>
                           ) : (
-                            <div className="bg-background rounded-lg">
+                            <div className="space-y-3">
                               {userPosts.map((post) => {
                                 // Use real tags from API, format with # prefix
                                 const tags =
@@ -1224,7 +1414,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                                     key={post.id}
                                     href={`/post/${post.id}`}
                                   >
-                                    <article className="cursor-pointer border-b border-border bg-background px-2 py-6 sm:px-4">
+                                    <article className="cursor-pointer rounded-xl border border-border bg-background p-5 shadow-sm transition-shadow duration-200 hover:shadow-md">
                                       <div className="flex items-start justify-between gap-4">
                                         {/* Main Content */}
                                         <div className="flex-1 min-w-0">
@@ -1323,14 +1513,14 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                               </p>
                             </div>
                           ) : (
-                            <div className="bg-background rounded-lg">
+                            <div className="space-y-3">
                               {draftsData.map((draft) => {
                                 return (
                                   <Link
                                     key={draft.uuid}
                                     href={`/create?draft=${draft.uuid}`}
                                   >
-                                    <article className="cursor-pointer border-b border-border bg-background px-2 py-6 sm:px-4">
+                                    <article className="cursor-pointer rounded-xl border border-border bg-background p-5 shadow-sm transition-shadow duration-200 hover:shadow-md">
                                       <div className="flex items-start justify-between gap-4">
                                         <div className="flex-1 min-w-0">
                                           <div className="flex items-center gap-2 mb-2">
@@ -1395,7 +1585,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                               </p>
                             </div>
                           ) : (
-                            <div className="bg-background rounded-lg">
+                            <div className="space-y-3">
                               {scoredPosts.map((post) => {
                                 const tags = [
                                   "#webdev",
@@ -1412,7 +1602,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                                     key={post.id}
                                     href={`/post/${post.id}`}
                                   >
-                                    <article className="cursor-pointer border-b border-border bg-background px-2 py-6 sm:px-4">
+                                    <article className="cursor-pointer rounded-xl border border-border bg-background p-5 shadow-sm transition-shadow duration-200 hover:shadow-md">
                                       <div className="flex items-start justify-between gap-4">
                                         {/* Main Content */}
                                         <div className="flex-1 min-w-0">
@@ -1485,7 +1675,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
 
                       {/* Settings Tab */}
                       {activeTab === "settings" && (
-                        <div>
+                        <div className="rounded-xl border border-border bg-background p-6 shadow-sm sm:p-8">
                           <h2 className="text-xl font-bold text-foreground mb-6">
                             Profile Settings
                           </h2>
@@ -1700,33 +1890,30 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                   // Other user's profile - show Posts and Scored tabs
                   <div className="w-full">
                     {/* Tabs */}
-                    <div className="mb-8 flex gap-8 border-b border-border">
-                      <button
-                        onClick={() => setActiveTab("posts")}
-                        className={`relative py-4 text-[15px] font-medium transition-colors ${
-                          activeTab === "posts"
-                            ? "text-primary"
-                            : "text-muted-foreground hover:text-foreground"
-                        }`}
-                      >
-                        Posts
-                        {activeTab === "posts" && (
-                          <span className="absolute bottom-0 left-0 right-0 h-px bg-primary"></span>
-                        )}
-                      </button>
-                      <button
-                        onClick={() => setActiveTab("scored")}
-                        className={`relative py-4 text-[15px] font-medium transition-colors ${
-                          activeTab === "scored"
-                            ? "text-primary"
-                            : "text-muted-foreground hover:text-foreground"
-                        }`}
-                      >
-                        Scored
-                        {activeTab === "scored" && (
-                          <span className="absolute bottom-0 left-0 right-0 h-px bg-primary"></span>
-                        )}
-                      </button>
+                    <div className="mb-6 flex gap-8 rounded-xl border border-border bg-background px-6 shadow-sm">
+                      {[
+                        { key: "posts", label: "Posts" },
+                        { key: "scored", label: "Scored" },
+                      ].map((tab) => (
+                        <button
+                          key={tab.key}
+                          onClick={() => setActiveTab(tab.key)}
+                          className={`relative py-4 text-[15px] font-medium transition-colors ${
+                            activeTab === tab.key
+                              ? "text-primary"
+                              : "text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          {tab.label}
+                          {activeTab === tab.key && (
+                            <motion.span
+                              layoutId="profile-tab-indicator-other"
+                              className="absolute bottom-0 left-0 right-0 h-[2px] bg-primary"
+                              transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                            />
+                          )}
+                        </button>
+                      ))}
                     </div>
 
                     {/* Tab Content */}
@@ -1754,7 +1941,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                               <p className="text-muted-foreground">No posts found</p>
                             </div>
                           ) : (
-                            <div className="bg-background rounded-lg">
+                            <div className="space-y-3">
                               {userPosts.map((post) => {
                                 // Use real tags from API, format with # prefix
                                 const tags =
@@ -1773,7 +1960,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                                     key={post.id}
                                     href={`/post/${post.id}`}
                                   >
-                                    <article className="cursor-pointer border-b border-border bg-background px-2 py-6 sm:px-4">
+                                    <article className="cursor-pointer rounded-xl border border-border bg-background p-5 shadow-sm transition-shadow duration-200 hover:shadow-md">
                                       <div className="flex items-start justify-between gap-4">
                                         {/* Main Content */}
                                         <div className="flex-1 min-w-0">
@@ -1871,7 +2058,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                               </p>
                             </div>
                           ) : (
-                            <div className="bg-background rounded-lg">
+                            <div className="space-y-3">
                               {scoredPosts.map((post) => {
                                 // Use real tags from API, format with # prefix
                                 const tags =
@@ -1890,7 +2077,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                                     key={post.id}
                                     href={`/post/${post.id}`}
                                   >
-                                    <article className="cursor-pointer border-b border-border bg-background px-2 py-6 sm:px-4">
+                                    <article className="cursor-pointer rounded-xl border border-border bg-background p-5 shadow-sm transition-shadow duration-200 hover:shadow-md">
                                       <div className="flex items-start justify-between gap-4">
                                         {/* Main Content */}
                                         <div className="flex-1 min-w-0">
@@ -1966,8 +2153,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                   </div>
                 )}
               </motion.div>
-            </div>
-          </div>
+          </main>
         </div>
       </div>
     </div>

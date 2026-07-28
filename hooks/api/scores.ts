@@ -59,6 +59,26 @@ export const useUpdateScore = () => {
   });
 };
 
+// Step 4: Ask the backend to verify the transaction on-chain
+// (moves the score from BLOCKCHAIN_INITIATED to its verified state)
+export const verifyScore = async (scoreUuid: string): Promise<ScoreDto> => {
+  const response = await API.post(`/scores/verify/${scoreUuid}`);
+  return response.data;
+};
+
+export const useVerifyScore = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: verifyScore,
+    onSuccess: (data) => {
+      if (data.postUuid) {
+        queryClient.invalidateQueries({ queryKey: ["post", data.postUuid] });
+      }
+    },
+  });
+};
+
 // Fetch daily vote percentage using wallet address
 export const fetchDailyVotePercentage = async (
   userWalletAddress: string
