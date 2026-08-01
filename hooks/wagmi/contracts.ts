@@ -134,6 +134,13 @@ export const curatAiTokenAbi = [
   {
     type: 'function',
     inputs: [],
+    name: 'SUPER_ADMIN_ROLE',
+    outputs: [{ name: '', internalType: 'bytes32', type: 'bytes32' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [],
     name: 'VOTING_CONTRACT',
     outputs: [{ name: '', internalType: 'bytes32', type: 'bytes32' }],
     stateMutability: 'view',
@@ -164,6 +171,23 @@ export const curatAiTokenAbi = [
     name: 'balanceOf',
     outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
     stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'value', internalType: 'uint256', type: 'uint256' }],
+    name: 'burn',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'account', internalType: 'address', type: 'address' },
+      { name: 'value', internalType: 'uint256', type: 'uint256' },
+    ],
+    name: 'burnFrom',
+    outputs: [],
+    stateMutability: 'nonpayable',
   },
   {
     type: 'function',
@@ -258,6 +282,7 @@ export const curateAiPostsAbi = [
     type: 'constructor',
     inputs: [
       { name: '_roleManager', internalType: 'address', type: 'address' },
+      { name: '_tokenAddress', internalType: 'address', type: 'address' },
     ],
     stateMutability: 'nonpayable',
   },
@@ -283,6 +308,31 @@ export const curateAiPostsAbi = [
     name: 'PostCreated',
   },
   {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      {
+        name: 'oldAmount',
+        internalType: 'uint256',
+        type: 'uint256',
+        indexed: false,
+      },
+      {
+        name: 'newAmount',
+        internalType: 'uint256',
+        type: 'uint256',
+        indexed: false,
+      },
+      {
+        name: 'setter',
+        internalType: 'address',
+        type: 'address',
+        indexed: true,
+      },
+    ],
+    name: 'PostResetBurnAmountUpdated',
+  },
+  {
     type: 'function',
     inputs: [],
     name: 'AI_AGENT_ROLE',
@@ -300,6 +350,13 @@ export const curateAiPostsAbi = [
     type: 'function',
     inputs: [],
     name: 'SETTLEMENT_ROLE',
+    outputs: [{ name: '', internalType: 'bytes32', type: 'bytes32' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'SUPER_ADMIN_ROLE',
     outputs: [{ name: '', internalType: 'bytes32', type: 'bytes32' }],
     stateMutability: 'view',
   },
@@ -367,6 +424,13 @@ export const curateAiPostsAbi = [
   },
   {
     type: 'function',
+    inputs: [],
+    name: 'postResetBurnAmount',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
     inputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
     name: 'posts',
     outputs: [
@@ -381,6 +445,13 @@ export const curateAiPostsAbi = [
       { name: 'aiVoted', internalType: 'bool', type: 'bool' },
     ],
     stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'resetPostCooldown',
+    outputs: [],
+    stateMutability: 'nonpayable',
   },
   {
     type: 'function',
@@ -400,6 +471,13 @@ export const curateAiPostsAbi = [
   },
   {
     type: 'function',
+    inputs: [{ name: 'newAmount', internalType: 'uint256', type: 'uint256' }],
+    name: 'setPostResetBurnAmount',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
     inputs: [
       { name: 'postId', internalType: 'uint256', type: 'uint256' },
       { name: 'amount', internalType: 'uint256', type: 'uint256' },
@@ -407,6 +485,19 @@ export const curateAiPostsAbi = [
     name: 'setPostScore',
     outputs: [],
     stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'token',
+    outputs: [
+      {
+        name: '',
+        internalType: 'contract IContentMediaToken',
+        type: 'address',
+      },
+    ],
+    stateMutability: 'view',
   },
 ] as const
 
@@ -804,6 +895,13 @@ export const curateAiSettlementAbi = [
   {
     type: 'function',
     inputs: [],
+    name: 'SUPER_ADMIN_ROLE',
+    outputs: [{ name: '', internalType: 'bytes32', type: 'bytes32' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [],
     name: 'VOTING_CONTRACT',
     outputs: [{ name: '', internalType: 'bytes32', type: 'bytes32' }],
     stateMutability: 'view',
@@ -943,6 +1041,13 @@ export const curateAiVoteAbi = [
   {
     type: 'function',
     inputs: [],
+    name: 'SUPER_ADMIN_ROLE',
+    outputs: [{ name: '', internalType: 'bytes32', type: 'bytes32' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [],
     name: 'VOTES_PER_DAY_MULTIPLIER',
     outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
     stateMutability: 'view',
@@ -956,6 +1061,13 @@ export const curateAiVoteAbi = [
   },
   {
     type: 'function',
+    inputs: [],
+    name: 'aiLastVoteResetTime',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
     inputs: [
       { name: 'postId', internalType: 'uint256', type: 'uint256' },
       { name: 'amount', internalType: 'uint256', type: 'uint256' },
@@ -963,6 +1075,13 @@ export const curateAiVoteAbi = [
     name: 'aiVote',
     outputs: [],
     stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'aiVotesUsedToday',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view',
   },
   {
     type: 'function',
@@ -1027,6 +1146,16 @@ export const curateAiVoteAbi = [
     inputs: [{ name: 'user', internalType: 'address', type: 'address' }],
     name: 'getUserVoteDays',
     outputs: [{ name: '', internalType: 'uint256[]', type: 'uint256[]' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '', internalType: 'address', type: 'address' },
+      { name: '', internalType: 'uint256', type: 'uint256' },
+    ],
+    name: 'hasVoted',
+    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
     stateMutability: 'view',
   },
   {
@@ -1265,6 +1394,15 @@ export const useReadCuratAiTokenSettlementRole =
   })
 
 /**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link curatAiTokenAbi}__ and `functionName` set to `"SUPER_ADMIN_ROLE"`
+ */
+export const useReadCuratAiTokenSuperAdminRole =
+  /*#__PURE__*/ createUseReadContract({
+    abi: curatAiTokenAbi,
+    functionName: 'SUPER_ADMIN_ROLE',
+  })
+
+/**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link curatAiTokenAbi}__ and `functionName` set to `"VOTING_CONTRACT"`
  */
 export const useReadCuratAiTokenVotingContract =
@@ -1353,6 +1491,23 @@ export const useWriteCuratAiTokenApprove = /*#__PURE__*/ createUseWriteContract(
 )
 
 /**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link curatAiTokenAbi}__ and `functionName` set to `"burn"`
+ */
+export const useWriteCuratAiTokenBurn = /*#__PURE__*/ createUseWriteContract({
+  abi: curatAiTokenAbi,
+  functionName: 'burn',
+})
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link curatAiTokenAbi}__ and `functionName` set to `"burnFrom"`
+ */
+export const useWriteCuratAiTokenBurnFrom =
+  /*#__PURE__*/ createUseWriteContract({
+    abi: curatAiTokenAbi,
+    functionName: 'burnFrom',
+  })
+
+/**
  * Wraps __{@link useWriteContract}__ with `abi` set to __{@link curatAiTokenAbi}__ and `functionName` set to `"distribute"`
  */
 export const useWriteCuratAiTokenDistribute =
@@ -1402,6 +1557,24 @@ export const useSimulateCuratAiTokenApprove =
   /*#__PURE__*/ createUseSimulateContract({
     abi: curatAiTokenAbi,
     functionName: 'approve',
+  })
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link curatAiTokenAbi}__ and `functionName` set to `"burn"`
+ */
+export const useSimulateCuratAiTokenBurn =
+  /*#__PURE__*/ createUseSimulateContract({
+    abi: curatAiTokenAbi,
+    functionName: 'burn',
+  })
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link curatAiTokenAbi}__ and `functionName` set to `"burnFrom"`
+ */
+export const useSimulateCuratAiTokenBurnFrom =
+  /*#__PURE__*/ createUseSimulateContract({
+    abi: curatAiTokenAbi,
+    functionName: 'burnFrom',
   })
 
 /**
@@ -1499,6 +1672,15 @@ export const useReadCurateAiPostsSettlementRole =
   })
 
 /**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link curateAiPostsAbi}__ and `functionName` set to `"SUPER_ADMIN_ROLE"`
+ */
+export const useReadCurateAiPostsSuperAdminRole =
+  /*#__PURE__*/ createUseReadContract({
+    abi: curateAiPostsAbi,
+    functionName: 'SUPER_ADMIN_ROLE',
+  })
+
+/**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link curateAiPostsAbi}__ and `functionName` set to `"VOTING_CONTRACT"`
  */
 export const useReadCurateAiPostsVotingContract =
@@ -1542,6 +1724,15 @@ export const useReadCurateAiPostsPostCounter =
   })
 
 /**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link curateAiPostsAbi}__ and `functionName` set to `"postResetBurnAmount"`
+ */
+export const useReadCurateAiPostsPostResetBurnAmount =
+  /*#__PURE__*/ createUseReadContract({
+    abi: curateAiPostsAbi,
+    functionName: 'postResetBurnAmount',
+  })
+
+/**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link curateAiPostsAbi}__ and `functionName` set to `"posts"`
  */
 export const useReadCurateAiPostsPosts = /*#__PURE__*/ createUseReadContract({
@@ -1557,6 +1748,14 @@ export const useReadCurateAiPostsRoleManager =
     abi: curateAiPostsAbi,
     functionName: 'roleManager',
   })
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link curateAiPostsAbi}__ and `functionName` set to `"token"`
+ */
+export const useReadCurateAiPostsToken = /*#__PURE__*/ createUseReadContract({
+  abi: curateAiPostsAbi,
+  functionName: 'token',
+})
 
 /**
  * Wraps __{@link useWriteContract}__ with `abi` set to __{@link curateAiPostsAbi}__
@@ -1575,12 +1774,30 @@ export const useWriteCurateAiPostsCreatePost =
   })
 
 /**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link curateAiPostsAbi}__ and `functionName` set to `"resetPostCooldown"`
+ */
+export const useWriteCurateAiPostsResetPostCooldown =
+  /*#__PURE__*/ createUseWriteContract({
+    abi: curateAiPostsAbi,
+    functionName: 'resetPostCooldown',
+  })
+
+/**
  * Wraps __{@link useWriteContract}__ with `abi` set to __{@link curateAiPostsAbi}__ and `functionName` set to `"setAIVoted"`
  */
 export const useWriteCurateAiPostsSetAiVoted =
   /*#__PURE__*/ createUseWriteContract({
     abi: curateAiPostsAbi,
     functionName: 'setAIVoted',
+  })
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link curateAiPostsAbi}__ and `functionName` set to `"setPostResetBurnAmount"`
+ */
+export const useWriteCurateAiPostsSetPostResetBurnAmount =
+  /*#__PURE__*/ createUseWriteContract({
+    abi: curateAiPostsAbi,
+    functionName: 'setPostResetBurnAmount',
   })
 
 /**
@@ -1609,12 +1826,30 @@ export const useSimulateCurateAiPostsCreatePost =
   })
 
 /**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link curateAiPostsAbi}__ and `functionName` set to `"resetPostCooldown"`
+ */
+export const useSimulateCurateAiPostsResetPostCooldown =
+  /*#__PURE__*/ createUseSimulateContract({
+    abi: curateAiPostsAbi,
+    functionName: 'resetPostCooldown',
+  })
+
+/**
  * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link curateAiPostsAbi}__ and `functionName` set to `"setAIVoted"`
  */
 export const useSimulateCurateAiPostsSetAiVoted =
   /*#__PURE__*/ createUseSimulateContract({
     abi: curateAiPostsAbi,
     functionName: 'setAIVoted',
+  })
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link curateAiPostsAbi}__ and `functionName` set to `"setPostResetBurnAmount"`
+ */
+export const useSimulateCurateAiPostsSetPostResetBurnAmount =
+  /*#__PURE__*/ createUseSimulateContract({
+    abi: curateAiPostsAbi,
+    functionName: 'setPostResetBurnAmount',
   })
 
 /**
@@ -1639,6 +1874,15 @@ export const useWatchCurateAiPostsPostCreatedEvent =
   /*#__PURE__*/ createUseWatchContractEvent({
     abi: curateAiPostsAbi,
     eventName: 'PostCreated',
+  })
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link curateAiPostsAbi}__ and `eventName` set to `"PostResetBurnAmountUpdated"`
+ */
+export const useWatchCurateAiPostsPostResetBurnAmountUpdatedEvent =
+  /*#__PURE__*/ createUseWatchContractEvent({
+    abi: curateAiPostsAbi,
+    eventName: 'PostResetBurnAmountUpdated',
   })
 
 /**
@@ -2026,6 +2270,15 @@ export const useReadCurateAiSettlementSettlementRole =
   })
 
 /**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link curateAiSettlementAbi}__ and `functionName` set to `"SUPER_ADMIN_ROLE"`
+ */
+export const useReadCurateAiSettlementSuperAdminRole =
+  /*#__PURE__*/ createUseReadContract({
+    abi: curateAiSettlementAbi,
+    functionName: 'SUPER_ADMIN_ROLE',
+  })
+
+/**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link curateAiSettlementAbi}__ and `functionName` set to `"VOTING_CONTRACT"`
  */
 export const useReadCurateAiSettlementVotingContract =
@@ -2196,6 +2449,15 @@ export const useReadCurateAiVoteSettlementRole =
   })
 
 /**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link curateAiVoteAbi}__ and `functionName` set to `"SUPER_ADMIN_ROLE"`
+ */
+export const useReadCurateAiVoteSuperAdminRole =
+  /*#__PURE__*/ createUseReadContract({
+    abi: curateAiVoteAbi,
+    functionName: 'SUPER_ADMIN_ROLE',
+  })
+
+/**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link curateAiVoteAbi}__ and `functionName` set to `"VOTES_PER_DAY_MULTIPLIER"`
  */
 export const useReadCurateAiVoteVotesPerDayMultiplier =
@@ -2211,6 +2473,24 @@ export const useReadCurateAiVoteVotingContract =
   /*#__PURE__*/ createUseReadContract({
     abi: curateAiVoteAbi,
     functionName: 'VOTING_CONTRACT',
+  })
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link curateAiVoteAbi}__ and `functionName` set to `"aiLastVoteResetTime"`
+ */
+export const useReadCurateAiVoteAiLastVoteResetTime =
+  /*#__PURE__*/ createUseReadContract({
+    abi: curateAiVoteAbi,
+    functionName: 'aiLastVoteResetTime',
+  })
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link curateAiVoteAbi}__ and `functionName` set to `"aiVotesUsedToday"`
+ */
+export const useReadCurateAiVoteAiVotesUsedToday =
+  /*#__PURE__*/ createUseReadContract({
+    abi: curateAiVoteAbi,
+    functionName: 'aiVotesUsedToday',
   })
 
 /**
@@ -2275,6 +2555,14 @@ export const useReadCurateAiVoteGetUserVoteDays =
     abi: curateAiVoteAbi,
     functionName: 'getUserVoteDays',
   })
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link curateAiVoteAbi}__ and `functionName` set to `"hasVoted"`
+ */
+export const useReadCurateAiVoteHasVoted = /*#__PURE__*/ createUseReadContract({
+  abi: curateAiVoteAbi,
+  functionName: 'hasVoted',
+})
 
 /**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link curateAiVoteAbi}__ and `functionName` set to `"lastVoteResetTime"`

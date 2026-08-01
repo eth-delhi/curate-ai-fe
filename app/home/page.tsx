@@ -32,15 +32,23 @@ export default function HomeRevampPage() {
   }, []);
 
   if (isLoading) {
-    return <LoadingState />;
+    return (
+      <div className="home-page">
+        <LoadingState />
+      </div>
+    );
   }
 
   if (isError) {
-    return <ErrorState error={error} />;
+    return (
+      <div className="home-page">
+        <ErrorState error={error} />
+      </div>
+    );
   }
 
   return (
-    <div className="home-page min-h-screen bg-muted text-foreground">
+    <div className="home-page min-h-screen bg-background text-foreground">
       <style jsx global>{`
         /* Scoped to this page subtree so we don’t change app-wide metrics after client nav. */
         .home-page {
@@ -78,15 +86,15 @@ export default function HomeRevampPage() {
         }
       `}</style>
 
-      <HomeNavbar maxWidth={1128} />
+      <HomeNavbar maxWidth={1400} />
 
-      <div className="pt-[76px]">
-        <div className="max-w-[1128px] mx-auto px-6 py-6 flex gap-6">
-          <aside className="hidden lg:block w-[225px] shrink-0">
-            <LeftSidebar />
+      <div className="pt-[61px]">
+        <div className="mx-auto flex max-w-[1400px] items-start px-4 md:px-6">
+          <aside className="sticky top-[61px] hidden w-[240px] shrink-0 self-start py-8 pr-8 lg:block">
+            <LeftSidebar onTopicClick={handleTagClick} />
           </aside>
 
-          <main className="flex-1 max-w-[555px] mx-auto lg:mx-0">
+          <main className="min-w-0 flex-1 px-0 py-4 lg:border-x lg:border-border lg:px-12">
             <FeedSection
               posts={feedPosts}
               activeTab={activeTab}
@@ -100,7 +108,7 @@ export default function HomeRevampPage() {
             />
           </main>
 
-          <aside className="hidden lg:block w-[300px] shrink-0">
+          <aside className="sticky top-[61px] hidden w-[352px] shrink-0 self-start py-8 pl-10 xl:block">
             <RightSidebar onTopicClick={handleTagClick} />
           </aside>
         </div>

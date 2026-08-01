@@ -32,3 +32,21 @@ export const useRpcUrlQuery = () =>
     staleTime: 60_000,
     refetchInterval: 60_000,
   });
+
+export interface ReferralSettings {
+  isReferralActive: boolean;
+  referalBonusAmount: number;
+}
+
+export const getReferralSettings = () =>
+  API.get<ReferralSettings>("/settings/referral").then((res) => res.data);
+
+// Mirrors the backend's own short-TTL cache, so a kill-switch flip in the
+// DB is reflected here within a minute without a page reload.
+export const useReferralSettingsQuery = () =>
+  useQuery({
+    queryKey: ["referral-settings"],
+    queryFn: getReferralSettings,
+    staleTime: 60_000,
+    refetchInterval: 60_000,
+  });

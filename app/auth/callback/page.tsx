@@ -4,10 +4,15 @@ import { useEffect } from "react";
 import { useMagic } from "@/hooks/MagicProvider";
 import { useMagicState } from "@/context/magic.provider";
 import { useLogin } from "@/hooks/api/auth";
+import { fetchUserInterests } from "@/hooks/api/tags";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
 import { TypingMessage } from "@/components/auth/TypingMessage";
+import {
+  clearStoredReferralCode,
+  getStoredReferralCode,
+} from "@/utils/referral";
 
 export default function AuthCallbackPage() {
   const { magic } = useMagic();
@@ -27,10 +32,17 @@ export default function AuthCallbackPage() {
             token: result.magic.idToken as string,
             email: metadata?.email as string,
             walletAddress: metadata?.publicAddress as string,
+            referralCode: getStoredReferralCode(),
           });
+          clearStoredReferralCode();
 
           setToken(result.magic.idToken as string);
-          router.push("/home");
+          try {
+            const { interests } = await fetchUserInterests();
+            router.push(interests.length > 0 ? "/home" : "/onboarding/interests");
+          } catch {
+            router.push("/home");
+          }
         } else {
           router.push("/auth");
         }

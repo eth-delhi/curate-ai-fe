@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Inter, Source_Serif_4, Geist_Mono } from "next/font/google";
+import "react-toastify/dist/ReactToastify.css";
 import "./globals.css";
+import { ToastContainer } from "react-toastify";
 import { Magic } from "@/context/magic.provider";
 import { Wagmi } from "@/context/wagmi.provider";
 import { QueryProvider } from "@/context/query.provider";
@@ -48,6 +50,7 @@ export default function RootLayout({
                   <WalletAutoConnect />
                   <ServiceWorkerRegistration />
                   {children}
+                  <ToastContainer />
                 </ContractAddressesProvider>
               </Wagmi>
             </Magic>

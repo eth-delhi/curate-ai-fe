@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import { motion, useMotionValue, useSpring } from "framer-motion";
 import { Mail, Loader2, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,7 +14,23 @@ import { useMagicState } from "@/context/magic.provider";
 import showToast from "@/utils/showToast";
 import { RPCError, RPCErrorCode } from "magic-sdk";
 import { useLogin } from "@/hooks/api/auth";
+import { fetchUserInterests } from "@/hooks/api/tags";
 import { useRouter } from "next/navigation";
+import {
+  captureReferralCodeFromUrl,
+  clearStoredReferralCode,
+  getStoredReferralCode,
+} from "@/utils/referral";
+
+/** Sends a fresh login to the topic picker if they haven't chosen any yet, otherwise the feed. */
+async function redirectAfterLogin(router: ReturnType<typeof useRouter>) {
+  try {
+    const { interests } = await fetchUserInterests();
+    router.push(interests.length > 0 ? "/home" : "/onboarding/interests");
+  } catch {
+    router.push("/home");
+  }
+}
 
 /** Follows the cursor and nudges toward it — used on the primary CTA. */
 function Magnetic({ children }: { children: React.ReactNode }) {
@@ -52,11 +69,18 @@ export default function AuthRevampPage() {
   const [isGoogleLoginInProgress, setGoogleLoginInProgress] = useState(false);
   const { mutateAsync } = useLogin();
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Capture ?ref=<walletAddress> so it survives the Magic Link / Google
+  // OAuth redirect round-trip and can be sent along with the signup request.
+  useEffect(() => {
+    captureReferralCodeFromUrl(searchParams.get("ref"));
+  }, [searchParams]);
 
   // Redirect if already authenticated
   useEffect(() => {
     if (token && token.length > 0) {
-      router.push("/home");
+      redirectAfterLogin(router);
     }
   }, [token, router]);
 
@@ -119,10 +143,12 @@ export default function AuthRevampPage() {
         token: didToken,
         email: email,
         walletAddress: metadata?.publicAddress as string,
+        referralCode: getStoredReferralCode(),
       });
 
       if (response.success) {
         setToken(didToken);
+        clearStoredReferralCode();
         showToast({ message: "Magic Link sent! Check your email.", type: "success" });
         // Redirect will happen automatically due to useEffect
       } else {
@@ -180,9 +206,9 @@ export default function AuthRevampPage() {
       {/* Main Content */}
       <div className="pt-20 min-h-screen flex items-center justify-center">
         <div className="w-full px-4 sm:px-8 lg:px-16">
-          <div className="w-full bg-background border border-border rounded-3xl shadow-sm overflow-hidden flex min-h-[700px]">
+          <div className="w-full flex min-h-[700px]">
             {/* Left Side - Login Form */}
-            <div className="w-full lg:w-5/12 p-8 md:p-16 flex flex-col justify-center">
+            <div className="w-full lg:w-5/12 p-8 md:p-16 lg:pr-16 flex flex-col justify-center lg:border-r lg:border-border">
               <div className="mb-10">
                 <span className="font-mono text-xs tracking-widest text-primary uppercase">
                   Curate AI
@@ -222,21 +248,6 @@ export default function AuthRevampPage() {
                     />
                   </svg>
                   Continue with Google
-                </Button>
-
-                <Button
-                  variant="outline"
-                  className="w-full h-11 justify-start text-left font-normal border-border hover:bg-accent bg-background text-foreground cursor-pointer transition-colors duration-150"
-                  disabled
-                >
-                  <svg
-                    className="w-5 h-5 mr-3"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                  >
-                    <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
-                  </svg>
-                  Continue with Apple
                 </Button>
               </div>
 
@@ -297,112 +308,42 @@ export default function AuthRevampPage() {
 
               {/* Footer */}
               <div className="mt-8 text-center">
-                <p className="text-sm text-muted-foreground">
-                  New to Curate AI?{" "}
-                  <a
-                    href="#"
-                    className="text-primary font-medium hover:underline transition-colors duration-150"
-                  >
-                    Create account
-                  </a>
-                </p>
                 <button
                   type="button"
                   onClick={() => router.push("/home")}
-                  className="mt-3 text-xs text-muted-foreground hover:text-foreground underline transition-colors duration-150 cursor-pointer"
+                  className="text-xs text-muted-foreground hover:text-foreground underline transition-colors duration-150 cursor-pointer"
                 >
                   Continue without logging in
                 </button>
               </div>
             </div>
 
-            <div className="hidden lg:block lg:w-7/12 relative overflow-hidden bg-muted">
-              {/* Fine dot grid */}
-              <div
-                className="absolute inset-0 opacity-40"
-                style={{
-                  backgroundImage:
-                    "radial-gradient(rgba(7,47,95,0.18) 1px, transparent 1px)",
-                  backgroundSize: "22px 22px",
-                }}
-              />
+            <div className="hidden lg:flex lg:w-7/12 relative overflow-hidden rounded-3xl bg-muted items-center justify-center p-16">
+              {/* Single ambient glow — kept subtle and static so it reads as
+                  texture, not another competing element. */}
+              <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-primary/10 blur-3xl" />
 
-              {/* Ambient drifting glow */}
-              <motion.div
-                className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-primary/10 blur-3xl"
-                animate={{ x: [0, -30, 0], y: [0, 20, 0] }}
-                transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
-              />
-              <motion.div
-                className="absolute bottom-0 left-0 w-72 h-72 rounded-full bg-primary/10 blur-3xl"
-                animate={{ x: [0, 20, 0], y: [0, -20, 0] }}
-                transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-              />
-
-              {/* Quadratic voting mock — reinforces what makes the platform different */}
-              <div className="absolute top-16 left-12 right-12">
-                <div className="bg-background/90 backdrop-blur-sm border border-border rounded-2xl p-6 shadow-sm">
-                  <div className="flex items-center justify-between mb-5">
-                    <span className="font-mono text-[11px] tracking-widest text-muted-foreground uppercase">
-                      Live vote weight
-                    </span>
-                    <span className="flex items-center gap-1.5 font-mono text-[11px] text-primary">
-                      <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse-dot" />
-                      Fair by design
-                    </span>
+              {/* Manifesto quote — the one thing this panel says */}
+              <blockquote className="relative max-w-md space-y-6">
+                <p className="text-2xl text-foreground leading-relaxed font-serif">
+                  &ldquo;First platform where my following didn&apos;t
+                  matter — the work did. Quadratic voting means one whale
+                  account can&apos;t bury a hundred honest readers.&rdquo;
+                </p>
+                <footer className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground">
+                    <Logo className="h-5 w-5" />
                   </div>
-                  <div className="space-y-3">
-                    {[
-                      { label: "1 vote", cost: "1 CAT", width: "8%" },
-                      { label: "5 votes", cost: "25 CAT", width: "42%" },
-                      { label: "10 votes", cost: "100 CAT", width: "100%" },
-                    ].map((row) => (
-                      <div key={row.label} className="flex items-center gap-3 text-xs">
-                        <span className="w-16 text-muted-foreground shrink-0">
-                          {row.label}
-                        </span>
-                        <div className="flex-1 h-1.5 bg-border rounded-full overflow-hidden">
-                          <motion.div
-                            className="h-full bg-primary rounded-full"
-                            initial={{ width: 0 }}
-                            animate={{ width: row.width }}
-                            transition={{ duration: 1.2, ease: "easeOut" }}
-                          />
-                        </div>
-                        <span className="w-16 text-right font-mono text-foreground shrink-0">
-                          {row.cost}
-                        </span>
-                      </div>
-                    ))}
+                  <div>
+                    <div className="text-sm font-medium text-foreground">
+                      devansh.cat
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Early creator, Curate AI
+                    </div>
                   </div>
-                </div>
-              </div>
-
-              {/* Manifesto quote — grounded in the product's actual positioning */}
-              <div className="absolute bottom-12 left-12 right-12">
-                <div className="bg-background/90 backdrop-blur-sm border border-border rounded-2xl p-8 shadow-sm">
-                  <blockquote className="space-y-4">
-                    <p className="text-lg text-foreground leading-relaxed font-serif">
-                      &ldquo;First platform where my following didn&apos;t
-                      matter — the work did. Quadratic voting means one whale
-                      account can&apos;t bury a hundred honest readers.&rdquo;
-                    </p>
-                    <footer className="flex items-center gap-3 pt-2">
-                      <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground">
-                        <Logo className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <div className="text-sm font-medium text-foreground">
-                          devansh.cat
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          Early creator, Curate AI
-                        </div>
-                      </div>
-                    </footer>
-                  </blockquote>
-                </div>
-              </div>
+                </footer>
+              </blockquote>
             </div>
           </div>
         </div>

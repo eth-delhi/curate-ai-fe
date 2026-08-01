@@ -8,23 +8,22 @@ import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import {
-  MessageSquare,
-  Flag,
   Calendar,
   Clock,
   Send,
   User,
   Loader2,
   AlertCircle,
-  Maximize2,
   X,
   ArrowLeft,
-  Bookmark,
   MoreHorizontal,
-  MessageCircle,
 } from "lucide-react";
-import { PiHandsClappingThin } from "react-icons/pi";
-import { IoChevronUpCircle } from "react-icons/io5";
+import {
+  ClapIcon,
+  CommentIcon,
+  BookmarkIcon,
+  UpvoteIcon,
+} from "@/components/icons";
 import HomeNavbar from "@/components/ui/HomeNavbar";
 import { formatDistanceToNow } from "date-fns";
 import { motion } from "framer-motion";
@@ -38,6 +37,9 @@ import { useContractAddresses } from "@/context/contractAddresses.provider";
 import {
   useWriteCurateAiVoteVote,
   useReadCurateAiPostsGetPostScore,
+  useReadCurateAiRoleManagerCuratorRole,
+  useReadCurateAiRoleManagerHasRole,
+  useReadCurateAiVoteHasVoted,
 } from "@/hooks/wagmi/contracts";
 import { useCatTokenBalance } from "@/hooks/wagmi/useCatTokenBalance";
 import { RPC_POLL_INTERVAL_MS } from "@/constants/chain";
@@ -55,7 +57,7 @@ import {
   useMaxClapsPerUser,
 } from "@/hooks/api/claps";
 import { showToast } from "@/utils/showToast";
-import { LeftSidebar } from "@/components/home-revamp";
+import { useAuth } from "@/hooks/useAuth";
 import { createClapDebouncer } from "@/utils/clapDebounce";
 
 const MarkdownPreview = dynamic(
@@ -95,6 +97,7 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
   const { address: userAddress } = useAccount();
   const { contracts } = useContractAddresses();
   const router = useRouter();
+  const { isAuthenticated } = useAuth();
 
   // Fetch post data from API
   const {
@@ -123,7 +126,8 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
   const cid = postData?.internal_id ?? 0;
 
   // Fetch user token balance
-  const { balance: tokenBalance } = useCatTokenBalance();
+  const { balance: tokenBalance, isLoading: isTokenBalanceLoading } =
+    useCatTokenBalance();
 
   // Vote count shown here comes straight from the chain (post.sol's
   // totalScore), not the backend's score rows — this page needs the exact,
@@ -147,6 +151,45 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
   // Voting contract interaction
   const { writeContractAsync, isPending: isScorePending } =
     useWriteCurateAiVoteVote();
+
+  // vote.sol's vote() is gated onlyRole(CURATOR_ROLE) — check this up front
+  // so non-curators get a clear explanation instead of a silent on-chain
+  // revert with no useful feedback.
+  const { data: curatorRole } = useReadCurateAiRoleManagerCuratorRole({
+    address: contracts?.role as `0x${string}`,
+    query: { enabled: !!contracts, staleTime: Infinity },
+  });
+  const { data: isCurator, isLoading: isCuratorCheckLoading } =
+    useReadCurateAiRoleManagerHasRole({
+      address: contracts?.role as `0x${string}`,
+      args:
+        curatorRole !== undefined && userAddress
+          ? [curatorRole, userAddress]
+          : undefined,
+      query: {
+        enabled: !!contracts && curatorRole !== undefined && !!userAddress,
+        refetchInterval: RPC_POLL_INTERVAL_MS,
+        staleTime: RPC_POLL_INTERVAL_MS,
+      },
+    });
+
+  // vote.sol only allows one vote per (account, post) — hasVoted[msg.sender][postId].
+  // Read straight from the contract so the button state can't drift from
+  // what the chain will actually enforce.
+  const { data: hasVotedOnPost, refetch: refetchHasVoted } =
+    useReadCurateAiVoteHasVoted({
+      address: contracts?.vote as `0x${string}`,
+      args:
+        userAddress && postData?.internal_id !== undefined
+          ? [userAddress, BigInt(postData.internal_id)]
+          : undefined,
+      query: {
+        enabled:
+          !!contracts && !!userAddress && postData?.internal_id !== undefined,
+        refetchInterval: RPC_POLL_INTERVAL_MS,
+        staleTime: RPC_POLL_INTERVAL_MS,
+      },
+    });
 
   // API hooks for scoring
   const createScoreMutation = useCreateScore();
@@ -187,8 +230,6 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
     ((clapCount: number) => Promise<void>) | null
   >(null);
 
-  // State for reading mode
-  const [isReadingMode, setIsReadingMode] = useState(false);
   const [showScorePopover, setShowScorePopover] = useState(false);
   const scorePopoverRef = useRef<HTMLDivElement>(null);
 
@@ -250,7 +291,39 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
       return;
     }
 
-    if (!voteValue || isScorePending) {
+    if (isCurator === false) {
+      showToast({
+        message: "Only curators can upvote posts",
+        type: "error",
+      });
+      return;
+    }
+
+    if (hasVotedOnPost === true) {
+      showToast({
+        message: "You've already voted on this post.",
+        type: "error",
+      });
+      return;
+    }
+
+    if (isScorePending) {
+      return;
+    }
+
+    if (isTokenBalanceLoading) {
+      showToast({
+        message: "Your token balance is still loading. Please try again in a moment.",
+        type: "error",
+      });
+      return;
+    }
+
+    if (!voteValue) {
+      showToast({
+        message: "You need CAT tokens to upvote.",
+        type: "error",
+      });
       return;
     }
 
@@ -262,6 +335,7 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
       return;
     }
 
+
     if (!contracts) {
       showToast({
         message: "Contract addresses not loaded yet. Please wait...",
@@ -271,7 +345,6 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
     }
 
     try {
-      console.log("Starting scoring process...");
 
       const scoreData = await createScoreMutation.mutateAsync({
         postUuid: uuid,
@@ -279,23 +352,23 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
         quantity: Number(voteValue),
         votePercentage: voteWeight,
       });
-      console.log("Score created:", scoreData);
-      console.log("Step 2: Executing blockchain transaction...");
-      console.log("Contract address:", contracts.post);
-      console.log("Arguments:", [BigInt(cid), voteValue]);
 
       let txResult;
       let blockchainError = false;
+      let blockchainErrorReason: string | undefined;
       try {
         txResult = await writeContractAsync({
           address: contracts.vote as `0x${string}`,
           args: [BigInt(cid), voteValue],
         });
-        console.log("Transaction result:", txResult);
-      } catch (txError) {
+      } catch (txError: any) {
         console.error("Blockchain transaction failed:", txError);
         blockchainError = true;
         txResult = null;
+        // viem surfaces revert reasons (e.g. the AccessControl "missing
+        // role" error from vote.sol's onlyRole(CURATOR_ROLE)) via
+        // shortMessage; fall back to the raw message if that's not present.
+        blockchainErrorReason = txError?.shortMessage || txError?.message;
       }
 
       // Handle different return types from wagmi
@@ -341,9 +414,14 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
         }
       }
 
+      // Refetch the chain's own vote-count and hasVoted state right away,
+      // whether the write succeeded or reverted, so the UI (post score,
+      // "already voted" button state) never drifts from what's on-chain.
+      refetchPostScore();
+      refetchHasVoted();
+
       if (txHash) {
         console.log("Score updated successfully with transaction hash");
-        refetchPostScore();
       } else {
         console.log("Score marked as BLOCKCHAIN_FAILED");
       }
@@ -355,7 +433,9 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
         });
       } else {
         showToast({
-          message: `Upvote recorded but blockchain transaction failed. Please try again.`,
+          message: blockchainErrorReason
+            ? `Upvote failed: ${blockchainErrorReason}`
+            : "Upvote recorded but the blockchain transaction failed. Please try again.",
           type: "warning",
         });
       }
@@ -443,13 +523,10 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
           clapCount: clapCount,
         });
         setPendingClapCount(0);
-        // Clear optimistic values - API will update them
+        // Clear optimistic values - API will update them. The clap count
+        // already animated up on click, so no toast needed here.
         setOptimisticUserClapCount(null);
         setOptimisticTotalClapCount(null);
-        showToast({
-          message: `${clapCount} clap${clapCount > 1 ? "s" : ""} added!`,
-          type: "success",
-        });
       } catch (error) {
         console.error("Failed to add clap:", error);
         // Rollback optimistic updates on error
@@ -484,6 +561,14 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
 
   // Handle clap
   const handleClap = () => {
+    if (!isAuthenticated) {
+      showToast({
+        message: "Sign in to clap on posts",
+        type: "info",
+      });
+      return;
+    }
+
     // Check if user has reached the max clap limit
     if (hasReachedMax) {
       showToast({
@@ -531,22 +616,15 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
 
     try {
       if (hasFlagged) {
-        // Remove flag
+        // Remove flag — icon state flips immediately once the query
+        // invalidation refetches hasFlagged, no toast needed.
         await removeFlagMutation.mutateAsync({
           postUuid: uuid,
-        });
-        showToast({
-          message: "Flag removed successfully",
-          type: "success",
         });
       } else {
         // Add flag
         await addFlagMutation.mutateAsync({
           postUuid: uuid,
-        });
-        showToast({
-          message: "Post flagged successfully",
-          type: "success",
         });
       }
     } catch (error) {
@@ -1026,93 +1104,16 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
       `}</style>
 
       {/* Top Navbar */}
-      <HomeNavbar />
-
-      {/* Floating Fullscreen Button - Hidden on mobile and tablet */}
-      <motion.button
-        onClick={() => setIsReadingMode(!isReadingMode)}
-        className="fixed bottom-8 right-8 z-50 hidden rounded-full border border-border bg-background/90 p-2.5 text-muted-foreground shadow-sm backdrop-blur-sm transition-all duration-200 hover:bg-background hover:text-foreground hover:shadow-md lg:flex"
-        aria-label={isReadingMode ? "Exit reading mode" : "Enter reading mode"}
-        animate={
-          isReadingMode
-            ? {}
-            : {
-                scale: [1, 1.1, 1],
-              }
-        }
-        transition={{
-          scale: {
-            duration: 1.5,
-            repeat: Infinity,
-            repeatDelay: 2,
-            ease: "easeInOut",
-          },
-        }}
-      >
-        {isReadingMode ? (
-          <X className="w-4 h-4" />
-        ) : (
-          <Maximize2 className="w-4 h-4" />
-        )}
-      </motion.button>
+      <HomeNavbar maxWidth={1128} />
 
       {/* Main Content Area - Below Navbar */}
       <div className="flex flex-1 overflow-hidden pt-[60px]">
-        {/* Content Area */}
-        <motion.div
-          className={`flex flex-1 overflow-hidden bg-background ${
-            isReadingMode ? "" : "mx-auto w-full max-w-[1336px]"
-          }`}
-          initial={false}
-          animate={{
-            justifyContent: isReadingMode ? "center" : "flex-start",
-          }}
-          transition={{
-            duration: 0.5,
-            delay: isReadingMode ? 0.3 : 0,
-            ease: [0.4, 0, 0.2, 1],
-          }}
-        >
-          {/* Left Sidebar - Hidden on mobile */}
-          <motion.div
-            initial={false}
-            animate={{
-              width: isReadingMode ? 0 : 220,
-              opacity: isReadingMode ? 0 : 1,
-            }}
-            transition={{
-              opacity: {
-                duration: 0.3,
-                delay: isReadingMode ? 0 : 0.3,
-                ease: [0.4, 0, 0.2, 1],
-              },
-              width: {
-                duration: 0.5,
-                delay: isReadingMode ? 0.3 : 0,
-                ease: [0.4, 0, 0.2, 1],
-              },
-            }}
-            className="hidden overflow-hidden pt-8 lg:block"
-          >
-            <LeftSidebar />
-          </motion.div>
-
+        {/* Content Area — always centered, no left sidebar */}
+        <div className="flex flex-1 justify-center overflow-hidden bg-background">
           {/* Main Content */}
-          <motion.div
-            initial={false}
-            animate={{
-              flex: isReadingMode ? "0 0 80%" : "1 1 0",
-            }}
-            transition={{
-              duration: 0.5,
-              delay: isReadingMode ? 0.3 : 0,
-              ease: [0.4, 0, 0.2, 1],
-            }}
-            className={
-              isReadingMode
-                ? "scrollbar-hide w-full overflow-y-auto px-4 lg:px-12"
-                : "w-full overflow-y-auto px-4 lg:px-12"
-            }
+          <div
+            className="scrollbar-hide w-full overflow-y-auto px-4 lg:px-12"
+            style={{ flex: "0 0 80%" }}
           >
             <div className="py-2">
               <div className="mx-auto mt-8 w-full max-w-[860px]">
@@ -1130,20 +1131,9 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
                   </div>
 
                   {/* Title */}
-                  <motion.h1
-                    initial={false}
-                    animate={{
-                      fontSize: isReadingMode ? "2.5rem" : "2rem",
-                    }}
-                    transition={{
-                      duration: 0.5,
-                      delay: isReadingMode ? 0.3 : 0,
-                      ease: [0.4, 0, 0.2, 1],
-                    }}
-                    className="mb-6 font-serif text-[40px] font-bold leading-[1.15] tracking-tight text-foreground"
-                  >
+                  <h1 className="mb-6 font-serif text-[40px] font-bold leading-[1.15] tracking-tight text-foreground">
                     {postData.title}
-                  </motion.h1>
+                  </h1>
 
                   {/* Tags */}
                   {postData.tags && postData.tags.length > 0 && (
@@ -1185,7 +1175,7 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
                     </span>
                     <span>·</span>
                     <div className="flex items-center gap-1">
-                      <IoChevronUpCircle className="h-3.5 w-3.5" />
+                      <UpvoteIcon className="h-3.5 w-3.5" />
                       <span>{postScore ? postScore.toString() : "0"}</span>
                     </div>
                   </div>
@@ -1210,11 +1200,7 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
 
                 {/* Article Content */}
                 <div className="border-b border-border bg-background px-3 py-5">
-                  <article
-                    className={`prose max-w-none ${
-                      isReadingMode ? "prose-reading-mode" : ""
-                    }`}
-                  >
+                  <article className="prose max-w-none">
                     <MarkdownPreview
                       source={postData.content || ""}
                       components={{ img: PostImage }}
@@ -1233,16 +1219,18 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
                           animate={isClapping ? { scale: [1, 1.2, 1] } : {}}
                           transition={{ duration: 0.3 }}
                           onClick={handleClap}
-                          disabled={isClapPending || hasReachedMax}
+                          disabled={isClapPending || (isAuthenticated && hasReachedMax)}
                           className={`flex items-center gap-1.5 text-[14px] transition-colors ${
-                            hasReachedMax
+                            !isAuthenticated || hasReachedMax
                               ? "cursor-not-allowed text-muted-foreground/50"
                               : userClapCount > 0
                               ? "text-foreground"
                               : "text-muted-foreground hover:text-foreground"
                           }`}
                           title={
-                            hasReachedMax
+                            !isAuthenticated
+                              ? "Sign in to clap on posts"
+                              : hasReachedMax
                               ? `You can only clap ${maxClapsPerUser} times on a post`
                               : `Clap (${userClapCount}/${maxClapsPerUser})`
                           }
@@ -1250,9 +1238,9 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
                           {isClapPending ? (
                             <Loader2 className="h-5 w-5 animate-spin" />
                           ) : (
-                            <PiHandsClappingThin
+                            <ClapIcon
                               className={`h-5 w-5 ${
-                                hasReachedMax
+                                !isAuthenticated || hasReachedMax
                                   ? "text-muted-foreground/50"
                                   : userClapCount > 0
                                   ? "text-foreground"
@@ -1299,7 +1287,7 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
                         }
                         className="flex items-center gap-1.5 text-[14px] text-muted-foreground transition-colors hover:text-foreground"
                       >
-                        <MessageCircle className="h-5 w-5" />
+                        <CommentIcon className="h-5 w-5" />
                         <span className="text-[14px] font-medium">
                           {postData?.comments?.length || 0}
                         </span>
@@ -1308,18 +1296,54 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
                       <div className="group relative" ref={scorePopoverRef}>
                         <button
                           onClick={() => {
+                            if (!isAuthenticated) {
+                              showToast({
+                                message: "Sign in to upvote posts",
+                                type: "info",
+                              });
+                              return;
+                            }
+                            if (isCurator === false) {
+                              showToast({
+                                message: "Only curators can upvote posts",
+                                type: "info",
+                              });
+                              return;
+                            }
+                            if (hasVotedOnPost === true) {
+                              showToast({
+                                message: "You've already voted on this post.",
+                                type: "info",
+                              });
+                              return;
+                            }
                             if (!isPostOnChainFailed) {
                               setShowScorePopover(!showScorePopover);
                             }
                           }}
-                          aria-disabled={isPostOnChainFailed}
-                          className={`flex items-center gap-1.5 text-[14px] text-muted-foreground transition-colors ${
-                            isPostOnChainFailed
-                              ? "cursor-not-allowed opacity-50"
-                              : "hover:text-foreground"
+                          aria-disabled={
+                            isPostOnChainFailed || hasVotedOnPost === true
+                          }
+                          title={
+                            !isAuthenticated
+                              ? "Sign in to upvote posts"
+                              : isCurator === false
+                              ? "Only curators can upvote posts"
+                              : hasVotedOnPost === true
+                              ? "You've already voted on this post"
+                              : undefined
+                          }
+                          className={`flex items-center gap-1.5 text-[14px] transition-colors ${
+                            hasVotedOnPost === true
+                              ? "cursor-not-allowed text-foreground"
+                              : isPostOnChainFailed ||
+                                !isAuthenticated ||
+                                isCurator === false
+                              ? "cursor-not-allowed text-muted-foreground opacity-50"
+                              : "text-muted-foreground hover:text-foreground"
                           }`}
                         >
-                          <IoChevronUpCircle className="h-5 w-5" />
+                          <UpvoteIcon className="h-5 w-5" />
                           <span className="text-[14px] font-medium">
                             {postScore ? postScore.toString() : "0"}
                           </span>
@@ -1332,7 +1356,25 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
                           </span>
                         )}
 
-                        {showScorePopover && !isPostOnChainFailed && (
+                        {!isPostOnChainFailed &&
+                          isAuthenticated &&
+                          isCurator !== false &&
+                          hasVotedOnPost === true && (
+                          <span className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 hidden w-52 -translate-x-1/2 rounded-md border border-border bg-background px-2.5 py-1.5 text-center text-xs leading-relaxed text-muted-foreground shadow-md group-hover:block">
+                            You&apos;ve already voted on this post.
+                          </span>
+                        )}
+
+                        {!isPostOnChainFailed && isAuthenticated && isCurator === false && (
+                          <span className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 hidden w-52 -translate-x-1/2 rounded-md border border-border bg-background px-2.5 py-1.5 text-center text-xs leading-relaxed text-muted-foreground shadow-md group-hover:block">
+                            Only curators can upvote posts.
+                          </span>
+                        )}
+
+                        {showScorePopover &&
+                          !isPostOnChainFailed &&
+                          isAuthenticated &&
+                          isCurator !== false && (
                           <div className="upvote-popover absolute bottom-full left-0 z-50 mb-2 w-64 rounded-lg border border-border bg-background p-3 shadow-lg">
                             <div className="space-y-2.5">
                               <div className="flex items-center justify-between">
@@ -1372,20 +1414,45 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
                                 size="sm"
                                 onClick={(e) => {
                                   if (voteWeight > 0) {
+                                    console.log("Submitting upvote with weight:", voteWeight);
                                     handleVote(e);
                                     setShowScorePopover(false);
                                   }
+                                  console.log("Vote weight:", voteWeight);
                                 }}
-                                disabled={isScorePending || voteWeight === 0}
+                                disabled={
+                                  isScorePending ||
+                                  voteWeight === 0 ||
+                                  isTokenBalanceLoading ||
+                                  hasVotedOnPost === true
+                                }
+                                title={
+                                  hasVotedOnPost === true
+                                    ? "You've already voted on this post"
+                                    : voteWeight === 0
+                                    ? "Move the slider above 0% to upvote"
+                                    : undefined
+                                }
                                 className="w-full"
                               >
                                 {isScorePending ? (
                                   <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
                                 ) : (
-                                  <IoChevronUpCircle className="mr-1.5 h-4 w-4" />
+                                  <UpvoteIcon className="mr-1.5 h-4 w-4" />
                                 )}
                                 <span>Submit Upvote</span>
                               </Button>
+                              {hasVotedOnPost === true ? (
+                                <p className="text-xs text-muted-foreground">
+                                  You&apos;ve already voted on this post.
+                                </p>
+                              ) : (
+                                voteWeight === 0 && (
+                                  <p className="text-xs text-muted-foreground">
+                                    Move the slider above 0% to upvote.
+                                  </p>
+                                )
+                              )}
                             </div>
                           </div>
                         )}
@@ -1395,7 +1462,7 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
                     {/* Right Group: Bookmark, More */}
                     <div className="flex items-center gap-5">
                       <button className="text-muted-foreground transition-colors hover:text-foreground">
-                        <Bookmark className="h-5 w-5" />
+                        <BookmarkIcon className="h-5 w-5" />
                       </button>
                       <button className="text-muted-foreground transition-colors hover:text-foreground">
                         <MoreHorizontal className="h-5 w-5" />
@@ -1461,8 +1528,8 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
                 </div>
               </div>
             </div>
-          </motion.div>
-        </motion.div>
+          </div>
+        </div>
       </div>
     </div>
   );

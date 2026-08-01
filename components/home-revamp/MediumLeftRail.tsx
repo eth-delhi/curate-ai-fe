@@ -1,14 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import {
-  Home,
-  Bookmark,
-  User,
-  FileText,
-  BarChart2,
-  Plus,
-} from "lucide-react";
+import { Home, User, FileText, BarChart2, Plus } from "lucide-react";
+import { BookmarkIcon } from "@/components/icons";
 import { useAuth } from "@/hooks/useAuth";
 import { useFollowing } from "@/hooks/api/follows";
 import { getIpfsUrl } from "@/utils/ipfs";
@@ -72,7 +66,7 @@ export function MediumLeftRail({
           title="Library"
           onClick={onSelectLibrary}
         >
-          <Bookmark className="h-6 w-6 stroke-[1.5]" />
+          <BookmarkIcon className="h-6 w-6 stroke-[1.5]" />
         </NavIcon>
         <NavIcon
           href={userId ? `/profile/${userId}` : "/auth"}

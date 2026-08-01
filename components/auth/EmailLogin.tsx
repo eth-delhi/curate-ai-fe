@@ -10,6 +10,10 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Mail, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 import { useLogin } from "@/hooks/api/auth";
+import {
+  clearStoredReferralCode,
+  getStoredReferralCode,
+} from "@/utils/referral";
 
 export const EmailLogin = ({ token, setToken }: LoginProps) => {
   const { magic } = useMagic();
@@ -37,12 +41,14 @@ export const EmailLogin = ({ token, setToken }: LoginProps) => {
           token: token as string,
           email,
           walletAddress: metadata?.publicAddress as string,
+          referralCode: getStoredReferralCode(),
         });
 
         if (!token || !metadata?.publicAddress) {
           throw new Error("Magic login failed");
         }
 
+        clearStoredReferralCode();
         setToken(token);
         setEmail("");
       } catch (e) {

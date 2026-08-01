@@ -1,6 +1,6 @@
 "use client";
 
-import { Bookmark } from "lucide-react";
+import { BookmarkIcon } from "@/components/icons";
 import Image from "next/image";
 import Link from "next/link";
 import { FeaturedPostsSectionProps } from "@/types/home-revamp";
@@ -64,7 +64,7 @@ const FeaturedPostCard = ({ post }: { post: any }) => {
                 aria-label={isBookmarked ? "Remove bookmark" : "Bookmark post"}
                 className="p-1 hover:bg-accent rounded transition-colors duration-150"
               >
-                <Bookmark
+                <BookmarkIcon
                   className={`w-4 h-4 transition-colors duration-150 ${
                     isBookmarked ? "fill-current text-primary" : "text-muted-foreground"
                   }`}

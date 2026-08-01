@@ -6,6 +6,7 @@ const login = async (user: {
   email: string;
   walletAddress: string;
   token: string;
+  referralCode?: string;
 }) => {
   if (!user.email || !user.walletAddress || !user.token) {
     throw new Error("Invalid user data");

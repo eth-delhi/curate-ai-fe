@@ -5,7 +5,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { User, MessageSquare, Send, Loader2 } from "lucide-react";
+import { User, Send, Loader2 } from "lucide-react";
+import { CommentIcon } from "@/components/icons";
 import { useAccount } from "wagmi";
 import { useComments, useCreateComment } from "@/hooks/api/comments";
 import { CommentItem } from "./CommentItem";
@@ -42,12 +43,8 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
       });
       setNewComment("");
       setReplyingTo(undefined);
-      showToast({
-        message: replyingTo
-          ? "Reply posted successfully"
-          : "Comment posted successfully",
-        type: "success",
-      });
+      // The new comment/reply appears in the thread immediately once the
+      // query invalidates — no toast needed.
     } catch (error) {
       console.error("Failed to create comment:", error);
       showToast({
@@ -68,10 +65,6 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
       });
       setNewComment("");
       setReplyingTo(undefined);
-      showToast({
-        message: "Reply posted successfully",
-        type: "success",
-      });
     } catch (error) {
       console.error("Failed to create reply:", error);
       showToast({
@@ -196,7 +189,7 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
         </div>
       ) : (
         <div className="text-center py-8">
-          <MessageSquare className="mx-auto mb-3 h-12 w-12 text-muted-foreground" />
+          <CommentIcon className="mx-auto mb-3 h-12 w-12 text-muted-foreground" />
           <h3 className="mb-1 text-[18px] font-medium text-foreground">
             No comments yet
           </h3>

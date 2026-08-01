@@ -4,7 +4,18 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import { Logo } from "@/components/ui/Logo";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, LogOut, Search, PenSquare, Bell, Loader2 } from "lucide-react";
+import {
+  User,
+  LogOut,
+  Search,
+  PenSquare,
+  Loader2,
+  ChevronDown,
+  Copy,
+  Check,
+  Send,
+} from "lucide-react";
+import { BellIcon, WalletIcon } from "@/components/icons";
 import { useUserProfile } from "@/hooks/api/profile";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -93,10 +104,12 @@ const formatNotificationMessage = (
   }
 };
 
-// Real on-chain CAT + native token balance for the connected wallet.
-// Same fetching pattern as components/home-revamp/LeftSidebar.tsx's
-// WalletWidget, without the mocked USD conversion.
-const WalletBalance = () => {
+// Real on-chain CAT + native token balance for the connected wallet, shown
+// as a clickable pill that opens a small panel with the full address (copy)
+// and a shortcut into the profile's Wallet tab. Same fetching pattern as
+// components/home-revamp/LeftSidebar.tsx's WalletWidget, without the mocked
+// USD conversion.
+const WalletMenu = ({ userId }: { userId: string | null }) => {
   const { address } = useAccount();
   const { balance: catBalance, isLoading: isCatBalanceLoading } =
     useCatTokenBalance();
@@ -108,6 +121,28 @@ const WalletBalance = () => {
         staleTime: RPC_POLL_INTERVAL_MS,
       },
     });
+
+  const [isOpen, setIsOpen] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
+  const [position, setPosition] = useState({ top: 0, right: 0 });
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (
+        buttonRef.current?.contains(target) ||
+        panelRef.current?.contains(target)
+      ) {
+        return;
+      }
+      setIsOpen(false);
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isOpen]);
 
   // CAT amounts are whole base units — the token contract mints/distributes
   // unscaled values, so the ERC20's 18 decimals must not be applied.
@@ -125,24 +160,109 @@ const WalletBalance = () => {
     }
   }, [nativeBalance]);
 
+  useEffect(() => {
+    if (isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setPosition({
+        top: rect.bottom + 8,
+        right: window.innerWidth - rect.right,
+      });
+    }
+  }, [isOpen]);
+
   if (!address) return null;
 
   const isLoading = isCatBalanceLoading || isNativeBalanceLoading;
+  const shortAddress = `${address.slice(0, 6)}...${address.slice(-4)}`;
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(address);
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
+    } catch (error) {
+      console.error("Error copying address:", error);
+    }
+  };
 
   return (
-    <div className="hidden shrink-0 items-center gap-2 whitespace-nowrap rounded-full border border-border bg-muted/50 px-3 py-1.5 text-xs font-medium text-foreground sm:flex">
-      {isLoading ? (
-        <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
-      ) : (
-        <>
-          <span>
-            {formattedCatBalance} {TOKEN_DISPLAY_NAMES.CAT}
-          </span>
-          <span className="text-muted-foreground">·</span>
-          <span>
-            {formattedNativeBalance} {TOKEN_DISPLAY_NAMES.SONIC}
-          </span>
-        </>
+    <div className="relative hidden shrink-0 sm:block">
+      <button
+        ref={buttonRef}
+        type="button"
+        onClick={() => setIsOpen((prev) => !prev)}
+        className="flex items-center gap-2 whitespace-nowrap rounded-full border border-border bg-muted/50 px-3 py-1.5 text-xs font-medium text-foreground shadow-sm transition-colors duration-150 hover:border-primary/40"
+      >
+        {isLoading ? (
+          <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+        ) : (
+          <>
+            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary/10">
+              <WalletIcon className="h-2.5 w-2.5 text-primary" />
+            </span>
+            <span>
+              {formattedCatBalance} {TOKEN_DISPLAY_NAMES.CAT}
+            </span>
+            <span className="text-muted-foreground">·</span>
+            <span>
+              {formattedNativeBalance} {TOKEN_DISPLAY_NAMES.SONIC}
+            </span>
+            <ChevronDown
+              className={`h-3.5 w-3.5 text-muted-foreground transition-transform duration-150 ${
+                isOpen ? "rotate-180" : ""
+              }`}
+            />
+          </>
+        )}
+      </button>
+
+      {isOpen && (
+        <div
+          ref={panelRef}
+          className="fixed w-72 overflow-hidden rounded-xl border border-border bg-background shadow-xl"
+          style={{ top: `${position.top}px`, right: `${position.right}px`, zIndex: 10001 }}
+        >
+          <div className="border-b border-border bg-muted/40 px-4 py-4">
+            <p className="text-xs font-medium text-muted-foreground">
+              Wallet balance
+            </p>
+            <p className="mt-1 text-2xl font-semibold text-foreground">
+              {formattedCatBalance}{" "}
+              <span className="text-sm font-medium text-muted-foreground">
+                {TOKEN_DISPLAY_NAMES.CAT}
+              </span>
+            </p>
+            <p className="text-sm text-muted-foreground">
+              {formattedNativeBalance} {TOKEN_DISPLAY_NAMES.SONIC}
+            </p>
+          </div>
+
+          <div className="p-3">
+            <button
+              type="button"
+              onClick={handleCopy}
+              className="flex w-full items-center justify-between gap-2 rounded-lg border border-border bg-muted/50 px-3 py-2 text-left transition-colors duration-150 hover:bg-muted"
+            >
+              <span className="truncate font-mono text-xs text-foreground">
+                {shortAddress}
+              </span>
+              {isCopied ? (
+                <Check className="h-3.5 w-3.5 shrink-0 text-primary" />
+              ) : (
+                <Copy className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              )}
+            </button>
+
+            <Link
+              href={userId ? `/profile/${userId}?tab=wallet` : "/auth"}
+              onClick={() => setIsOpen(false)}
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition-colors duration-150 hover:bg-primary/90"
+            >
+              <Send className="h-4 w-4" />
+              Send tokens
+            </Link>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -235,7 +355,7 @@ export default function HomeNavbar({
 
   return (
     <nav
-      className={`fixed top-0 left-0 right-0 w-full bg-background border-b border-border z-[9999] ${className}`}
+      className={`fixed top-0 left-0 right-0 w-full border-b border-border/70 bg-background/85 shadow-[0_1px_0_rgba(7,47,95,0.06)] backdrop-blur-md z-[9999] ${className}`}
     >
       <div className="w-full">
         <div
@@ -246,10 +366,10 @@ export default function HomeNavbar({
           <div className="flex min-w-0 items-center justify-between gap-3 md:justify-start">
             <Link
               href="/home"
-              className="flex shrink-0 items-center gap-2.5 text-foreground transition-opacity duration-150 hover:opacity-90"
+              className="flex shrink-0 items-center gap-2 text-foreground transition-opacity duration-150 hover:opacity-90"
             >
-              <Logo className="h-7 w-7 shrink-0 text-foreground" />
-              <span className="font-serif text-xl font-semibold leading-none tracking-tight">
+              <Logo className="h-8 w-8 shrink-0 text-foreground" />
+              <span className="font-serif text-[24px] font-bold leading-none tracking-tight text-foreground">
                 Curate AI
               </span>
             </Link>
@@ -257,7 +377,7 @@ export default function HomeNavbar({
 
           {/* Search */}
           <div className="flex min-w-0 justify-center px-0 md:px-4">
-            <div className="flex w-full max-w-[360px] items-center gap-3 rounded-[24px] bg-muted px-5 py-2.5">
+            <div className="flex w-full max-w-[360px] items-center gap-3 rounded-[24px] border border-transparent bg-muted px-5 py-2.5 transition-colors duration-150 focus-within:border-primary/30 focus-within:bg-background">
               <Search className="h-5 w-5 shrink-0 text-muted-foreground" />
               <input
                 type="text"
@@ -286,7 +406,7 @@ export default function HomeNavbar({
               </>
             ) : (
               <>
-                <WalletBalance />
+                <WalletMenu userId={userId} />
 
                 <Link
                   href="/create"
@@ -319,7 +439,7 @@ export default function HomeNavbar({
                     className="relative flex h-9 w-9 shrink-0 items-center justify-center"
                     aria-label="Notifications"
                   >
-                    <Bell className="h-5 w-5 stroke-[1.5] text-muted-foreground" />
+                    <BellIcon className="h-5 w-5 stroke-[1.5] text-muted-foreground" />
                     {unreadCount > 0 && (
                       <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">
                         {unreadCount > 9 ? "9+" : unreadCount}

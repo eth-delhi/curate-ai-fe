@@ -53,10 +53,6 @@ export const CommentItem: React.FC<CommentItemProps> = ({
         data: { content: editContent },
       });
       setIsEditing(false);
-      showToast({
-        message: "Comment updated successfully",
-        type: "success",
-      });
     } catch (error) {
       console.error("Failed to update comment:", error);
       showToast({
@@ -70,10 +66,6 @@ export const CommentItem: React.FC<CommentItemProps> = ({
     try {
       await deleteCommentMutation.mutateAsync(comment.uuid);
       setShowDeleteModal(false);
-      showToast({
-        message: "Comment deleted successfully",
-        type: "success",
-      });
     } catch (error) {
       console.error("Failed to delete comment:", error);
       showToast({

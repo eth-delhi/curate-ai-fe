@@ -9,6 +9,11 @@
           "internalType": "address",
           "name": "_roleManager",
           "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_tokenAddress",
+          "type": "address"
         }
       ],
       "stateMutability": "nonpayable",
@@ -46,6 +51,31 @@
       "type": "event"
     },
     {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "oldAmount",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "newAmount",
+          "type": "uint256"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "setter",
+          "type": "address"
+        }
+      ],
+      "name": "PostResetBurnAmountUpdated",
+      "type": "event"
+    },
+    {
       "inputs": [],
       "name": "AI_AGENT_ROLE",
       "outputs": [
@@ -74,6 +104,19 @@
     {
       "inputs": [],
       "name": "SETTLEMENT_ROLE",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "SUPER_ADMIN_ROLE",
       "outputs": [
         {
           "internalType": "bytes32",
@@ -239,6 +282,19 @@
       "type": "function"
     },
     {
+      "inputs": [],
+      "name": "postResetBurnAmount",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
       "inputs": [
         {
           "internalType": "uint256",
@@ -299,6 +355,13 @@
     },
     {
       "inputs": [],
+      "name": "resetPostCooldown",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
       "name": "roleManager",
       "outputs": [
         {
@@ -327,6 +390,19 @@
       "inputs": [
         {
           "internalType": "uint256",
+          "name": "newAmount",
+          "type": "uint256"
+        }
+      ],
+      "name": "setPostResetBurnAmount",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
           "name": "postId",
           "type": "uint256"
         },
@@ -339,6 +415,19 @@
       "name": "setPostScore",
       "outputs": [],
       "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "token",
+      "outputs": [
+        {
+          "internalType": "contract IContentMediaToken",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
       "type": "function"
     }
   ],

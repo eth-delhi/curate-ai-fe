@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect, use, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { SuccessButton, useActionStatus } from "@/components/ui/SuccessButton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -30,6 +32,7 @@ import Link from "next/link";
 import { showToast } from "@/utils/showToast";
 import { useAccount, useBalance, useSendTransaction } from "wagmi";
 import { ProfileLeftSidebar } from "@/components/profile/ProfileLeftSidebar";
+import ReferralTab from "@/components/profile/ReferralTab";
 import { parseUnits, formatUnits, isAddress } from "viem";
 import {
   useReadCuratAiTokenDecimals,
@@ -46,7 +49,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Upload, X } from "lucide-react";
 import {
-  TOKEN_CONTRACTS,
   TOKEN_DISPLAY_NAMES,
   NATIVE_TOKEN_SYMBOL,
   RPC_POLL_INTERVAL_MS,
@@ -61,12 +63,9 @@ import {
   Settings as SettingsIcon,
   FileText,
   BarChart2,
-  Wallet,
   Copy,
   Check,
   Heart,
-  MessageSquare,
-  MessageCircle,
   Eye,
   Clock,
   MoreHorizontal,
@@ -75,10 +74,13 @@ import {
   AlertTriangle,
   Send,
   ChevronDown,
-  Wallet as WalletIcon,
-  UserPlus,
-  UserMinus,
 } from "lucide-react";
+import {
+  CommentIcon,
+  FollowIcon,
+  UnfollowIcon,
+  WalletIcon,
+} from "@/components/icons";
 
 // Wallet Tab Component
 function WalletTab() {
@@ -159,6 +161,15 @@ function WalletTab() {
     sendTransaction: sendSonicTransaction,
     isPending: isSonicTransferPending,
   } = useSendTransaction();
+  // Driven manually (not via useActionStatus) since handleTransfer has
+  // several validation branches that return early before the actual
+  // transfer — wrapping the whole handler in run() would risk flashing a
+  // false success tick on a validation failure.
+  const [transferSuccessTick, setTransferSuccessTick] = useState(false);
+  const showTransferSuccessTick = () => {
+    setTransferSuccessTick(true);
+    setTimeout(() => setTransferSuccessTick(false), 1400);
+  };
 
   // Format token balances
   // Match post page behavior: show raw balance value
@@ -256,10 +267,7 @@ function WalletTab() {
           args: [recipient, amount],
         });
 
-        showToast({
-          message: "CAT tokens transferred successfully",
-          type: "success",
-        });
+        showTransferSuccessTick();
 
         // Refetch balances
         refetchCatBalance();
@@ -281,10 +289,7 @@ function WalletTab() {
           value: amount,
         });
 
-        showToast({
-          message: "SONIC transferred successfully",
-          type: "success",
-        });
+        showTransferSuccessTick();
 
         // Refetch balances
         refetchSonicBalance();
@@ -545,8 +550,15 @@ function WalletTab() {
             </p>
           </div>
 
-          <Button
+          <SuccessButton
             onClick={handleTransfer}
+            status={
+              transferSuccessTick
+                ? "success"
+                : isLoading || isTransferring
+                ? "loading"
+                : "idle"
+            }
             disabled={
               isLoading ||
               isTransferring ||
@@ -555,23 +567,20 @@ function WalletTab() {
                 ? !isAddress(recipientAddress)
                 : !walletLookup?.walletAddress)
             }
-            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-          >
-            {isLoading || isTransferring ? (
+            loadingChildren={
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                 Transferring...
               </>
-            ) : (
-              <>
-                <Send className="w-4 h-4 mr-2" />
-                Transfer{" "}
-                {activeTokenTab === "CAT"
-                  ? TOKEN_DISPLAY_NAMES.CAT
-                  : TOKEN_DISPLAY_NAMES.SONIC}
-              </>
-            )}
-          </Button>
+            }
+            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+          >
+            <Send className="w-4 h-4 mr-2" />
+            Transfer{" "}
+            {activeTokenTab === "CAT"
+              ? TOKEN_DISPLAY_NAMES.CAT
+              : TOKEN_DISPLAY_NAMES.SONIC}
+          </SuccessButton>
 
           {!userAddress && (
             <p className="text-sm text-amber-600 text-center">
@@ -607,7 +616,10 @@ const getUserIdFromToken = (): string | null => {
 
 export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
   const { id } = use(params);
-  const [activeTab, setActiveTab] = useState("posts");
+  const searchParams = useSearchParams();
+  const [activeTab, setActiveTab] = useState(
+    () => searchParams.get("tab") || "posts"
+  );
   const [profilePicPreview, setProfilePicPreview] = useState<string | null>(
     null
   );
@@ -647,6 +659,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
 
   // Profile update mutation
   const updateProfileMutation = useUpdateProfile();
+  const { status: saveProfileStatus, run: runSaveProfile } = useActionStatus();
 
   // Follow/unfollow hooks (only fetch status if viewing someone else's profile)
   const followUserMutation = useFollowUser();
@@ -877,10 +890,8 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
         data: { profilePic: ipfsHash },
       });
 
-      showToast({
-        message: "Profile picture updated successfully",
-        type: "success",
-      });
+      // The real avatar re-renders in place of the preview once the profile
+      // query refetches, which is confirmation enough.
 
       // Clear preview after successful upload
       setProfilePicPreview(null);
@@ -998,17 +1009,14 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
       console.log("Form data:", formData);
       console.log("Sending only changed fields:", updateData);
 
-      await updateProfileMutation.mutateAsync({
-        id: id,
-        data: updateData,
-      });
-
-      // Profile will automatically refetch via query invalidation/refetch
-      // The useEffect will update formData and originalValues when new data arrives
-
-      showToast({
-        message: "Profile updated successfully",
-        type: "success",
+      // Profile will automatically refetch via query invalidation/refetch —
+      // the useEffect will update formData/originalValues when new data
+      // arrives. Confirmation is the button's own success tick, not a toast.
+      await runSaveProfile(async () => {
+        await updateProfileMutation.mutateAsync({
+          id: id,
+          data: updateData,
+        });
       });
     } catch (error) {
       console.error("Profile update error:", error);
@@ -1044,12 +1052,10 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
   // Handle follow/unfollow
   const handleFollow = async () => {
     try {
+      // The button itself flips to "Following" once the query invalidates,
+      // so no toast is needed on success.
       await followUserMutation.mutateAsync({
         followingUuid: id,
-      });
-      showToast({
-        message: "You are now following this user",
-        type: "success",
       });
     } catch (error: any) {
       console.error("Follow error:", error);
@@ -1064,10 +1070,6 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
     try {
       await unfollowUserMutation.mutateAsync({
         followingUuid: id,
-      });
-      showToast({
-        message: "You unfollowed this user",
-        type: "success",
       });
     } catch (error: any) {
       console.error("Unfollow error:", error);
@@ -1223,7 +1225,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                               title={userData.walletAddress}
                               className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
                             >
-                              <Wallet className="h-3.5 w-3.5" />
+                              <WalletIcon className="h-3.5 w-3.5" />
                               <span className="font-mono">
                                 {`${userData.walletAddress.slice(0, 6)}...${userData.walletAddress.slice(-4)}`}
                               </span>
@@ -1290,12 +1292,12 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                               </>
                             ) : isFollowing ? (
                               <>
-                                <UserMinus className="h-4 w-4 mr-2" />
+                                <UnfollowIcon className="h-4 w-4 mr-2" />
                                 Unfollow
                               </>
                             ) : (
                               <>
-                                <UserPlus className="h-4 w-4 mr-2" />
+                                <FollowIcon className="h-4 w-4 mr-2" />
                                 Follow
                               </>
                             )}
@@ -1348,6 +1350,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                         { key: "scored", label: "Scored" },
                         { key: "settings", label: "Settings" },
                         { key: "wallet", label: "Wallet" },
+                        { key: "referral", label: "Referral" },
                       ].map((tab) => (
                         <button
                           key={tab.key}
@@ -1458,7 +1461,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                                               <span>{reactions}</span>
                                             </div>
                                             <div className="flex items-center gap-1">
-                                              <MessageCircle className="w-4 h-4" />
+                                              <CommentIcon className="w-4 h-4" />
                                               <span>{comments}</span>
                                             </div>
                                             <span className="text-muted-foreground">
@@ -1644,7 +1647,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                                               <span>{reactions}</span>
                                             </div>
                                             <div className="flex items-center gap-1">
-                                              <MessageCircle className="w-4 h-4" />
+                                              <CommentIcon className="w-4 h-4" />
                                               <span>{comments}</span>
                                             </div>
                                             <span className="text-muted-foreground">
@@ -1859,20 +1862,19 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                               >
                                 Reset
                               </Button>
-                              <Button
+                              <SuccessButton
                                 type="submit"
                                 className="bg-primary hover:bg-primary/90 text-primary-foreground"
-                                disabled={updateProfileMutation.isPending}
-                              >
-                                {updateProfileMutation.isPending ? (
+                                status={saveProfileStatus}
+                                loadingChildren={
                                   <>
                                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                                     Saving...
                                   </>
-                                ) : (
-                                  "Save Changes"
-                                )}
-                              </Button>
+                                }
+                              >
+                                Save Changes
+                              </SuccessButton>
                             </div>
                           </form>
                         </div>
@@ -1882,6 +1884,13 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                       {activeTab === "wallet" && (
                         <div>
                           <WalletTab />
+                        </div>
+                      )}
+
+                      {/* Referral Tab */}
+                      {activeTab === "referral" && (
+                        <div>
+                          <ReferralTab />
                         </div>
                       )}
                     </div>
@@ -2004,7 +2013,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                                               <span>{reactions}</span>
                                             </div>
                                             <div className="flex items-center gap-1">
-                                              <MessageCircle className="w-4 h-4" />
+                                              <CommentIcon className="w-4 h-4" />
                                               <span>{comments}</span>
                                             </div>
                                             <span className="text-muted-foreground">
@@ -2121,7 +2130,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                                               <span>{reactions}</span>
                                             </div>
                                             <div className="flex items-center gap-1">
-                                              <MessageCircle className="w-4 h-4" />
+                                              <CommentIcon className="w-4 h-4" />
                                               <span>{comments}</span>
                                             </div>
                                             <span className="text-muted-foreground">

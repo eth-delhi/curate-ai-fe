@@ -2,16 +2,8 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import {
-  Wallet,
-  Loader2,
-  Users,
-  Trophy,
-  MessageSquare,
-  Flag,
-  Hand,
-  FileText,
-} from "lucide-react";
+import { Loader2, Users, Trophy, FileText } from "lucide-react";
+import { CommentIcon, FlagIcon, ClapIcon } from "@/components/icons";
 import { useAccount, useBalance } from "wagmi";
 import { useCatTokenBalance } from "@/hooks/wagmi/useCatTokenBalance";
 import {
@@ -21,6 +13,7 @@ import {
 import { useContractAddresses } from "@/context/contractAddresses.provider";
 import { RPC_POLL_INTERVAL_MS } from "@/constants/chain";
 import { showToast } from "@/utils/showToast";
+import { SuccessButton, useActionStatus } from "@/components/ui/SuccessButton";
 import { formatUnits } from "viem";
 import { useMemo } from "react";
 import Link from "next/link";
@@ -109,6 +102,7 @@ const WalletWidget = () => {
   });
   const { writeContractAsync: claimRewardsAsync, isPending: isClaiming } =
     useWriteCurateAiSettlementClaimRewards();
+  const { status: claimStatus, run: runClaim } = useActionStatus();
 
   const claimableTokenUnits =
     claimableRaw !== undefined
@@ -130,10 +124,11 @@ const WalletWidget = () => {
       return;
     }
     try {
-      await claimRewardsAsync({ address: contracts.settle as `0x${string}` });
-      showToast({ message: "Rewards claimed successfully!", type: "success" });
-      refetchClaimable();
-      refetchCatBalance();
+      await runClaim(async () => {
+        await claimRewardsAsync({ address: contracts.settle as `0x${string}` });
+        refetchClaimable();
+        refetchCatBalance();
+      });
     } catch (error) {
       console.error("Claim rewards failed:", error);
       showToast({
@@ -197,14 +192,20 @@ const WalletWidget = () => {
                   {isClaimableLoading ? "…" : `${formattedClaimable} CAT`}
                 </p>
               </div>
-              <button
+              <SuccessButton
                 onClick={handleClaim}
                 disabled={isClaiming || !claimableRaw}
+                status={claimStatus}
+                loadingChildren={
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    Claiming...
+                  </>
+                }
                 className="flex w-full items-center justify-center gap-1.5 rounded-md bg-primary px-2 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {isClaiming && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                {isClaiming ? "Claiming..." : "Claim Rewards"}
-              </button>
+                Claim Rewards
+              </SuccessButton>
             </div>
           </div>
         )}
@@ -370,13 +371,13 @@ export const ProfileLeftSidebar = ({ userUuid }: ProfileLeftSidebarProps) => {
               small={true}
             />
             <StatItem
-              icon={MessageSquare}
+              icon={CommentIcon}
               label="Comments"
               value={totalComments}
               small={true}
             />
-            <StatItem icon={Flag} label="Flags" value={totalFlags} small={true} />
-            <StatItem icon={Hand} label="Claps" value={totalClaps} small={true} />
+            <StatItem icon={FlagIcon} label="Flags" value={totalFlags} small={true} />
+            <StatItem icon={ClapIcon} label="Claps" value={totalClaps} small={true} />
           </div>
         </div>
 

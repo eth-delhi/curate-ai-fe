@@ -8,14 +8,6 @@ import { sonicTestnet } from "@/context/wagmi.config";
 // Chain identifier - defaults to "sonic-testnet" but can be changed via env
 export const CHAIN_NAME = process.env.NEXT_PUBLIC_CHAIN_NAME || "sonic-testnet";
 
-// Token contract addresses
-export const TOKEN_CONTRACTS = {
-  // Contract addresses now come from the backend (GET /settings/contracts,
-  // via useContractAddresses()) rather than a hardcoded fallback here.
-  CAT: process.env.NEXT_PUBLIC_CAT_TOKEN_ADDRESS,
-  // Add other token addresses as needed
-};
-
 // Native token symbol, sourced from the actual configured wagmi chain so it
 // can't drift out of sync with CHAIN_NAME the way a string comparison could.
 export const NATIVE_TOKEN_SYMBOL = sonicTestnet.nativeCurrency.symbol;

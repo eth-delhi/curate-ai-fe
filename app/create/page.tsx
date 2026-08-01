@@ -1,17 +1,22 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useRouter, useSearchParams } from "next/navigation";
 import axios from "axios";
-import { useAccount, useBalance, useBlock } from "wagmi";
-import { formatUnits } from "viem";
+import { useAccount, useBalance, useBlock, usePublicClient } from "wagmi";
+import { BaseError, ContractFunctionRevertedError, formatUnits } from "viem";
 import { ConfirmActionModal } from "@/components/modal/confirmActionModal";
 import {
   useReadCurateAiPostsLastPostTime,
   useReadCurateAiPostsPostCounter,
+  useReadCurateAiPostsPostResetBurnAmount,
   useWriteCurateAiPostsCreatePost,
+  useWriteCurateAiPostsResetPostCooldown,
   useReadCurateAiRoleManagerCuratorRole,
   useReadCurateAiRoleManagerHasRole,
+  useReadCuratAiTokenAllowance,
+  useWriteCuratAiTokenApprove,
 } from "@/hooks/wagmi/contracts";
 import {
   usePublishPost,
@@ -19,6 +24,7 @@ import {
   useGetPostIdFromTransaction,
 } from "@/hooks/api/create";
 import { useContractAddresses } from "@/context/contractAddresses.provider";
+import { useCatTokenBalance } from "@/hooks/wagmi/useCatTokenBalance";
 import {
   TOKEN_DISPLAY_NAMES,
   RPC_POLL_INTERVAL_MS,
@@ -28,10 +34,11 @@ import { useSaveDraft, useGetDraft } from "@/hooks/api/drafts";
 import MarkdownIt from "markdown-it";
 import AdvancedEditor from "@/components/advanced-editor";
 import { Button } from "@/components/ui/button";
+import { SuccessButton, useActionStatus } from "@/components/ui/SuccessButton";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import HomeNavbar from "@/components/ui/HomeNavbar";
-import { X, Check, Loader2 } from "lucide-react";
+import { X, Check, Loader2, Flame } from "lucide-react";
 import { showToast } from "@/utils/showToast";
 
 // Markdown parser for converting markdown to HTML
@@ -45,6 +52,24 @@ const md = new MarkdownIt({
 // transaction. Frontend-only guardrail — the chain itself will still reject
 // an underfunded transaction, this just avoids sending users into that wall.
 const MIN_NATIVE_BALANCE_FOR_GAS = 0.01;
+
+// Decodes a wagmi/viem write error down to the actual on-chain revert reason
+// (custom error name + args, or a require() string) instead of the opaque
+// error object we were previously just console.error-ing wholesale.
+const decodeContractError = (error: unknown): string => {
+  if (error instanceof BaseError) {
+    const revertError = error.walk(
+      (e) => e instanceof ContractFunctionRevertedError
+    );
+    if (revertError instanceof ContractFunctionRevertedError) {
+      const errorName = revertError.data?.errorName ?? "";
+      const args = revertError.data?.args;
+      return args?.length ? `${errorName}(${args.join(", ")})` : errorName || revertError.shortMessage;
+    }
+    return error.shortMessage ?? error.message;
+  }
+  return error instanceof Error ? error.message : String(error);
+};
 
 // Get user UUID from JWT token, same pattern used in HomeNavbar/RightSidebar
 const getUserIdFromToken = (): string | null => {
@@ -181,6 +206,129 @@ export default function CreateRevampPage() {
     remainingMinutes % 60
   ).padStart(2, "0")}`;
 
+  // post.sol's resetPostCooldown() lets a curator burn CAT to skip the
+  // remaining 24h wait instead of waiting it out. The burn amount is a
+  // contract setting (SUPER_ADMIN_ROLE-tunable), read live rather than
+  // hardcoded so this can't drift from the deployed value.
+  const { data: postResetBurnAmount } = useReadCurateAiPostsPostResetBurnAmount(
+    {
+      address: contracts?.post as `0x${string}`,
+      query: { enabled: !!contracts, staleTime: Infinity },
+    }
+  );
+  const { balance: catBalance } = useCatTokenBalance();
+  // resetPostCooldown() calls token.burnFrom(), which requires the Post
+  // contract to already hold an ERC20 allowance from this account — check
+  // it so we only prompt for an approve tx when one is actually needed.
+  const { data: tokenAllowance, refetch: refetchAllowance } =
+    useReadCuratAiTokenAllowance({
+      address: contracts?.token as `0x${string}`,
+      args:
+        account && contracts?.post
+          ? [account, contracts.post as `0x${string}`]
+          : undefined,
+      query: {
+        enabled: !!account && !!contracts,
+        refetchInterval: RPC_POLL_INTERVAL_MS,
+        staleTime: RPC_POLL_INTERVAL_MS,
+      },
+    });
+  const { writeContractAsync: writeApprove } = useWriteCuratAiTokenApprove();
+  const { writeContractAsync: writeResetCooldown, isPending: isResettingCooldown } =
+    useWriteCurateAiPostsResetPostCooldown();
+  const { status: resetCooldownStatus, run: runResetCooldown } =
+    useActionStatus(1000);
+  const publicClient = usePublicClient();
+  const [isResetPopoverOpen, setIsResetPopoverOpen] = useState(false);
+  // Rendered via a portal (see below) instead of a plain absolutely-
+  // positioned child, since the trigger sits inside the sticky title bar —
+  // an `overflow-hidden` ancestor was clipping/hiding an in-flow popover
+  // behind the navbar. Position is computed from the trigger's own rect.
+  const [resetPopoverPosition, setResetPopoverPosition] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
+  const resetTriggerRef = useRef<HTMLButtonElement>(null);
+  const resetPopoverRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (
+        resetTriggerRef.current?.contains(target) ||
+        resetPopoverRef.current?.contains(target)
+      ) {
+        return;
+      }
+      setIsResetPopoverOpen(false);
+    };
+    if (isResetPopoverOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isResetPopoverOpen]);
+
+  const toggleResetPopover = () => {
+    if (!isResetPopoverOpen && resetTriggerRef.current) {
+      const rect = resetTriggerRef.current.getBoundingClientRect();
+      const popoverWidth = 288; // w-72
+      setResetPopoverPosition({
+        top: rect.bottom + 8,
+        left: Math.min(rect.left, window.innerWidth - popoverWidth - 16),
+      });
+    }
+    setIsResetPopoverOpen((open) => !open);
+  };
+
+  const handleResetCooldown = async () => {
+    if (!account || !contracts || postResetBurnAmount === undefined) {
+      return;
+    }
+    if (catBalance !== undefined && catBalance < postResetBurnAmount) {
+      showToast({
+        message: `You need at least ${postResetBurnAmount.toString()} CAT to reset your cooldown.`,
+        type: "error",
+      });
+      return;
+    }
+    try {
+      await runResetCooldown(async () => {
+        if (
+          tokenAllowance === undefined ||
+          tokenAllowance < postResetBurnAmount
+        ) {
+          const approveHash = await writeApprove({
+            address: contracts.token as `0x${string}`,
+            args: [contracts.post as `0x${string}`, postResetBurnAmount],
+          });
+          if (publicClient) {
+            await publicClient.waitForTransactionReceipt({
+              hash: approveHash as `0x${string}`,
+            });
+          }
+          await refetchAllowance();
+        }
+        await writeResetCooldown({
+          address: contracts.post as `0x${string}`,
+        });
+      }, () => {
+        // Reload once the success tick has played, so every bit of state
+        // derived from the old cooldown (button labels, draft gating,
+        // cached allowance/balance reads, etc.) is guaranteed fresh rather
+        // than trusting every affected read to refetch itself correctly.
+        setIsResetPopoverOpen(false);
+        window.location.reload();
+      });
+    } catch (err) {
+      const reason = decodeContractError(err);
+      console.error("Reset cooldown failed:", reason, err);
+      showToast({
+        message: `Failed to reset cooldown: ${reason}`,
+        type: "error",
+      });
+    }
+  };
+
   const handlePublish = () => {
     if (isNotApprovedToPost) {
       showToast({
@@ -285,6 +433,7 @@ export default function CreateRevampPage() {
 
       let txHash: string | undefined;
       let blockchainError = false;
+      let blockchainErrorReason: string | undefined;
 
       try {
         const result = await writeContractAsync({
@@ -303,9 +452,18 @@ export default function CreateRevampPage() {
         }
 
       } catch (txError) {
-        console.error("Blockchain transaction failed:", txError);
+        blockchainErrorReason = decodeContractError(txError);
+        console.error(
+          "Blockchain transaction failed:",
+          blockchainErrorReason,
+          txError
+        );
         blockchainError = true;
         txHash = undefined;
+        showToast({
+          message: `On-chain post creation failed: ${blockchainErrorReason}`,
+          type: "error",
+        });
       }
 
       // Step 4: Update post with transaction hash and status
@@ -726,11 +884,92 @@ export default function CreateRevampPage() {
                       </p>
                     ) : (
                       hasPostedToday && (
-                        <p className="pb-3 text-xs text-muted-foreground">
-                          You&apos;ve already posted today. Keep writing —
-                          your work is auto-saved as a draft, so you can
-                          publish it once the timer runs out.
-                        </p>
+                        <div className="pb-3">
+                          <p className="pb-2 text-xs text-muted-foreground">
+                            You&apos;ve already posted today. Keep writing —
+                            your work is auto-saved as a draft, so you can
+                            publish it once the timer runs out.
+                          </p>
+                          <button
+                            ref={resetTriggerRef}
+                            onClick={toggleResetPopover}
+                            title={
+                              postResetBurnAmount !== undefined
+                                ? `Burn ${postResetBurnAmount.toString()} CAT to post again immediately`
+                                : undefined
+                            }
+                            className="inline-flex items-center gap-1.5 rounded-md border border-destructive/40 bg-destructive/5 px-2.5 py-1.5 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10"
+                          >
+                            <Flame className="h-3.5 w-3.5" />
+                            Reset cooldown
+                            {postResetBurnAmount !== undefined
+                              ? ` (burn ${postResetBurnAmount.toString()} CAT)`
+                              : ""}
+                          </button>
+
+                          {isResetPopoverOpen &&
+                            resetPopoverPosition &&
+                            typeof document !== "undefined" &&
+                            createPortal(
+                              <div
+                                ref={resetPopoverRef}
+                                style={{
+                                  position: "fixed",
+                                  top: resetPopoverPosition.top,
+                                  left: resetPopoverPosition.left,
+                                }}
+                                className="z-[100] w-72 rounded-lg border border-border bg-background p-3 shadow-lg"
+                              >
+                                <div className="space-y-2.5">
+                                  <div className="flex items-center justify-between">
+                                    <span className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+                                      <Flame className="h-4 w-4 text-destructive" />
+                                      Reset cooldown
+                                    </span>
+                                    <button
+                                      onClick={() => setIsResetPopoverOpen(false)}
+                                      className="text-muted-foreground hover:text-foreground"
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </button>
+                                  </div>
+                                  <p className="text-xs leading-relaxed text-muted-foreground">
+                                    This will burn{" "}
+                                    <span className="font-medium text-foreground">
+                                      {postResetBurnAmount !== undefined
+                                        ? postResetBurnAmount.toString()
+                                        : "500"}{" "}
+                                      CAT
+                                    </span>{" "}
+                                    from your wallet and immediately reset
+                                    your daily post cooldown. This
+                                    can&apos;t be undone.
+                                  </p>
+                                  <SuccessButton
+                                    size="sm"
+                                    variant="destructive"
+                                    onClick={handleResetCooldown}
+                                    status={resetCooldownStatus}
+                                    disabled={
+                                      isResettingCooldown ||
+                                      postResetBurnAmount === undefined
+                                    }
+                                    loadingChildren={
+                                      <>
+                                        <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                                        Burning...
+                                      </>
+                                    }
+                                    className="w-full"
+                                  >
+                                    <Flame className="mr-1.5 h-4 w-4" />
+                                    Burn &amp; reset
+                                  </SuccessButton>
+                                </div>
+                              </div>,
+                              document.body
+                            )}
+                        </div>
                       )
                     )}
                   </div>
