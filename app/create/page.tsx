@@ -824,7 +824,7 @@ export default function CreateRevampPage() {
               <>
                 {/* Sticky Title Bar */}
                 <div className="flex justify-center bg-background sticky top-0 z-10 border-b border-border">
-                  <div className="w-full max-w-4xl px-8">
+                  <div className="w-full max-w-4xl px-4 md:px-8">
                     <div className="flex items-center gap-4 py-4">
                       <input
                         type="text"
@@ -978,7 +978,7 @@ export default function CreateRevampPage() {
                 {/* Scrollable Editor Section */}
                 <div className="flex-1 overflow-hidden">
                   <div className="h-full flex justify-center">
-                    <div className="w-full max-w-4xl px-8">
+                    <div className="w-full max-w-4xl px-4 md:px-8">
                       <AdvancedEditor
                         initialContent={editorContent}
                         setMarkdownContent={setMarkdownContent}

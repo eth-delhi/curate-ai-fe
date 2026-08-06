@@ -1203,11 +1203,10 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
       <div className="flex flex-1 overflow-hidden pt-[60px]">
         {/* Content Area — always centered, no left sidebar */}
         <div className="flex flex-1 justify-center overflow-hidden bg-background">
-          {/* Main Content */}
-          <div
-            className="scrollbar-hide w-full overflow-y-auto px-4 lg:px-12"
-            style={{ flex: "0 0 80%" }}
-          >
+          {/* Main Content — full width on mobile, the inner max-w-[860px]
+              container handles centering/measure on larger screens. */}
+          <div className="scrollbar-hide w-full flex-1 overflow-y-auto px-4 lg:px-12">
+
             <div className="py-2">
               <div className="mx-auto mt-8 w-full max-w-[860px]">
                 {/* Article Header */}
@@ -1224,7 +1223,7 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
                   </div>
 
                   {/* Title */}
-                  <h1 className="mb-6 font-serif text-[40px] font-bold leading-[1.15] tracking-tight text-foreground">
+                  <h1 className="mb-6 font-serif text-[28px] font-bold leading-[1.2] tracking-tight text-foreground sm:text-[34px] sm:leading-[1.15] md:text-[40px]">
                     {postData.title}
                   </h1>
 
@@ -1305,7 +1304,7 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
                 <div className="border-b border-border bg-background px-3 py-5">
                   <div className="flex items-center justify-between gap-4">
                     {/* Left Group: Clap, Comment, Upvote */}
-                    <div className="flex items-center gap-6">
+                    <div className="flex items-center gap-4 sm:gap-6">
                       <div className="relative">
                         <motion.button
                           whileTap={{ scale: 0.95 }}
@@ -1613,7 +1612,7 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
                     </div>
 
                     {/* Right Group: Bookmark, More */}
-                    <div className="flex items-center gap-5">
+                    <div className="flex items-center gap-4 sm:gap-5">
                       <button className="text-muted-foreground transition-colors hover:text-foreground">
                         <BookmarkIcon className="h-5 w-5" />
                       </button>

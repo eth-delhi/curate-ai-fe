@@ -13,6 +13,7 @@ import {
   Copy,
   Check,
   Send,
+  Search,
 } from "lucide-react";
 import NavbarSearch from "@/components/ui/NavbarSearch";
 import { BellIcon, WalletIcon } from "@/components/icons";
@@ -359,7 +360,7 @@ export default function HomeNavbar({
     >
       <div className="w-full">
         <div
-          className="mx-auto grid h-[60px] w-full grid-cols-1 grid-rows-[auto_auto] items-center gap-3 px-6 md:grid-cols-[auto_1fr_auto] md:grid-rows-1"
+          className="mx-auto grid h-[60px] w-full grid-cols-[auto_1fr_auto] items-center gap-3 px-4 md:px-6"
           style={{ maxWidth: `${maxWidth}px` }}
         >
           {/* Logo */}
@@ -375,16 +376,18 @@ export default function HomeNavbar({
             </Link>
           </div>
 
-          {/* Search */}
+          {/* Search — hidden on mobile (see the compact search icon below) */}
           <NavbarSearch />
 
           {/* Right actions */}
-          <div className="flex shrink-0 items-center justify-end gap-5 justify-self-end md:justify-self-auto">
+          <div className="flex shrink-0 items-center justify-end gap-3 justify-self-end sm:gap-5 md:justify-self-auto">
             {!isAuthenticated ? (
               <>
+                {/* Hidden on the smallest screens so the logo + "Get started"
+                    fit on one row; sign-in is still reachable from /auth. */}
                 <Link
                   href="/auth"
-                  className="rounded-full border border-foreground bg-transparent px-4 py-[7px] text-sm font-medium text-foreground transition-colors duration-150 hover:bg-accent"
+                  className="hidden rounded-full border border-foreground bg-transparent px-4 py-[7px] text-sm font-medium text-foreground transition-colors duration-150 hover:bg-accent sm:inline-flex"
                 >
                   Sign in
                 </Link>
@@ -397,6 +400,15 @@ export default function HomeNavbar({
               </>
             ) : (
               <>
+                {/* Compact search entry on mobile, where the full search bar is hidden */}
+                <Link
+                  href="/search"
+                  aria-label="Search"
+                  className="flex h-9 w-9 shrink-0 items-center justify-center text-muted-foreground transition-colors duration-150 hover:text-foreground md:hidden"
+                >
+                  <Search className="h-5 w-5 stroke-[1.5]" />
+                </Link>
+
                 <WalletMenu userId={userId} />
 
                 <Link
@@ -405,7 +417,7 @@ export default function HomeNavbar({
                   aria-label="Write"
                 >
                   <PenSquare className="h-6 w-6 stroke-[1.5]" />
-                  <span>Write</span>
+                  <span className="hidden sm:inline">Write</span>
                 </Link>
 
                 <div className="relative shrink-0">

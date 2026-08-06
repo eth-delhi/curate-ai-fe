@@ -1339,7 +1339,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                 {isOwnProfile ? (
                   <div className="w-full">
                     {/* Tabs */}
-                    <div className="mb-6 flex gap-8 border-b border-border">
+                    <div className="mb-6 flex gap-8 overflow-x-auto border-b border-border">
                       {[
                         { key: "posts", label: "Posts" },
                         { key: "drafts", label: "Drafts" },
@@ -1351,7 +1351,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                         <button
                           key={tab.key}
                           onClick={() => setActiveTab(tab.key)}
-                          className={`relative py-4 text-[15px] font-medium transition-colors ${
+                          className={`relative shrink-0 whitespace-nowrap py-4 text-[15px] font-medium transition-colors ${
                             activeTab === tab.key
                               ? "text-primary"
                               : "text-muted-foreground hover:text-foreground"
@@ -1725,7 +1725,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                   // Other user's profile - show Posts and Scored tabs
                   <div className="w-full">
                     {/* Tabs */}
-                    <div className="mb-6 flex gap-8 border-b border-border">
+                    <div className="mb-6 flex gap-8 overflow-x-auto border-b border-border">
                       {[
                         { key: "posts", label: "Posts" },
                         { key: "scored", label: "Scored" },
@@ -1733,7 +1733,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                         <button
                           key={tab.key}
                           onClick={() => setActiveTab(tab.key)}
-                          className={`relative py-4 text-[15px] font-medium transition-colors ${
+                          className={`relative shrink-0 whitespace-nowrap py-4 text-[15px] font-medium transition-colors ${
                             activeTab === tab.key
                               ? "text-primary"
                               : "text-muted-foreground hover:text-foreground"

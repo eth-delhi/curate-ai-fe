@@ -138,7 +138,7 @@ export default function NavbarSearch({
   return (
     <div
       ref={containerRef}
-      className={`relative flex min-w-0 justify-center px-0 md:px-4 ${className}`}
+      className={`relative hidden min-w-0 justify-center md:flex md:px-4 ${className}`}
     >
       <div className="relative w-full max-w-[360px]">
         <div className="flex w-full items-center gap-3 rounded-[24px] border border-transparent bg-muted px-5 py-2.5 transition-colors duration-150 focus-within:border-primary/30 focus-within:bg-background">
