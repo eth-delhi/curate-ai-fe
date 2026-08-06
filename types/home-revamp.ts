@@ -3,7 +3,7 @@ export interface DisplayPost {
   uuid?: string;
   title: string;
   content: string;
-  imageUrl: string;
+  imageUrl?: string | null;
   author: string; // Keep for backward compatibility
   timeAgo: string;
   authorAvatar: string; // Keep for backward compatibility

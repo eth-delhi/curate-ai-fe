@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/Logo";
 import Navbar from "@/components/ui/Navbar";
@@ -20,6 +20,10 @@ import {
   MessageCircle,
   Twitter,
   ChevronUp,
+  PenLine,
+  Scale,
+  Boxes,
+  Coins,
 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
@@ -55,45 +59,6 @@ function Magnetic({
       }}
       style={{ x: springX, y: springY }}
       className="inline-block"
-    >
-      {children}
-    </motion.div>
-  );
-}
-
-/** Tilts its contents toward the mouse in 3D — used for the hero card stack. */
-function TiltCard({
-  children,
-  className = "",
-  style,
-}: {
-  children: React.ReactNode;
-  className?: string;
-  style?: React.CSSProperties;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-  const rx = useMotionValue(0);
-  const ry = useMotionValue(0);
-  const rotateX = useSpring(rx, { stiffness: 160, damping: 18 });
-  const rotateY = useSpring(ry, { stiffness: 160, damping: 18 });
-
-  return (
-    <motion.div
-      ref={ref}
-      onMouseMove={(e) => {
-        const rect = ref.current?.getBoundingClientRect();
-        if (!rect) return;
-        const px = (e.clientX - rect.left) / rect.width - 0.5;
-        const py = (e.clientY - rect.top) / rect.height - 0.5;
-        ry.set(px * 16);
-        rx.set(py * -16);
-      }}
-      onMouseLeave={() => {
-        rx.set(0);
-        ry.set(0);
-      }}
-      style={{ rotateX, rotateY, transformStyle: "preserve-3d", ...style }}
-      className={className}
     >
       {children}
     </motion.div>
@@ -284,6 +249,37 @@ const solutions = [
   },
 ];
 
+const pillars = [
+  {
+    icon: PenLine,
+    tag: "Written content",
+    title: "For the written word",
+    description:
+      "Long reads, sharp takes, real reporting. A home for writing people actually finish — not thumb-stopping noise.",
+  },
+  {
+    icon: Scale,
+    tag: "Fair",
+    title: "Fair by design",
+    description:
+      "Quadratic voting makes shouting expensive. Conviction beats capital, so the best writing rises — not the richest wallet.",
+  },
+  {
+    icon: Boxes,
+    tag: "Blockchain",
+    title: "Proof on-chain",
+    description:
+      "Every post, vote, and score is written to the chain — inspectable, permanent, and impossible to quietly rewrite.",
+  },
+  {
+    icon: Coins,
+    tag: "Source of income",
+    title: "Words that pay",
+    description:
+      "Great writing earns CAT. Turn the hours you already spend writing into income you actually own.",
+  },
+];
+
 const flowSteps = [
   {
     step: "01",
@@ -346,7 +342,7 @@ export default function LandingPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden">
+    <div className="landing min-h-screen bg-background overflow-x-hidden">
       {/* Scroll progress bar */}
       <motion.div
         className="fixed top-0 left-0 right-0 h-[3px] bg-primary origin-left z-[10000]"
@@ -357,7 +353,7 @@ export default function LandingPage() {
       <div
         className="fixed inset-0 pointer-events-none z-[1] transition-opacity duration-300"
         style={{
-          background: `radial-gradient(500px circle at ${spotlight.x}px ${spotlight.y}px, rgba(7,47,95,0.05), transparent 70%)`,
+          background: `radial-gradient(500px circle at ${spotlight.x}px ${spotlight.y}px, rgba(10,10,10,0.04), transparent 70%)`,
         }}
       />
 
@@ -366,9 +362,13 @@ export default function LandingPage() {
       {/* ---------------------------------------------------------------- */}
       {/* HERO */}
       {/* ---------------------------------------------------------------- */}
-      <section className="relative pt-40 pb-24 lg:pt-48 lg:pb-32 px-4 sm:px-8 lg:px-16">
-        <div className="max-w-7xl mx-auto grid lg:grid-cols-[1.1fr_0.9fr] gap-16 items-center">
-          <div>
+      <section className="relative overflow-hidden min-h-screen px-4 sm:px-8 lg:px-16">
+        {/* Curation lens — a full-bleed field of writing that your cursor
+            reveals and scores in real time. This is the signature moment. */}
+        <CurationLens />
+        <div className="relative z-20 flex min-h-screen flex-col justify-center pt-24 pb-16">
+          {/* Headline block — full-bleed, oversized */}
+          <div className="w-full">
             <motion.div
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
@@ -380,8 +380,8 @@ export default function LandingPage() {
               <span className="animate-blink-caret">_</span>
             </motion.div>
 
-            <h1 className="font-serif font-black text-foreground leading-[0.95] text-5xl sm:text-6xl lg:text-7xl xl:text-[5.5rem] tracking-tight">
-              {["Content has", "a trust"].map((line, i) => (
+            <h1 className="font-sans font-black text-foreground leading-[0.85] text-[clamp(3rem,11.5vw,10.5rem)] -tracking-[0.04em]">
+              {["Content has", "a trust", "problem."].map((line, i) => (
                 <motion.span
                   key={line}
                   initial={{ opacity: 0, y: 40 }}
@@ -392,21 +392,13 @@ export default function LandingPage() {
                   {line}
                 </motion.span>
               ))}
-              <motion.span
-                initial={{ opacity: 0, y: 40 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.7, delay: 0.3 }}
-                className="block text-primary"
-              >
-                problem.
-              </motion.span>
             </h1>
 
             <motion.p
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.5 }}
-              className="mt-8 text-lg sm:text-xl text-muted-foreground max-w-xl leading-relaxed"
+              className="mt-8 text-xl text-muted-foreground max-w-xl leading-relaxed"
             >
               We&apos;re fixing it with math, not marketing. Quadratic voting
               and open-source AI scoring decide what rises — not whale
@@ -448,7 +440,7 @@ export default function LandingPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.9 }}
-              className="mt-16 grid grid-cols-3 gap-6 max-w-lg border-t border-border pt-8"
+              className="mt-16 grid grid-cols-3 gap-6 max-w-md border-t border-border pt-8"
             >
               <div>
                 <div className="font-mono text-2xl sm:text-3xl font-bold text-foreground">
@@ -476,50 +468,6 @@ export default function LandingPage() {
               </div>
             </motion.div>
           </div>
-
-          {/* Tilting mock product-card stack */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.8, delay: 0.3 }}
-            className="relative h-[420px] sm:h-[480px] hidden sm:block"
-            style={{ perspective: 1200 }}
-          >
-            <TiltCard
-              className="absolute inset-x-6 top-16 bg-background border border-border rounded-2xl p-6 shadow-sm z-10"
-              style={{ rotate: "-4deg" }}
-            >
-              <PostMock
-                title="On-chain identity without the headache"
-                author="mira.eth"
-                score={92}
-                votes={341}
-              />
-            </TiltCard>
-            <TiltCard
-              className="absolute inset-x-2 top-4 bg-background border border-border rounded-2xl p-6 shadow-md z-20"
-              style={{ rotate: "2deg" }}
-            >
-              <PostMock
-                title="Why quadratic voting kills whale dominance"
-                author="devansh.cat"
-                score={97}
-                votes={812}
-                featured
-              />
-            </TiltCard>
-            <TiltCard
-              className="absolute inset-x-10 top-32 bg-background border border-border rounded-2xl p-6 shadow-sm z-0"
-              style={{ rotate: "-8deg" }}
-            >
-              <PostMock
-                title="A field guide to Sybil resistance"
-                author="0x_ren"
-                score={88}
-                votes={205}
-              />
-            </TiltCard>
-          </motion.div>
         </div>
       </section>
 
@@ -538,6 +486,75 @@ export default function LandingPage() {
           ))}
         </div>
       </div>
+
+      {/* ---------------------------------------------------------------- */}
+      {/* PILLARS — the four ideas + mascot */}
+      {/* ---------------------------------------------------------------- */}
+      <section id="pillars" className="relative py-28 lg:py-36 px-4 sm:px-8 lg:px-16">
+        <div className="max-w-6xl mx-auto">
+          <div className="max-w-2xl mb-16">
+            <span className="font-mono text-xs tracking-widest text-primary uppercase">
+              What Curate is built on
+            </span>
+            <h2 className="font-serif font-black text-4xl sm:text-5xl lg:text-6xl text-foreground mt-4 leading-[1.05]">
+              Four ideas. One home for writing.
+            </h2>
+            <p className="mt-6 text-lg text-muted-foreground leading-relaxed">
+              Meet the resident critic — a very serious cat who reads
+              everything. Around it sit the four things Curate refuses to
+              compromise on.
+            </p>
+          </div>
+
+          <div className="grid lg:grid-cols-[0.85fr_1.15fr] gap-12 lg:gap-16 items-center">
+            {/* Mascot character */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.94 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true, margin: "-80px" }}
+              transition={{ duration: 0.7 }}
+              className="relative mx-auto w-full max-w-sm"
+            >
+              <motion.img
+                src="/curate-cat.svg"
+                alt="The Curate cat — a scholarly mascot representing written content, fairness, blockchain and income"
+                className="w-full h-auto select-none"
+                draggable={false}
+                animate={{ y: [0, -10, 0] }}
+                transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+              />
+            </motion.div>
+
+            {/* Pillar cards */}
+            <div className="grid sm:grid-cols-2 gap-5">
+              {pillars.map((p, i) => (
+                <motion.div
+                  key={p.tag}
+                  initial={{ opacity: 0, y: 26 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-60px" }}
+                  transition={{ duration: 0.5, delay: i * 0.08 }}
+                  whileHover={{ y: -4 }}
+                  className="group bg-background border border-border rounded-3xl p-7 transition-shadow hover:shadow-lg"
+                >
+                  <div className="w-11 h-11 rounded-xl bg-accent flex items-center justify-center mb-5 group-hover:bg-primary transition-colors">
+                    <p.icon className="w-5 h-5 text-primary group-hover:text-primary-foreground transition-colors" />
+                  </div>
+                  <span className="font-mono text-[11px] tracking-widest text-muted-foreground uppercase">
+                    {p.tag}
+                  </span>
+                  <h3 className="font-serif font-bold text-xl text-foreground mt-1 mb-2">
+                    {p.title}
+                  </h3>
+                  <p className="text-muted-foreground text-[15px] leading-relaxed">
+                    {p.description}
+                  </p>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* ---------------------------------------------------------------- */}
       {/* PROBLEMS — stacked scroll cards */}
@@ -805,51 +822,249 @@ export default function LandingPage() {
 // Sub-components
 // ---------------------------------------------------------------------------
 
-function PostMock({
-  title,
-  author,
-  score,
-  votes,
-  featured = false,
-}: {
-  title: string;
-  author: string;
-  score: number;
-  votes: number;
-  featured?: boolean;
-}) {
+/**
+ * Hero visual — "The Curation Lens." A full-bleed field of drifting writing on
+ * paper. The cursor is a lens: words inside it sharpen and reveal a live score,
+ * so quality rises to your attention while noise stays faint and sinks. Before
+ * the visitor moves, the lens drifts on its own so the effect greets them.
+ */
+type LensToken = { t: string; s: number };
+
+const lensWords: LensToken[] = [
+  { t: "the essay that mattered", s: 96 },
+  { t: "the truth, footnoted", s: 97 },
+  { t: "quiet brilliance", s: 93 },
+  { t: "proof on-chain", s: 95 },
+  { t: "the buried lede", s: 91 },
+  { t: "open scoring", s: 90 },
+  { t: "paid to write", s: 92 },
+  { t: "provenance", s: 89 },
+  { t: "long read", s: 88 },
+  { t: "authorship", s: 88 },
+  { t: "conviction", s: 87 },
+  { t: "reputation", s: 86 },
+  { t: "peer review", s: 85 },
+  { t: "field notes", s: 84 },
+  { t: "the canon", s: 83 },
+  { t: "the archive", s: 82 },
+  { t: "manifesto", s: 81 },
+  { t: "royalties", s: 80 },
+  { t: "first draft", s: 79 },
+  { t: "the dispatch", s: 78 },
+  { t: "verified", s: 94 },
+  { t: "signal", s: 90 },
+  { t: "merit", s: 84 },
+  { t: "the ledger", s: 73 },
+  { t: "byline", s: 71 },
+  { t: "footnote", s: 66 },
+  { t: "prose", s: 64 },
+  { t: "op-ed", s: 62 },
+  { t: "$CAT", s: 85 },
+  { t: "0x9f3c…a1", s: 76 },
+  { t: "block #48210", s: 77 },
+  // noise — stays faint, sinks, and gets a low score
+  { t: "whale wallet", s: 14 },
+  { t: "vote ring", s: 11 },
+  { t: "sybil farm", s: 9 },
+  { t: "bot swarm", s: 12 },
+  { t: "spam", s: 8 },
+  { t: "clickbait", s: 17 },
+  { t: "engagement bait", s: 15 },
+  { t: "throwaway alt", s: 13 },
+  { t: "pump post", s: 19 },
+  { t: "shill thread", s: 10 },
+  { t: "astroturf", s: 12 },
+  { t: "reply guy", s: 21 },
+  { t: "copypasta", s: 16 },
+  { t: "noise", s: 18 },
+];
+
+// Deterministic spread so the layout is stable between renders.
+const lensRand = (n: number) => {
+  const x = Math.sin(n * 99.13) * 10000;
+  return x - Math.floor(x);
+};
+
+const LENS_RADIUS = 210;
+
+function CurationLens() {
+  const ref = useRef<HTMLDivElement>(null);
+  const sizeRef = useRef({ w: 0, h: 0 });
+  const interacted = useRef(false);
+  const mx = useMotionValue(0);
+  const my = useMotionValue(0);
+
+  const positions = useMemo(
+    () =>
+      lensWords.map((_, i) => {
+        const cols = 8;
+        const col = i % cols;
+        const row = Math.floor(i / cols);
+        const rows = Math.ceil(lensWords.length / cols);
+        return {
+          x: ((col + 0.5) / cols) * 100 + (lensRand(i + 1) - 0.5) * 9,
+          y: ((row + 0.5) / rows) * 100 + (lensRand(i + 7) - 0.5) * 10,
+        };
+      }),
+    []
+  );
+
+  useEffect(() => {
+    const measure = () => {
+      const el = ref.current;
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      sizeRef.current = { w: r.width, h: r.height };
+    };
+    measure();
+    mx.set(sizeRef.current.w * 0.62);
+    my.set(sizeRef.current.h * 0.5);
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [mx, my]);
+
+  // Idle drift until the visitor takes over.
+  useEffect(() => {
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce) return;
+    let raf = 0;
+    let start: number | null = null;
+    const loop = (ts: number) => {
+      if (interacted.current) return;
+      const { w, h } = sizeRef.current;
+      if (w) {
+        if (start === null) start = ts;
+        const e = (ts - start) / 1000;
+        mx.set(w * 0.6 + Math.cos(e * 0.45) * w * 0.2);
+        my.set(h * 0.5 + Math.sin(e * 0.6) * h * 0.24);
+      }
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, [mx, my]);
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      const el = ref.current;
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      sizeRef.current = { w: r.width, h: r.height };
+      interacted.current = true;
+      mx.set(e.clientX - r.left);
+      my.set(e.clientY - r.top);
+    };
+    window.addEventListener("mousemove", onMove);
+    return () => window.removeEventListener("mousemove", onMove);
+  }, [mx, my]);
+
   return (
-    <div className="w-64 sm:w-72">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-full bg-accent flex items-center justify-center">
-            <Logo className="h-3.5 w-3.5 text-accent-foreground" />
-          </div>
-          <span className="font-mono text-xs text-muted-foreground">
-            {author}
-          </span>
-        </div>
-        {featured && (
-          <span className="font-mono text-[10px] uppercase tracking-wide bg-primary text-primary-foreground px-2 py-0.5 rounded-full">
-            Trending
-          </span>
-        )}
-      </div>
-      <h4 className="font-serif font-semibold text-base text-foreground leading-snug mb-4">
-        {title}
-      </h4>
-      <div className="flex items-center gap-3">
-        <div className="flex-1 h-1.5 bg-border rounded-full overflow-hidden">
-          <div
-            className="h-full bg-primary rounded-full"
-            style={{ width: `${score}%` }}
-          />
-        </div>
-        <span className="font-mono text-xs text-foreground">{score}</span>
-      </div>
-      <div className="font-mono text-[11px] text-muted-foreground mt-2">
-        {votes} weighted votes
-      </div>
+    <div
+      ref={ref}
+      className="pointer-events-none absolute inset-0 z-0 overflow-hidden"
+    >
+      {lensWords.map((word, i) => (
+        <LensWord
+          key={i}
+          word={word}
+          pos={positions[i]}
+          mx={mx}
+          my={my}
+          sizeRef={sizeRef}
+        />
+      ))}
+
+      {/* The lens itself, following the cursor */}
+      <motion.div className="absolute left-0 top-0" style={{ x: mx, y: my }}>
+        <div
+          className="-translate-x-1/2 -translate-y-1/2 rounded-full border border-foreground/10"
+          style={{
+            width: LENS_RADIUS * 2,
+            height: LENS_RADIUS * 2,
+            background:
+              "radial-gradient(circle, rgba(255,255,255,0) 58%, rgba(230,229,224,0.28) 100%)",
+            boxShadow: "0 30px 80px -40px rgba(0,0,0,0.25)",
+          }}
+        />
+      </motion.div>
+    </div>
+  );
+}
+
+function LensWord({
+  word,
+  pos,
+  mx,
+  my,
+  sizeRef,
+}: {
+  word: LensToken;
+  pos: { x: number; y: number };
+  mx: MotionValue<number>;
+  my: MotionValue<number>;
+  sizeRef: React.RefObject<{ w: number; h: number }>;
+}) {
+  const t = useTransform([mx, my], (latest) => {
+    const [cx, cy] = latest as number[];
+    const { w, h } = sizeRef.current ?? { w: 0, h: 0 };
+    const wx = (pos.x / 100) * w;
+    const wy = (pos.y / 100) * h;
+    const d = Math.hypot(cx - wx, cy - wy);
+    return Math.max(0, Math.min(1, 1 - d / LENS_RADIUS));
+  });
+
+  const tier = word.s >= 55 ? "up" : word.s <= 25 ? "down" : "mid";
+  const opacity = useTransform(
+    t,
+    [0, 1],
+    [0.11, tier === "up" ? 0.95 : tier === "down" ? 0.5 : 0.78]
+  );
+  const scale = useTransform(
+    t,
+    [0, 1],
+    [1, tier === "up" ? 1.32 : tier === "down" ? 1.04 : 1.14]
+  );
+  const yShift = useTransform(
+    t,
+    [0, 1],
+    [0, tier === "up" ? -7 : tier === "down" ? 7 : 0]
+  );
+  const badge = useTransform(t, [0.25, 0.7], [0, 1]);
+
+  const phrase = word.t.includes(" ");
+  const token = /[$#]|0x/.test(word.t);
+  const fontSize = token ? 13 : phrase ? 19 : 16;
+  const symbol = tier === "up" ? "✓" : tier === "down" ? "↓" : "·";
+
+  return (
+    <div
+      className="absolute -translate-x-1/2 -translate-y-1/2"
+      style={{ left: `${pos.x}%`, top: `${pos.y}%` }}
+    >
+      <motion.div
+        className="relative whitespace-nowrap"
+        style={{ opacity, scale, y: yShift }}
+      >
+        <span
+          className={`${token ? "font-mono" : "font-serif"} ${
+            tier === "up" ? "font-semibold" : "font-normal"
+          } ${
+            tier === "down"
+              ? "line-through decoration-1 decoration-foreground/50"
+              : ""
+          } text-foreground`}
+          style={{ fontSize }}
+        >
+          {word.t}
+        </span>
+        <motion.span
+          className="absolute -right-5 -top-3 font-mono text-[10px] font-semibold text-foreground/70"
+          style={{ opacity: badge }}
+        >
+          {symbol}
+          {word.s}
+        </motion.span>
+      </motion.div>
     </div>
   );
 }

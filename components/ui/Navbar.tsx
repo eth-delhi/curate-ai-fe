@@ -14,7 +14,7 @@ export default function Navbar({ className = "" }: NavbarProps) {
 
   return (
     <nav
-      className={`fixed top-0 left-0 right-0 w-full bg-background border-b border-border z-[9999] ${className}`}
+      className={`fixed top-0 left-0 right-0 w-full bg-background z-[9999] ${className}`}
     >
       <div className="w-full px-4 sm:px-8 lg:px-16">
         <div className="flex justify-between items-center h-16">

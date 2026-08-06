@@ -12,7 +12,7 @@ import {
   useReadCurateAiVoteLastVoteResetTime,
   useReadCurateAiVoteVotesPerDayMultiplier,
 } from "@/hooks/wagmi/contracts";
-import { useCatTokenBalance } from "@/hooks/wagmi/useCatTokenBalance";
+import { useCatVotePower } from "@/hooks/wagmi/useCatVotePower";
 import { useContractAddresses } from "@/context/contractAddresses.provider";
 import {
   RPC_POLL_INTERVAL_MS,
@@ -72,8 +72,9 @@ const FALLBACK_TOPICS = [
 const VotingPowerWidget = () => {
   const { address } = useAccount();
   const { contracts } = useContractAddresses();
-  const { balance: catBalance, isLoading: isBalanceLoading } =
-    useCatTokenBalance();
+  // Daily budget is multiplier × votePowerOf (start-of-day balance), which is
+  // what vote.sol enforces — not the live wallet balance.
+  const { votePower, isLoading: isVotePowerLoading } = useCatVotePower();
 
   const { data: votesUsedRaw, isLoading: isUsedLoading } =
     useReadCurateAiVoteVotesUsedToday({
@@ -132,14 +133,14 @@ const VotingPowerWidget = () => {
   const used =
     votesUsedRaw !== undefined && !windowExpired ? Number(votesUsedRaw) : 0;
   const maxVotes =
-    catBalance !== undefined && votesPerDayMultiplier !== undefined
-      ? Number(catBalance) * Number(votesPerDayMultiplier)
+    votePower !== undefined && votesPerDayMultiplier !== undefined
+      ? Number(votePower) * Number(votesPerDayMultiplier)
       : 0;
   const percentage =
     maxVotes > 0 ? Math.min(100, Math.round((used / maxVotes) * 100)) : 0;
   const remaining = Math.max(0, maxVotes - used);
   const isLoading =
-    isBalanceLoading || isUsedLoading || votesPerDayMultiplier === undefined;
+    isVotePowerLoading || isUsedLoading || votesPerDayMultiplier === undefined;
 
   return (
     <div>

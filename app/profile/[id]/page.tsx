@@ -27,6 +27,7 @@ import {
 } from "@/hooks/api/follows";
 import { mapApiPostsToBlogPosts } from "@/utils/mappers";
 import { convertBlogPostToDisplayPost } from "@/utils/home-revamp";
+import { FeedPostCard } from "@/components/home-revamp/FeedSection";
 import { formatDistanceToNow } from "date-fns";
 import Link from "next/link";
 import { showToast } from "@/utils/showToast";
@@ -65,10 +66,6 @@ import {
   BarChart2,
   Copy,
   Check,
-  Heart,
-  Eye,
-  Clock,
-  MoreHorizontal,
   Loader2,
   AlertCircle,
   AlertTriangle,
@@ -76,7 +73,6 @@ import {
   ChevronDown,
 } from "lucide-react";
 import {
-  CommentIcon,
   FollowIcon,
   UnfollowIcon,
   WalletIcon,
@@ -1085,7 +1081,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
     followUserMutation.isPending || unfollowUserMutation.isPending;
 
   return (
-    <div className="profile-page min-h-screen bg-muted text-foreground">
+    <div className="profile-page min-h-screen bg-background text-foreground">
       <style jsx global>{`
         .profile-page {
           font-family: var(--font-sans), system-ui, sans-serif;
@@ -1094,7 +1090,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
         .prose {
           --tw-prose-headings: #1a1a1a;
           --tw-prose-body: #1a1a1a;
-          --tw-prose-links: #072f5f;
+          --tw-prose-links: #1a1a1a;
           --tw-prose-bold: #1a1a1a;
           --tw-prose-counters: #6b6b6b;
           --tw-prose-bullets: #e6e5e0;
@@ -1124,17 +1120,17 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
       `}</style>
 
       {/* Top Navbar */}
-      <HomeNavbar maxWidth={1128} />
+      <HomeNavbar maxWidth={1400} />
 
       {/* Main Content Area - Below Navbar */}
-      <div className="pt-[76px]">
-        <div className="mx-auto flex w-full max-w-[1128px] gap-6 px-6 py-6">
+      <div className="pt-[61px]">
+        <div className="mx-auto flex w-full max-w-[1400px] items-start px-4 md:px-6">
           <ProfileLeftSidebar userUuid={id} />
           {/* Main Content */}
-          <main className="min-w-0 flex-1">
+          <main className="min-w-0 flex-1 py-8 lg:border-l lg:border-border lg:pl-10">
               {/* Profile Header */}
               {isProfileLoading ? (
-                <div className="mb-6 rounded-xl border border-border bg-background p-8 shadow-sm">
+                <div className="mb-8 border-b border-border pb-8">
                   <div className="flex items-center justify-center py-12">
                     <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
                     <span className="ml-3 text-muted-foreground">
@@ -1143,7 +1139,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                   </div>
                 </div>
               ) : isProfileError ? (
-                <div className="mb-6 rounded-xl border border-border bg-background p-8 shadow-sm">
+                <div className="mb-8 border-b border-border pb-8">
                   <div className="flex flex-col items-center justify-center py-12">
                     <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
                     <p className="text-muted-foreground">Failed to load profile</p>
@@ -1154,7 +1150,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5 }}
-                  className="mb-6 rounded-xl border border-border bg-background p-6 shadow-sm sm:p-8"
+                  className="mb-8 border-b border-border pb-8"
                 >
                   <div className="flex flex-col md:flex-row gap-8 items-start">
                     <div className="flex-shrink-0 relative group">
@@ -1343,7 +1339,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                 {isOwnProfile ? (
                   <div className="w-full">
                     {/* Tabs */}
-                    <div className="mb-6 flex gap-8 rounded-xl border border-border bg-background px-6 shadow-sm">
+                    <div className="mb-6 flex gap-8 border-b border-border">
                       {[
                         { key: "posts", label: "Posts" },
                         { key: "drafts", label: "Drafts" },
@@ -1398,93 +1394,10 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                               <p className="text-muted-foreground">No posts found</p>
                             </div>
                           ) : (
-                            <div className="space-y-3">
-                              {userPosts.map((post) => {
-                                // Use real tags from API, format with # prefix
-                                const tags =
-                                  post.tags && post.tags.length > 0
-                                    ? post.tags.map((tag: string) =>
-                                        tag.startsWith("#") ? tag : `#${tag}`
-                                      )
-                                    : [];
-                                const reactions =
-                                  Math.floor(Math.random() * 50) + 10;
-                                const comments =
-                                  Math.floor(Math.random() * 20) + 5;
-
-                                return (
-                                  <Link
-                                    key={post.id}
-                                    href={`/post/${post.id}`}
-                                  >
-                                    <article className="cursor-pointer rounded-xl border border-border bg-background p-5 shadow-sm transition-shadow duration-200 hover:shadow-md">
-                                      <div className="flex items-start justify-between gap-4">
-                                        {/* Main Content */}
-                                        <div className="flex-1 min-w-0">
-                                          {/* Time Info */}
-                                          <div className="flex items-center gap-2 mb-2">
-                                            <span className="text-sm text-muted-foreground">
-                                              {post.timeAgo || "Recently"}
-                                            </span>
-                                          </div>
-
-                                          {/* Title */}
-                                          <h3 className="mb-3 text-[24px] font-bold leading-[1.3] text-foreground transition-colors hover:text-primary">
-                                            {post.title}
-                                          </h3>
-
-                                          {/* Tags */}
-                                          {tags.length > 0 && (
-                                            <div className="flex flex-wrap gap-2 mb-3">
-                                              {tags
-                                                .slice(0, 4)
-                                                .map(
-                                                  (
-                                                    tag: string,
-                                                    index: number
-                                                  ) => (
-                                                    <span
-                                                      key={index}
-                                                      className="text-sm text-muted-foreground hover:text-primary cursor-pointer"
-                                                    >
-                                                      {tag}
-                                                    </span>
-                                                  )
-                                                )}
-                                            </div>
-                                          )}
-
-                                          {/* Engagement Metrics */}
-                                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                                            <div className="flex items-center gap-1">
-                                              <Heart className="w-4 h-4" />
-                                              <span>{reactions}</span>
-                                            </div>
-                                            <div className="flex items-center gap-1">
-                                              <CommentIcon className="w-4 h-4" />
-                                              <span>{comments}</span>
-                                            </div>
-                                            <span className="text-muted-foreground">
-                                              {post.readTime || "0 min read"}
-                                            </span>
-                                          </div>
-                                        </div>
-
-                                        {/* Thumbnail Image - Right Side */}
-                                        {post.imageUrl && (
-                                          <div className="w-32 h-24 rounded-lg overflow-hidden bg-muted flex-shrink-0">
-                                            <img
-                                              src={post.imageUrl}
-                                              alt={post.title}
-                                              className="w-full h-full object-cover"
-                                            />
-                                          </div>
-                                        )}
-                                      </div>
-                                    </article>
-                                  </Link>
-                                );
-                              })}
+                            <div>
+                              {userPosts.map((post) => (
+                                <FeedPostCard key={post.id} post={post} />
+                              ))}
                             </div>
                           )}
                         </div>
@@ -1516,48 +1429,40 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                               </p>
                             </div>
                           ) : (
-                            <div className="space-y-3">
-                              {draftsData.map((draft) => {
-                                return (
+                            <div>
+                              {draftsData.map((draft) => (
+                                <article
+                                  key={draft.uuid}
+                                  className="border-b border-border"
+                                >
                                   <Link
-                                    key={draft.uuid}
                                     href={`/create?draft=${draft.uuid}`}
+                                    className="group block py-6"
                                   >
-                                    <article className="cursor-pointer rounded-xl border border-border bg-background p-5 shadow-sm transition-shadow duration-200 hover:shadow-md">
-                                      <div className="flex items-start justify-between gap-4">
-                                        <div className="flex-1 min-w-0">
-                                          <div className="flex items-center gap-2 mb-2">
-                                            <span className="text-xs px-2 py-0.5 bg-muted text-muted-foreground rounded">
-                                              Draft
-                                            </span>
-                                            <span className="text-sm text-muted-foreground">
-                                              ·
-                                            </span>
-                                            <span className="text-sm text-muted-foreground">
-                                              {formatDistanceToNow(
-                                                new Date(draft.updatedAt),
-                                                { addSuffix: true }
-                                              )}
-                                            </span>
-                                          </div>
-                                          <h3 className="mb-3 text-[24px] font-bold leading-[1.3] text-foreground transition-colors hover:text-primary">
-                                            {draft.title || "(Untitled)"}
-                                          </h3>
-                                          {draft.content && (
-                                            <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
-                                              {draft.content.substring(0, 200)}
-                                              {draft.content.length > 200 &&
-                                                "..."}
-                                            </p>
-                                          )}
-                                        </div>
-                                        {/* Thumbnail placeholder for drafts - can be empty or show a default */}
-                                        <div className="w-32 h-24 rounded-lg bg-muted flex-shrink-0"></div>
-                                      </div>
-                                    </article>
+                                    <div className="mb-2 flex items-center gap-2">
+                                      <span className="rounded bg-muted px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                                        Draft
+                                      </span>
+                                      <span className="text-muted-foreground">·</span>
+                                      <span className="text-[13px] text-muted-foreground">
+                                        {formatDistanceToNow(
+                                          new Date(draft.updatedAt),
+                                          { addSuffix: true }
+                                        )}
+                                      </span>
+                                    </div>
+                                    <h2 className="text-[18px] font-bold leading-[1.25] tracking-[-0.01em] text-foreground md:text-[20px]">
+                                      {draft.title || "(Untitled)"}
+                                    </h2>
+                                    {draft.content && (
+                                      <p className="mt-1.5 line-clamp-2 text-[15px] leading-[1.5] text-muted-foreground">
+                                        {draft.content.substring(0, 200)}
+                                        {draft.content.length > 200 && "…"}
+                                      </p>
+                                    )}
                                   </Link>
-                                );
-                              })}
+                                </article>
+                              ))}
                             </div>
                           )}
                         </div>
@@ -1588,89 +1493,10 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                               </p>
                             </div>
                           ) : (
-                            <div className="space-y-3">
-                              {scoredPosts.map((post) => {
-                                const tags = [
-                                  "#webdev",
-                                  "#career",
-                                  "#beginners",
-                                ];
-                                const reactions =
-                                  Math.floor(Math.random() * 50) + 10;
-                                const comments =
-                                  Math.floor(Math.random() * 20) + 5;
-
-                                return (
-                                  <Link
-                                    key={post.id}
-                                    href={`/post/${post.id}`}
-                                  >
-                                    <article className="cursor-pointer rounded-xl border border-border bg-background p-5 shadow-sm transition-shadow duration-200 hover:shadow-md">
-                                      <div className="flex items-start justify-between gap-4">
-                                        {/* Main Content */}
-                                        <div className="flex-1 min-w-0">
-                                          {/* Time Info */}
-                                          <div className="flex items-center gap-2 mb-2">
-                                            <span className="text-sm text-muted-foreground">
-                                              {post.timeAgo || "Recently"}
-                                            </span>
-                                          </div>
-
-                                          {/* Title */}
-                                          <h3 className="mb-3 text-[24px] font-bold leading-[1.3] text-foreground transition-colors hover:text-primary">
-                                            {post.title}
-                                          </h3>
-
-                                          {/* Tags */}
-                                          <div className="flex flex-wrap gap-2 mb-3">
-                                            {tags
-                                              .slice(0, 4)
-                                              .map(
-                                                (
-                                                  tag: string,
-                                                  index: number
-                                                ) => (
-                                                  <span
-                                                    key={index}
-                                                    className="text-sm text-muted-foreground hover:text-primary cursor-pointer"
-                                                  >
-                                                    {tag}
-                                                  </span>
-                                                )
-                                              )}
-                                          </div>
-
-                                          {/* Engagement Metrics */}
-                                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                                            <div className="flex items-center gap-1">
-                                              <Heart className="w-4 h-4" />
-                                              <span>{reactions}</span>
-                                            </div>
-                                            <div className="flex items-center gap-1">
-                                              <CommentIcon className="w-4 h-4" />
-                                              <span>{comments}</span>
-                                            </div>
-                                            <span className="text-muted-foreground">
-                                              {post.readTime || "0 min read"}
-                                            </span>
-                                          </div>
-                                        </div>
-
-                                        {/* Thumbnail Image - Right Side */}
-                                        {post.imageUrl && (
-                                          <div className="w-32 h-24 rounded-lg overflow-hidden bg-muted flex-shrink-0">
-                                            <img
-                                              src={post.imageUrl}
-                                              alt={post.title}
-                                              className="w-full h-full object-cover"
-                                            />
-                                          </div>
-                                        )}
-                                      </div>
-                                    </article>
-                                  </Link>
-                                );
-                              })}
+                            <div>
+                              {scoredPosts.map((post) => (
+                                <FeedPostCard key={post.id} post={post} />
+                              ))}
                             </div>
                           )}
                         </div>
@@ -1899,7 +1725,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                   // Other user's profile - show Posts and Scored tabs
                   <div className="w-full">
                     {/* Tabs */}
-                    <div className="mb-6 flex gap-8 rounded-xl border border-border bg-background px-6 shadow-sm">
+                    <div className="mb-6 flex gap-8 border-b border-border">
                       {[
                         { key: "posts", label: "Posts" },
                         { key: "scored", label: "Scored" },
@@ -1950,93 +1776,10 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                               <p className="text-muted-foreground">No posts found</p>
                             </div>
                           ) : (
-                            <div className="space-y-3">
-                              {userPosts.map((post) => {
-                                // Use real tags from API, format with # prefix
-                                const tags =
-                                  post.tags && post.tags.length > 0
-                                    ? post.tags.map((tag: string) =>
-                                        tag.startsWith("#") ? tag : `#${tag}`
-                                      )
-                                    : [];
-                                const reactions =
-                                  Math.floor(Math.random() * 50) + 10;
-                                const comments =
-                                  Math.floor(Math.random() * 20) + 5;
-
-                                return (
-                                  <Link
-                                    key={post.id}
-                                    href={`/post/${post.id}`}
-                                  >
-                                    <article className="cursor-pointer rounded-xl border border-border bg-background p-5 shadow-sm transition-shadow duration-200 hover:shadow-md">
-                                      <div className="flex items-start justify-between gap-4">
-                                        {/* Main Content */}
-                                        <div className="flex-1 min-w-0">
-                                          {/* Time Info */}
-                                          <div className="flex items-center gap-2 mb-2">
-                                            <span className="text-sm text-muted-foreground">
-                                              {post.timeAgo || "Recently"}
-                                            </span>
-                                          </div>
-
-                                          {/* Title */}
-                                          <h3 className="mb-3 text-[24px] font-bold leading-[1.3] text-foreground transition-colors hover:text-primary">
-                                            {post.title}
-                                          </h3>
-
-                                          {/* Tags */}
-                                          {tags.length > 0 && (
-                                            <div className="flex flex-wrap gap-2 mb-3">
-                                              {tags
-                                                .slice(0, 4)
-                                                .map(
-                                                  (
-                                                    tag: string,
-                                                    index: number
-                                                  ) => (
-                                                    <span
-                                                      key={index}
-                                                      className="text-sm text-muted-foreground hover:text-primary cursor-pointer"
-                                                    >
-                                                      {tag}
-                                                    </span>
-                                                  )
-                                                )}
-                                            </div>
-                                          )}
-
-                                          {/* Engagement Metrics */}
-                                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                                            <div className="flex items-center gap-1">
-                                              <Heart className="w-4 h-4" />
-                                              <span>{reactions}</span>
-                                            </div>
-                                            <div className="flex items-center gap-1">
-                                              <CommentIcon className="w-4 h-4" />
-                                              <span>{comments}</span>
-                                            </div>
-                                            <span className="text-muted-foreground">
-                                              {post.readTime || "0 min read"}
-                                            </span>
-                                          </div>
-                                        </div>
-
-                                        {/* Thumbnail Image - Right Side */}
-                                        {post.imageUrl && (
-                                          <div className="w-32 h-24 rounded-lg overflow-hidden bg-muted flex-shrink-0">
-                                            <img
-                                              src={post.imageUrl}
-                                              alt={post.title}
-                                              className="w-full h-full object-cover"
-                                            />
-                                          </div>
-                                        )}
-                                      </div>
-                                    </article>
-                                  </Link>
-                                );
-                              })}
+                            <div>
+                              {userPosts.map((post) => (
+                                <FeedPostCard key={post.id} post={post} />
+                              ))}
                             </div>
                           )}
                         </div>
@@ -2067,93 +1810,10 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                               </p>
                             </div>
                           ) : (
-                            <div className="space-y-3">
-                              {scoredPosts.map((post) => {
-                                // Use real tags from API, format with # prefix
-                                const tags =
-                                  post.tags && post.tags.length > 0
-                                    ? post.tags.map((tag: string) =>
-                                        tag.startsWith("#") ? tag : `#${tag}`
-                                      )
-                                    : [];
-                                const reactions =
-                                  Math.floor(Math.random() * 50) + 10;
-                                const comments =
-                                  Math.floor(Math.random() * 20) + 5;
-
-                                return (
-                                  <Link
-                                    key={post.id}
-                                    href={`/post/${post.id}`}
-                                  >
-                                    <article className="cursor-pointer rounded-xl border border-border bg-background p-5 shadow-sm transition-shadow duration-200 hover:shadow-md">
-                                      <div className="flex items-start justify-between gap-4">
-                                        {/* Main Content */}
-                                        <div className="flex-1 min-w-0">
-                                          {/* Time Info */}
-                                          <div className="flex items-center gap-2 mb-2">
-                                            <span className="text-sm text-muted-foreground">
-                                              {post.timeAgo || "Recently"}
-                                            </span>
-                                          </div>
-
-                                          {/* Title */}
-                                          <h3 className="mb-3 text-[24px] font-bold leading-[1.3] text-foreground transition-colors hover:text-primary">
-                                            {post.title}
-                                          </h3>
-
-                                          {/* Tags */}
-                                          {tags.length > 0 && (
-                                            <div className="flex flex-wrap gap-2 mb-3">
-                                              {tags
-                                                .slice(0, 4)
-                                                .map(
-                                                  (
-                                                    tag: string,
-                                                    index: number
-                                                  ) => (
-                                                    <span
-                                                      key={index}
-                                                      className="text-sm text-muted-foreground hover:text-primary cursor-pointer"
-                                                    >
-                                                      {tag}
-                                                    </span>
-                                                  )
-                                                )}
-                                            </div>
-                                          )}
-
-                                          {/* Engagement Metrics */}
-                                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                                            <div className="flex items-center gap-1">
-                                              <Heart className="w-4 h-4" />
-                                              <span>{reactions}</span>
-                                            </div>
-                                            <div className="flex items-center gap-1">
-                                              <CommentIcon className="w-4 h-4" />
-                                              <span>{comments}</span>
-                                            </div>
-                                            <span className="text-muted-foreground">
-                                              {post.readTime || "0 min read"}
-                                            </span>
-                                          </div>
-                                        </div>
-
-                                        {/* Thumbnail Image - Right Side */}
-                                        {post.imageUrl && (
-                                          <div className="w-32 h-24 rounded-lg overflow-hidden bg-muted flex-shrink-0">
-                                            <img
-                                              src={post.imageUrl}
-                                              alt={post.title}
-                                              className="w-full h-full object-cover"
-                                            />
-                                          </div>
-                                        )}
-                                      </div>
-                                    </article>
-                                  </Link>
-                                );
-                              })}
+                            <div>
+                              {scoredPosts.map((post) => (
+                                <FeedPostCard key={post.id} post={post} />
+                              ))}
                             </div>
                           )}
                         </div>

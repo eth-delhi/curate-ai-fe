@@ -42,6 +42,7 @@ import {
   useReadCurateAiVoteHasVoted,
 } from "@/hooks/wagmi/contracts";
 import { useCatTokenBalance } from "@/hooks/wagmi/useCatTokenBalance";
+import { useCatVotePower } from "@/hooks/wagmi/useCatVotePower";
 import { RPC_POLL_INTERVAL_MS } from "@/constants/chain";
 import { CommentsSection } from "@/components/comments/CommentsSection";
 import {
@@ -59,11 +60,18 @@ import {
 import { showToast } from "@/utils/showToast";
 import { useAuth } from "@/hooks/useAuth";
 import { createClapDebouncer } from "@/utils/clapDebounce";
+import { UpvoteCountBurst } from "@/components/UpvoteCountBurst";
 
 const MarkdownPreview = dynamic(
   () => import("@uiw/react-markdown-preview").then((mod) => mod.default),
   { ssr: false }
 );
+
+// vote.sol accepts a whole-number amount in [1, votePower]; the protocol also
+// caps a single vote at 500,000,000 (half the 1e9 max supply). Built via
+// BigInt() rather than a `500_000_000n` literal because the TS target predates
+// BigInt literals (matches the rest of this file).
+const MAX_VOTE_AMOUNT = BigInt(500000000);
 
 // Renders <img> tags from post content with the fast S3 URL as the primary
 // src, falling back to the pinned IPFS gateway URL (data-ipfs-fallback,
@@ -125,9 +133,18 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
   // Get internal_id (cid) from post data
   const cid = postData?.internal_id ?? 0;
 
-  // Fetch user token balance
-  const { balance: tokenBalance, isLoading: isTokenBalanceLoading } =
+  // Live wallet balance (shown for context) and the *votable* power for today.
+  // vote.sol caps a vote at votePowerOf(msg.sender) — the start-of-day balance
+  // — not the live balance, so tokens received today aren't spendable until
+  // tomorrow. Compute the vote from votePower so the UI can't submit an amount
+  // the chain will reject.
+  const { balance: tokenBalance, refetch: refetchBalance } =
     useCatTokenBalance();
+  const {
+    votePower,
+    isLoading: isVotePowerLoading,
+    refetch: refetchVotePower,
+  } = useCatVotePower();
 
   // Vote count shown here comes straight from the chain (post.sol's
   // totalScore), not the backend's score rows — this page needs the exact,
@@ -138,11 +155,14 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
       address: contracts?.post as `0x${string}`,
       args: [BigInt(cid)],
       query: {
+        // On-chain post ids are 0-based — post.sol assigns `postId =
+        // postCounter++`, so the very first post has id 0. Gating on
+        // `cid > 0` disabled the score read for that post, which then always
+        // rendered "0" even when the chain held a real score. `internal_id`
+        // of 0 is a valid id, not a missing one, so enable the read whenever
+        // we have an on-chain id at all.
         enabled:
-          !!contracts &&
-          !!postData &&
-          postData.internal_id !== undefined &&
-          cid > 0,
+          !!contracts && !!postData && postData.internal_id !== undefined,
         refetchInterval: RPC_POLL_INTERVAL_MS,
         staleTime: RPC_POLL_INTERVAL_MS,
       },
@@ -233,6 +253,19 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
   const [showScorePopover, setShowScorePopover] = useState(false);
   const scorePopoverRef = useRef<HTMLDivElement>(null);
 
+  // When set, animates the upvote count in place (zoom the current count up,
+  // show "<count> + <amount>", settle to the new total with a monochrome
+  // burst) in place of the old success toast.
+  const [voteBurst, setVoteBurst] = useState<{
+    from: number;
+    amount: number;
+  } | null>(null);
+  // Holds the count at the post-vote total until the chain read catches up, so
+  // the number doesn't flash back to the old value after the burst settles.
+  const [optimisticPostScore, setOptimisticPostScore] = useState<number | null>(
+    null
+  );
+
   // Close popover when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -258,17 +291,70 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
   const isFlagPending =
     addFlagMutation.isPending || removeFlagMutation.isPending;
 
-  // Update voteValue when voteWeight or tokenBalance changes
+  // Vote amount is a percentage of today's voting power (votePowerOf), not the
+  // live wallet balance — matches what vote.sol enforces on-chain. The chain
+  // only accepts a whole integer in [1, votePower], so:
+  //   - BigInt math keeps it an integer (division floors, never a decimal),
+  //   - a >0% pick with any power sends at least 1 whole vote — e.g. 2% of 10
+  //     tokens = 0.2 which would floor to 0 and revert (`amount > 0`),
+  //   - clamp to the voter's own power and the 500,000,000 protocol cap.
   useEffect(() => {
-    if (tokenBalance) {
-      const newValue = (tokenBalance * BigInt(voteWeight)) / BigInt(100);
-      setVoteValue(newValue);
+    if (votePower === undefined) return;
+
+    if (votePower <= BigInt(0) || voteWeight <= 0) {
+      setVoteValue(BigInt(0));
+      return;
     }
-  }, [voteWeight, tokenBalance]);
+
+    const cap = votePower < MAX_VOTE_AMOUNT ? votePower : MAX_VOTE_AMOUNT;
+    let amount = (votePower * BigInt(voteWeight)) / BigInt(100);
+    if (amount < BigInt(1)) amount = BigInt(1);
+    if (amount > cap) amount = cap;
+    setVoteValue(amount);
+  }, [voteWeight, votePower]);
+
+  // Once the on-chain score read has caught up to (or past) the optimistic
+  // post-vote total, drop the override so polling drives the number again.
+  useEffect(() => {
+    if (
+      optimisticPostScore !== null &&
+      postScore !== undefined &&
+      Number(postScore) >= optimisticPostScore
+    ) {
+      setOptimisticPostScore(null);
+    }
+  }, [postScore, optimisticPostScore]);
+
+  // Score shown in the UI: the optimistic post-vote total while the chain read
+  // catches up, otherwise the live on-chain value.
+  const displayedScore =
+    optimisticPostScore !== null
+      ? optimisticPostScore
+      : postScore
+      ? Number(postScore)
+      : 0;
 
   // Posts that never made it on-chain can't be voted on (no internal_id to
   // reference in the vote contract).
   const isPostOnChainFailed = postData?.status === "BLOCKCHAIN_FAILED";
+
+  // Voting-power display: CAT amounts are whole base units (no 18-decimal
+  // scaling). votePower is what's votable *today*; a live balance above it
+  // means tokens received today that only unlock after 24h.
+  const votePowerNum = votePower !== undefined ? Number(votePower) : undefined;
+  const liveBalanceNum =
+    tokenBalance !== undefined ? Number(tokenBalance) : undefined;
+  const hasLockedPower =
+    votePowerNum !== undefined &&
+    liveBalanceNum !== undefined &&
+    liveBalanceNum > votePowerNum;
+  // True when the chosen % of power is a fraction below 1 and was rounded up
+  // to the 1-vote minimum (e.g. 2% of 10 tokens).
+  const bumpedToMin =
+    votePower !== undefined &&
+    votePower > BigInt(0) &&
+    voteWeight > 0 &&
+    (votePower * BigInt(voteWeight)) / BigInt(100) < BigInt(1);
 
   // Handle voting with API integration
   const handleVote = async (e: React.FormEvent) => {
@@ -311,9 +397,10 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
       return;
     }
 
-    if (isTokenBalanceLoading) {
+    if (isVotePowerLoading) {
       showToast({
-        message: "Your token balance is still loading. Please try again in a moment.",
+        message:
+          "Your voting power is still loading. Please try again in a moment.",
         type: "error",
       });
       return;
@@ -321,7 +408,8 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
 
     if (!voteValue) {
       showToast({
-        message: "You need CAT tokens to upvote.",
+        message:
+          "You have no voting power to upvote with today. Tokens received today unlock after 24h.",
         type: "error",
       });
       return;
@@ -427,10 +515,15 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
       }
 
       if (txHash) {
-        showToast({
-          message: `Successfully upvoted ${voteValue.toString()} points!`,
-          type: "success",
-        });
+        // No success toast — the popover is already closed above. Animate the
+        // upvote count itself instead: hold it at the new total optimistically
+        // (until the chain read catches up) and kick off the in-place burst.
+        // Balance is refetched when the burst finishes (see onComplete on
+        // <UpvoteCountBurst /> below).
+        const prevScore = postScore ? Number(postScore) : 0;
+        const votedAmount = Number(voteValue);
+        setOptimisticPostScore(prevScore + votedAmount);
+        setVoteBurst({ from: prevScore, amount: votedAmount });
       } else {
         showToast({
           message: blockchainErrorReason
@@ -1104,7 +1197,7 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
       `}</style>
 
       {/* Top Navbar */}
-      <HomeNavbar maxWidth={1128} />
+      <HomeNavbar maxWidth={1400} />
 
       {/* Main Content Area - Below Navbar */}
       <div className="flex flex-1 overflow-hidden pt-[60px]">
@@ -1176,7 +1269,7 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
                     <span>·</span>
                     <div className="flex items-center gap-1">
                       <UpvoteIcon className="h-3.5 w-3.5" />
-                      <span>{postScore ? postScore.toString() : "0"}</span>
+                      <span>{displayedScore}</span>
                     </div>
                   </div>
 
@@ -1344,8 +1437,26 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
                           }`}
                         >
                           <UpvoteIcon className="h-5 w-5" />
-                          <span className="text-[14px] font-medium">
-                            {postScore ? postScore.toString() : "0"}
+                          <span className="relative inline-flex text-[14px] font-medium">
+                            {/* Static count keeps the layout width stable; the
+                                burst overlays it, absolutely centered, so the
+                                zoom/settle animation never shifts the row. */}
+                            <span className={voteBurst ? "invisible" : ""}>
+                              {displayedScore}
+                            </span>
+                            {voteBurst && (
+                              <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+                                <UpvoteCountBurst
+                                  fromScore={voteBurst.from}
+                                  amount={voteBurst.amount}
+                                  onComplete={() => {
+                                    setVoteBurst(null);
+                                    refetchBalance();
+                                    refetchVotePower();
+                                  }}
+                                />
+                              </span>
+                            )}
                           </span>
                         </button>
 
@@ -1393,6 +1504,48 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
                                 be reverted, this will use your daily upvoting
                                 limit.
                               </p>
+
+                              {/* Today's votable power (votePowerOf), not the
+                                  live wallet balance. */}
+                              <div className="rounded-md bg-muted/60 px-2.5 py-2">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs text-muted-foreground">
+                                    Voting power today
+                                  </span>
+                                  <span className="text-sm font-semibold text-foreground">
+                                    {isVotePowerLoading ||
+                                    votePowerNum === undefined
+                                      ? "…"
+                                      : votePowerNum.toLocaleString()}
+                                  </span>
+                                </div>
+                                <div className="mt-1 flex items-center justify-between">
+                                  <span className="text-xs text-muted-foreground">
+                                    This upvote
+                                  </span>
+                                  <span className="text-xs font-medium text-foreground">
+                                    {voteValue !== undefined
+                                      ? Number(voteValue).toLocaleString()
+                                      : "0"}
+                                  </span>
+                                </div>
+                                {bumpedToMin && (
+                                  <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">
+                                    {voteWeight}% of your power is below 1 vote,
+                                    so this sends the 1-vote minimum.
+                                  </p>
+                                )}
+                                {hasLockedPower && (
+                                  <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">
+                                    You hold{" "}
+                                    {liveBalanceNum!.toLocaleString()} CAT, but
+                                    tokens received today only become votable
+                                    after 24h — today you can vote with{" "}
+                                    {votePowerNum!.toLocaleString()}.
+                                  </p>
+                                )}
+                              </div>
+
                               <div className="flex items-center gap-2">
                                 <div className="flex-1">
                                   <Slider
@@ -1423,7 +1576,7 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
                                 disabled={
                                   isScorePending ||
                                   voteWeight === 0 ||
-                                  isTokenBalanceLoading ||
+                                  isVotePowerLoading ||
                                   hasVotedOnPost === true
                                 }
                                 title={

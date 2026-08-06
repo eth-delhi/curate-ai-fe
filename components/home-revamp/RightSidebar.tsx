@@ -11,14 +11,24 @@ import {
   type PeopleToFollowDto,
 } from "@/hooks/api/follows";
 import { useTopTags } from "@/hooks/api/tags";
+import { useNextVote } from "@/hooks/api/schedule";
 import { useAuth } from "@/hooks/useAuth";
 
 const linkGreen = "text-[13px] text-primary hover:underline";
 
 const pad = (n: number) => String(n).padStart(2, "0");
-// Random window (30m–6.5h) used as a placeholder until this is wired to the
-// real on-chain AI vote schedule.
-const randomCountdown = () => 1800 + Math.floor(Math.random() * 6 * 3600);
+
+// Renders seconds as H:M:S, prefixed with days when the window is long (the
+// cron is */5 during testing but becomes 24h in production).
+const formatCountdown = (secs: number | null) => {
+  if (secs === null) return "--:--:--";
+  const d = Math.floor(secs / 86400);
+  const h = Math.floor((secs % 86400) / 3600);
+  const m = Math.floor((secs % 3600) / 60);
+  const s = secs % 60;
+  const hms = `${pad(h)}:${pad(m)}:${pad(s)}`;
+  return d > 0 ? `${d}d ${hms}` : hms;
+};
 
 const StatRow = ({
   label,
@@ -54,24 +64,48 @@ const StatRow = ({
 // placeholders for now (except the live-ticking countdown) until wired to
 // the contracts.
 const ChainStats = () => {
+  const { data, refetch } = useNextVote();
   const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
 
+  // Drive the countdown off the server-provided next-run time. We recompute
+  // from the clock each tick (instead of decrementing) so it self-corrects
+  // after the tab is backgrounded, and correct for client/server clock skew so
+  // a long (e.g. 24h) countdown stays accurate.
+  //
+  // Until the backend `/schedule/next-vote` endpoint exists, fall back to the
+  // next */5 wall-clock boundary computed locally so the timer still ticks.
+  // NOTE: the fallback only holds for the current 5-minute cadence — the
+  // backend value is required once the cron becomes daily.
   useEffect(() => {
-    setSecondsLeft(randomCountdown());
-    const id = setInterval(() => {
-      setSecondsLeft((s) =>
-        s === null || s <= 1 ? randomCountdown() : s - 1
-      );
-    }, 1000);
-    return () => clearInterval(id);
-  }, []);
+    const FALLBACK_PERIOD_MS = 5 * 60 * 1000;
+    const skew = data ? Date.parse(data.serverNow) - Date.now() : 0;
+    const target = data ? Date.parse(data.nextRunAt) : null;
+    let refetched = false;
 
-  const total = secondsLeft ?? 0;
-  const h = Math.floor(total / 3600);
-  const m = Math.floor((total % 3600) / 60);
-  const s = total % 60;
-  const countdown =
-    secondsLeft === null ? "--:--:--" : `${pad(h)}:${pad(m)}:${pad(s)}`;
+    const tick = () => {
+      let left: number;
+      if (target !== null) {
+        left = Math.round((target - (Date.now() + skew)) / 1000);
+        // Window elapsed → pull the next run time (once, after a short grace
+        // period for the cron job to register the new schedule).
+        if (left <= 0 && !refetched) {
+          refetched = true;
+          setTimeout(() => refetch(), 3000);
+        }
+      } else {
+        const now = Date.now();
+        const next = Math.ceil(now / FALLBACK_PERIOD_MS) * FALLBACK_PERIOD_MS;
+        left = Math.round((next - now) / 1000);
+      }
+      setSecondsLeft(Math.max(0, left));
+    };
+
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [data, refetch]);
+
+  const countdown = formatCountdown(secondsLeft);
 
   return (
     <section>

@@ -7,7 +7,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   User,
   LogOut,
-  Search,
   PenSquare,
   Loader2,
   ChevronDown,
@@ -15,6 +14,7 @@ import {
   Check,
   Send,
 } from "lucide-react";
+import NavbarSearch from "@/components/ui/NavbarSearch";
 import { BellIcon, WalletIcon } from "@/components/icons";
 import { useUserProfile } from "@/hooks/api/profile";
 import { useAuth } from "@/hooks/useAuth";
@@ -376,16 +376,7 @@ export default function HomeNavbar({
           </div>
 
           {/* Search */}
-          <div className="flex min-w-0 justify-center px-0 md:px-4">
-            <div className="flex w-full max-w-[360px] items-center gap-3 rounded-[24px] border border-transparent bg-muted px-5 py-2.5 transition-colors duration-150 focus-within:border-primary/30 focus-within:bg-background">
-              <Search className="h-5 w-5 shrink-0 text-muted-foreground" />
-              <input
-                type="text"
-                placeholder="Search"
-                className="w-full bg-transparent text-[15px] text-foreground outline-none placeholder:text-muted-foreground"
-              />
-            </div>
-          </div>
+          <NavbarSearch />
 
           {/* Right actions */}
           <div className="flex shrink-0 items-center justify-end gap-5 justify-self-end md:justify-self-auto">

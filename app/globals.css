@@ -76,6 +76,19 @@
   --ring: #0A0A0A;
 }
 
+/* Landing page ("/") — keeps the light paper background but swaps the brand
+   blue for ink-black across every component that reads these tokens (navbar,
+   buttons, eyebrow labels, marquee, progress bar). Monochrome, editorial, no
+   blue. Revert by removing this block and the `landing` class on the root. */
+.landing {
+  --primary: #0A0A0A;
+  --primary-foreground: #FFFFFF;
+  --primary-2: #1A1A1A;
+  --accent: #ECECEC;
+  --accent-foreground: #141414;
+  --ring: #0A0A0A;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

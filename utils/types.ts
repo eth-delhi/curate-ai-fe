@@ -9,7 +9,7 @@ export type BlogPost = {
   id: string;
   title: string;
   content: string;
-  imageUrl?: string;
+  imageUrl?: string | null;
   contentHash: string;
   internal_id: string;
   tags: string[];

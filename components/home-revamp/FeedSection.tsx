@@ -27,7 +27,7 @@ function excerptPlainText(htmlOrText: string | undefined): string {
     .trim();
 }
 
-const FeedPostCard = ({ post }: { post: any }) => {
+export const FeedPostCard = ({ post }: { post: any }) => {
   const router = useRouter();
   const [avatarLoadError, setAvatarLoadError] = useState(false);
 

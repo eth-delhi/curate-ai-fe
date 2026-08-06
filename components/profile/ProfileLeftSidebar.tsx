@@ -350,11 +350,11 @@ export const ProfileLeftSidebar = ({ userUuid }: ProfileLeftSidebarProps) => {
       initial={{ opacity: 0, x: -12 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.4 }}
-      className="hidden lg:block w-[280px] shrink-0"
+      className="hidden lg:block w-[280px] shrink-0 self-start sticky top-[61px] py-8 pr-8"
     >
-      <div className="sticky top-[100px] space-y-3">
-        {/* Wallet + Stats card */}
-        <div className="rounded-xl border border-border bg-background p-4 shadow-sm">
+      <div className="space-y-6">
+        {/* Wallet + Stats */}
+        <div>
           <WalletWidget />
 
           <div className="mt-4 space-y-1">
@@ -381,8 +381,8 @@ export const ProfileLeftSidebar = ({ userUuid }: ProfileLeftSidebarProps) => {
           </div>
         </div>
 
-        {/* Followers/Following card */}
-        <div className="rounded-xl border border-border bg-background p-4 shadow-sm">
+        {/* Followers/Following */}
+        <div className="border-t border-border pt-6">
           {/* Tabs */}
           <div className="flex gap-1 mb-4 border-b border-border">
             <button
