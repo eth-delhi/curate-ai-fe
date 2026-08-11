@@ -98,11 +98,14 @@ const VotingPowerWidget = () => {
   const { data: votesPerDayMultiplier } =
     useReadCurateAiVoteVotesPerDayMultiplier({
       address: contracts?.vote as `0x${string}`,
-      query: { enabled: !!contracts, staleTime: Infinity },
+      query: { enabled: !!contracts && !!address, staleTime: Infinity },
     });
   // Chain time can drift from wall-clock time, so take the later of the two.
+  // Gated on address: this widget is hidden for logged-out visitors (see the
+  // early return below), so there's no reason to poll a block for them.
   const { data: latestBlock } = useBlock({
     query: {
+      enabled: !!address,
       refetchInterval: RPC_BLOCK_POLL_INTERVAL_MS,
       staleTime: RPC_BLOCK_POLL_INTERVAL_MS,
     },

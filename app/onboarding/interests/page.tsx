@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import AuthGuard from "@/components/auth/AuthGuard";
 import { useTopTags, useSetUserInterests } from "@/hooks/api/tags";
+import { markInterestsOnboardingSeen } from "@/utils/onboarding";
 import showToast from "@/utils/showToast";
 import { cn } from "@/lib/utils";
 
@@ -47,6 +48,7 @@ function InterestsPicker() {
 
     try {
       await mutateAsync(Array.from(selected));
+      markInterestsOnboardingSeen();
       router.push("/home");
     } catch (error) {
       console.error("Failed to save interests:", error);
@@ -117,7 +119,10 @@ function InterestsPicker() {
           </Button>
           <button
             type="button"
-            onClick={() => router.push("/home")}
+            onClick={() => {
+              markInterestsOnboardingSeen();
+              router.push("/home");
+            }}
             className="text-xs text-muted-foreground hover:text-foreground underline transition-colors duration-150 cursor-pointer"
           >
             Skip for now

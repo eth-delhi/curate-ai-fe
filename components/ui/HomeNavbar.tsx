@@ -30,6 +30,7 @@ import { useAccount, useBalance } from "wagmi";
 import { formatUnits } from "viem";
 import { useCatTokenBalance } from "@/hooks/wagmi/useCatTokenBalance";
 import { TOKEN_DISPLAY_NAMES, RPC_POLL_INTERVAL_MS } from "@/constants/chain";
+import { INTERESTS_ONBOARDING_KEY_PREFIX } from "@/utils/onboarding";
 
 interface HomeNavbarProps {
   className?: string;
@@ -598,7 +599,27 @@ export default function HomeNavbar({
                       <button
                         onClick={() => {
                           try {
+                            // Preserve the one-time interest-onboarding markers
+                            // so returning users aren't sent back through the
+                            // interest picker after logging out and back in.
+                            const preserved: Record<string, string> = {};
+                            for (let i = 0; i < localStorage.length; i++) {
+                              const key = localStorage.key(i);
+                              if (
+                                key?.startsWith(
+                                  INTERESTS_ONBOARDING_KEY_PREFIX
+                                )
+                              ) {
+                                const value = localStorage.getItem(key);
+                                if (value !== null) preserved[key] = value;
+                              }
+                            }
                             localStorage.clear();
+                            for (const [key, value] of Object.entries(
+                              preserved
+                            )) {
+                              localStorage.setItem(key, value);
+                            }
                           } catch (error) {
                             console.error(
                               "Error clearing localStorage:",

@@ -15,6 +15,10 @@ import showToast from "@/utils/showToast";
 import { RPCError, RPCErrorCode } from "magic-sdk";
 import { useLogin } from "@/hooks/api/auth";
 import { fetchUserInterests } from "@/hooks/api/tags";
+import {
+  hasSeenInterestsOnboarding,
+  markInterestsOnboardingSeen,
+} from "@/utils/onboarding";
 import { useRouter } from "next/navigation";
 import {
   captureReferralCodeFromUrl,
@@ -22,11 +26,22 @@ import {
   getStoredReferralCode,
 } from "@/utils/referral";
 
-/** Sends a fresh login to the topic picker if they haven't chosen any yet, otherwise the feed. */
+/**
+ * Sends the user to the interest picker only the first time (right after
+ * signup): if they already have interests, or they've been shown the picker
+ * before (even if they skipped it), go straight to the feed. Otherwise show
+ * it once and remember that we did.
+ */
 async function redirectAfterLogin(router: ReturnType<typeof useRouter>) {
   try {
     const { interests } = await fetchUserInterests();
-    router.push(interests.length > 0 ? "/home" : "/onboarding/interests");
+    const hasInterests = (interests?.length ?? 0) > 0;
+    if (!hasInterests && !hasSeenInterestsOnboarding()) {
+      markInterestsOnboardingSeen();
+      router.push("/onboarding/interests");
+    } else {
+      router.push("/home");
+    }
   } catch {
     router.push("/home");
   }
@@ -129,12 +144,30 @@ export default function AuthRevampPage() {
     setLoginInProgress(true);
 
     try {
-      const didToken = await magic.auth.loginWithMagicLink({ email });
+      let didToken: string | null = null;
+
+      // Magic-link emails are expensive, so reuse a live Magic session when we
+      // can: if the user is still logged into Magic for THIS email (app JWT
+      // gone but Magic session alive), mint a fresh DID token instead of
+      // sending another email. Only reuse on an exact email match, otherwise
+      // clear the stale session and fall through to a real magic link.
+      if (await magic.user.isLoggedIn()) {
+        const existing = await magic.user.getInfo();
+        if (existing?.email?.toLowerCase() === email.toLowerCase()) {
+          didToken = await magic.user.getIdToken();
+        } else {
+          await magic.user.logout();
+        }
+      }
+
+      if (!didToken) {
+        didToken = await magic.auth.loginWithMagicLink({ email });
+      }
+
       if (!didToken) {
         showToast({ message: "Magic Link failed. Please try again.", type: "error" });
         return;
       }
-      console.log("Magic Link sent successfully");
 
       const metadata = await magic.user.getInfo();
 
@@ -149,7 +182,7 @@ export default function AuthRevampPage() {
       if (response.success) {
         setToken(didToken);
         clearStoredReferralCode();
-        showToast({ message: "Magic Link sent! Check your email.", type: "success" });
+        showToast({ message: "Signed in! Welcome back.", type: "success" });
         // Redirect will happen automatically due to useEffect
       } else {
         showToast({ message: "Failed to create user account", type: "error" });

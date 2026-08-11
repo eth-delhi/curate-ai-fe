@@ -5,6 +5,10 @@ import { useMagic } from "@/hooks/MagicProvider";
 import { useMagicState } from "@/context/magic.provider";
 import { useLogin } from "@/hooks/api/auth";
 import { fetchUserInterests } from "@/hooks/api/tags";
+import {
+  hasSeenInterestsOnboarding,
+  markInterestsOnboardingSeen,
+} from "@/utils/onboarding";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
@@ -39,7 +43,13 @@ export default function AuthCallbackPage() {
           setToken(result.magic.idToken as string);
           try {
             const { interests } = await fetchUserInterests();
-            router.push(interests.length > 0 ? "/home" : "/onboarding/interests");
+            const hasInterests = (interests?.length ?? 0) > 0;
+            if (!hasInterests && !hasSeenInterestsOnboarding()) {
+              markInterestsOnboardingSeen();
+              router.push("/onboarding/interests");
+            } else {
+              router.push("/home");
+            }
           } catch {
             router.push("/home");
           }

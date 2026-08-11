@@ -26,7 +26,6 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
   const { address: userAddress } = useAccount();
   const { isAuthenticated } = useAuth();
   const [newComment, setNewComment] = useState("");
-  const [replyingTo, setReplyingTo] = useState<string | undefined>(undefined);
 
   const { data: commentsData } = useComments(comments);
   const createCommentMutation = useCreateComment(postUuid);
@@ -39,11 +38,9 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
       await createCommentMutation.mutateAsync({
         postUuid,
         content: newComment,
-        parentCommentUuid: replyingTo || undefined,
       });
       setNewComment("");
-      setReplyingTo(undefined);
-      // The new comment/reply appears in the thread immediately once the
+      // The new comment appears in the thread immediately once the
       // query invalidates — no toast needed.
     } catch (error) {
       console.error("Failed to create comment:", error);
@@ -52,34 +49,6 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
         type: "error",
       });
     }
-  };
-
-  const handleReply = async (parentCommentUuid: string) => {
-    if (!newComment.trim() || !isAuthenticated) return;
-
-    try {
-      await createCommentMutation.mutateAsync({
-        postUuid,
-        content: newComment,
-        parentCommentUuid,
-      });
-      setNewComment("");
-      setReplyingTo(undefined);
-    } catch (error) {
-      console.error("Failed to create reply:", error);
-      showToast({
-        message: "Failed to post reply. Please try again.",
-        type: "error",
-      });
-    }
-  };
-
-  const handleReplyClick = (parentCommentUuid: string) => {
-    setReplyingTo(parentCommentUuid);
-  };
-
-  const handleCancelReply = () => {
-    setReplyingTo(undefined);
   };
 
   const formatWalletAddress = (address: string) => {
@@ -121,33 +90,13 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
                   </Badge>
                 </div>
                 <Textarea
-                  placeholder={
-                    replyingTo ? "Write a reply..." : "Add a comment..."
-                  }
+                  placeholder="Add a comment..."
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
                   className="min-h-[110px] rounded-xl border-input bg-background text-[15px] leading-[1.6] text-foreground placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring"
                 />
               </div>
             </div>
-
-            {replyingTo && (
-              <div className="mb-3 ml-13">
-                <Badge
-                  variant="outline"
-                  className="border-border text-[11px] text-muted-foreground"
-                >
-                  Replying to comment
-                </Badge>
-                <button
-                  type="button"
-                  onClick={handleCancelReply}
-                  className="ml-2 text-[12px] text-muted-foreground transition-colors duration-150 hover:text-foreground"
-                >
-                  Cancel
-                </button>
-              </div>
-            )}
 
             <div className="flex justify-end">
               <Button
@@ -160,7 +109,7 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
                 ) : (
                   <Send className="h-4 w-4 mr-2" />
                 )}
-                {replyingTo ? "Post Reply" : "Post Comment"}
+                Post Comment
               </Button>
             </div>
           </form>
@@ -181,9 +130,6 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
               key={comment.uuid}
               comment={comment}
               postUuid={postUuid}
-              onReply={handleReplyClick}
-              replyingTo={replyingTo}
-              onCancelReply={handleCancelReply}
             />
           ))}
         </div>

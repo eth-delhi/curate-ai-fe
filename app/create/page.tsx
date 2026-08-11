@@ -150,7 +150,9 @@ export default function CreateRevampPage() {
   // up front so we don't send unapproved users into a doomed transaction.
   const { data: curatorRole } = useReadCurateAiRoleManagerCuratorRole({
     address: contracts?.role as `0x${string}`,
-    query: { enabled: !!contracts },
+    // CURATOR_ROLE is an immutable constant on the contract — read it once and
+    // never re-poll it (matches the post page's handling of the same value).
+    query: { enabled: !!contracts, staleTime: Infinity },
   });
   const { data: isCurator, isLoading: isCuratorRoleLoading } =
     useReadCurateAiRoleManagerHasRole({
@@ -387,10 +389,14 @@ export default function CreateRevampPage() {
     setIsConfirmOpen(true);
   };
 
-  const { data: postCount } = useReadCurateAiPostsPostCounter({
-    address: contracts?.post as `0x${string}`,
-    query: { enabled: !!contracts },
-  });
+  // The counter is only needed at publish time (to derive internal_id), so
+  // don't keep re-reading it — cache it and refetch a fresh value right before
+  // publishing instead (see handleContractWrite).
+  const { data: postCount, refetch: refetchPostCount } =
+    useReadCurateAiPostsPostCounter({
+      address: contracts?.post as `0x${string}`,
+      query: { enabled: !!contracts, staleTime: Infinity },
+    });
 
   const handleContractWrite = async () => {
     setIsPublishing(true);
@@ -408,6 +414,10 @@ export default function CreateRevampPage() {
         .replace(/\*\*/g, "") // Remove ** (bold markdown)
         .replace(/#{1,6}\s/g, ""); // Remove # (heading markdown)
 
+      // The cached counter can be stale if others posted while this page was
+      // open, and internal_id must be exact — pull a fresh value right now.
+      const { data: freshPostCount } = await refetchPostCount();
+
       // Step 1: Publish the post — backend pins referenced images + JSON
       // metadata to IPFS and creates the post row, all in one request.
       const publishResult = await apiPublishPost({
@@ -418,7 +428,7 @@ export default function CreateRevampPage() {
         coverImageUrl: coverImage || undefined,
         // post.sol: `postId = postCounter++` is a post-increment, so the new
         // post's on-chain id equals the counter's current value, not +1.
-        internal_id: Number(postCount) || 0,
+        internal_id: Number(freshPostCount ?? postCount) || 0,
       });
 
       const ipfsHash = publishResult.ipfsHash;

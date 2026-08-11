@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { User, ThumbsUp, Edit, Trash2, Reply, Send, X, Loader2 } from "lucide-react";
+import { User, ThumbsUp, Edit, Trash2, Send, X, Loader2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useAccount } from "wagmi";
 import {
@@ -19,23 +19,15 @@ import { showToast } from "@/utils/showToast";
 interface CommentItemProps {
   comment: CommentDto;
   postUuid: string;
-  onReply: (parentCommentUuid: string) => void;
-  replyingTo?: string | undefined;
-  onCancelReply: () => void;
 }
 
 export const CommentItem: React.FC<CommentItemProps> = ({
   comment,
   postUuid,
-  onReply,
-  replyingTo,
-  onCancelReply,
 }) => {
   const { address: userAddress } = useAccount();
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(comment.content);
-  const [isReplying, setIsReplying] = useState(false);
-  const [replyContent, setReplyContent] = useState("");
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const updateCommentMutation = useUpdateComment(postUuid);
@@ -77,13 +69,6 @@ export const CommentItem: React.FC<CommentItemProps> = ({
 
   const openDeleteModal = () => {
     setShowDeleteModal(true);
-  };
-
-  const handleReply = () => {
-    if (!replyContent.trim()) return;
-    onReply(comment.uuid);
-    setReplyContent("");
-    setIsReplying(false);
   };
 
   const formatWalletAddress = (address: string) => {
@@ -173,14 +158,6 @@ export const CommentItem: React.FC<CommentItemProps> = ({
             <span>0</span>
           </button>
 
-          <button
-            onClick={() => setIsReplying(!isReplying)}
-            className="flex items-center gap-1 text-[12px] text-muted-foreground transition-colors duration-150 hover:text-foreground"
-          >
-            <Reply className="h-3 w-3" />
-            Reply
-          </button>
-
           {isOwner && !isEditing && (
             <>
               <button
@@ -201,41 +178,6 @@ export const CommentItem: React.FC<CommentItemProps> = ({
             </>
           )}
         </div>
-
-        {/* Reply form */}
-        {isReplying && (
-          <div className="mt-4 ml-4 border-l-2 border-border pl-4">
-            <Textarea
-              value={replyContent}
-              onChange={(e) => setReplyContent(e.target.value)}
-              className="mb-2 min-h-[90px] rounded-xl border-input bg-background text-[14px] leading-[1.6] text-foreground focus-visible:ring-1 focus-visible:ring-ring"
-              placeholder="Write a reply..."
-            />
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                onClick={handleReply}
-                disabled={!replyContent.trim()}
-                className="rounded-full bg-primary text-primary-foreground transition-colors duration-150 hover:bg-primary/90"
-              >
-                <Send className="h-3 w-3 mr-1" />
-                Reply
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  setIsReplying(false);
-                  setReplyContent("");
-                }}
-                className="rounded-full border-border text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground"
-              >
-                <X className="h-3 w-3 mr-1" />
-                Cancel
-              </Button>
-            </div>
-          </div>
-        )}
 
         {/* Replies */}
         {comment.replies && comment.replies.length > 0 && (

@@ -35,10 +35,7 @@ import { useAccount, useBalance, useSendTransaction } from "wagmi";
 import { ProfileLeftSidebar } from "@/components/profile/ProfileLeftSidebar";
 import ReferralTab from "@/components/profile/ReferralTab";
 import { parseUnits, formatUnits, isAddress } from "viem";
-import {
-  useReadCuratAiTokenDecimals,
-  useWriteCuratAiTokenTransfer,
-} from "@/hooks/wagmi/contracts";
+import { useWriteCuratAiTokenTransfer } from "@/hooks/wagmi/contracts";
 import { useContractAddresses } from "@/context/contractAddresses.provider";
 import { useCatTokenBalance } from "@/hooks/wagmi/useCatTokenBalance";
 import { useWalletByUsername, useUsernameByWallet } from "@/hooks/api/users";
@@ -129,13 +126,6 @@ function WalletTab() {
   // Fetch CAT token balance
   const { balance: catBalance, refetch: refetchCatBalance } =
     useCatTokenBalance();
-
-  // Fetch CAT token decimals — immutable once deployed, so fetch once and
-  // never re-poll rather than riding the default polling cadence.
-  const { data: catDecimals } = useReadCuratAiTokenDecimals({
-    address: contracts?.token as `0x${string}`,
-    query: { staleTime: Infinity },
-  });
 
   // Fetch SONIC (native) balance
   const { data: sonicBalance, refetch: refetchSonicBalance } = useBalance({
@@ -229,25 +219,13 @@ function WalletTab() {
 
     try {
       if (activeTokenTab === "CAT") {
-        // Transfer CAT token
-        if (catDecimals === undefined || catDecimals === null) {
-          showToast({
-            message: "Token decimals not loaded. Please wait...",
-            type: "error",
-          });
-          setIsTransferring(false);
-          return;
-        }
-        const decimals = Number(catDecimals);
-        const amount = parseUnits(transferAmount, decimals);
-        if (catBalance && catBalance < amount) {
-          showToast({
-            message: "Insufficient CAT balance",
-            type: "error",
-          });
-          setIsTransferring(false);
-          return;
-        }
+        // Transfer CAT token.
+        // CAT is used in whole-token units throughout the app — balanceOf,
+        // votes, and cooldown burns all read/pass unscaled amounts — even
+        // though the token's decimals() reports 18. Scaling the amount by
+        // decimals() here would over-inflate it by 1e18 and revert on-chain,
+        // so send the entered amount as whole tokens (0 decimals).
+        const amount = parseUnits(transferAmount, 0);
 
         if (!contracts) {
           showToast({
@@ -271,14 +249,6 @@ function WalletTab() {
         // Transfer SONIC (native token)
         // Native tokens always use 18 decimals
         const amount = parseUnits(transferAmount, 18);
-        if (sonicBalance?.value && sonicBalance.value < amount) {
-          showToast({
-            message: "Insufficient SONIC balance",
-            type: "error",
-          });
-          setIsTransferring(false);
-          return;
-        }
 
         await sendSonicTransaction({
           to: recipient,
@@ -307,6 +277,30 @@ function WalletTab() {
   };
 
   const isLoading = isCatTransferPending || isSonicTransferPending;
+
+  // True only when a valid positive amount has been entered that exceeds the
+  // active token's balance. Used to disable the transfer button (rather than
+  // surfacing an "insufficient balance" toast on submit). Returns false for
+  // empty/invalid amounts so the existing "enter a valid amount" validation
+  // still handles those on click.
+  const hasInsufficientBalance = (() => {
+    const amountStr = transferAmount.trim();
+    if (!amountStr || parseFloat(amountStr) <= 0) return false;
+    try {
+      if (activeTokenTab === "CAT") {
+        if (catBalance === undefined) return false;
+        // catBalance is in whole CAT tokens (see handleTransfer) — compare the
+        // entered amount in the same unit, with no decimals() scaling.
+        return parseFloat(amountStr) > Number(catBalance);
+      }
+      if (sonicBalance?.value === undefined) return false;
+      return parseUnits(amountStr, 18) > sonicBalance.value;
+    } catch {
+      // parseUnits throws on malformed input (e.g. too many decimals); let
+      // the on-click validation handle those rather than disabling here.
+      return false;
+    }
+  })();
 
   // TEMP DEBUG — remove after diagnosing disabled-button issue
   useEffect(() => {
@@ -559,6 +553,7 @@ function WalletTab() {
               isLoading ||
               isTransferring ||
               !userAddress ||
+              hasInsufficientBalance ||
               (sendMode === "address"
                 ? !isAddress(recipientAddress)
                 : !walletLookup?.walletAddress)
