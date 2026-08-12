@@ -14,14 +14,14 @@ export default function Navbar({ className = "" }: NavbarProps) {
 
   return (
     <nav
-      className={`fixed top-0 left-0 right-0 w-full bg-background z-[9999] ${className}`}
+      className={`fixed top-0 left-0 right-0 w-full bg-background/70 backdrop-blur-xl border-b border-border/60 z-[9999] ${className}`}
     >
       <div className="w-full px-4 sm:px-8 lg:px-16">
         <div className="flex justify-between items-center h-16">
           {/* Left - Logo */}
           <a href="/" className="flex items-center gap-2.5">
             <Logo className="h-9 w-9 shrink-0 text-foreground" />
-            <span className="font-serif text-xl font-semibold leading-none tracking-tight text-foreground">
+            <span className="font-sans text-xl font-semibold leading-none tracking-tight text-foreground">
               Curate AI
             </span>
           </a>
@@ -80,7 +80,7 @@ export default function Navbar({ className = "" }: NavbarProps) {
           {/* Right - Get Started Button */}
           <div className="hidden md:block">
             <Button
-              className="bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-2 cursor-pointer text-sm"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full px-6 py-2 cursor-pointer text-sm"
               onClick={() => (window.location.href = "/auth")}
             >
               Get Started
@@ -152,7 +152,7 @@ export default function Navbar({ className = "" }: NavbarProps) {
 
               <div className="pt-4 border-t border-border">
                 <Button
-                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground cursor-pointer text-sm"
+                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground rounded-full cursor-pointer text-sm"
                   onClick={() => (window.location.href = "/auth")}
                 >
                   Get Started

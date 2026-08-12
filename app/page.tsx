@@ -365,7 +365,7 @@ export default function LandingPage() {
       <section className="relative overflow-hidden min-h-screen px-4 sm:px-8 lg:px-16">
         {/* Curation lens — a full-bleed field of writing that your cursor
             reveals and scores in real time. This is the signature moment. */}
-        <CurationLens />
+        {/* <CurationLens /> */}
         <div className="relative z-20 flex min-h-screen flex-col justify-center pt-24 pb-16">
           {/* Headline block — full-bleed, oversized */}
           <div className="w-full">
@@ -376,11 +376,11 @@ export default function LandingPage() {
               className="inline-flex items-center gap-2 font-mono text-xs tracking-widest text-muted-foreground mb-8 uppercase"
             >
               <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse-dot" />
-              Live on Sonic testnet — v0.9 beta
+              Live onchain — v0.9 beta
               <span className="animate-blink-caret">_</span>
             </motion.div>
 
-            <h1 className="font-sans font-black text-foreground leading-[0.85] text-[clamp(3rem,11.5vw,10.5rem)] -tracking-[0.04em]">
+            <h1 className="font-sans font-semibold text-foreground leading-[0.92] text-[clamp(3rem,11.5vw,10.5rem)] -tracking-[0.04em]">
               {["Content has", "a trust", "problem."].map((line, i) => (
                 <motion.span
                   key={line}
@@ -424,7 +424,7 @@ export default function LandingPage() {
                 <Button
                   size="lg"
                   variant="outline"
-                  className="border-2 border-border text-foreground hover:border-primary hover:text-primary rounded-full px-8 py-6 text-base font-semibold"
+                  className="border border-border text-foreground hover:border-primary hover:text-primary rounded-full px-8 py-6 text-base font-semibold"
                   onClick={() =>
                     document
                       .getElementById("problems")
@@ -474,7 +474,7 @@ export default function LandingPage() {
       {/* ---------------------------------------------------------------- */}
       {/* MARQUEE */}
       {/* ---------------------------------------------------------------- */}
-      <div className="border-y border-border py-4 -rotate-1 bg-muted overflow-hidden marquee-group">
+      <div className="border-y border-border py-4 bg-muted overflow-hidden marquee-group">
         <div className="flex whitespace-nowrap animate-marquee-left w-max">
           {[...tickerWords, ...tickerWords].map((word, i) => (
             <span
@@ -496,7 +496,7 @@ export default function LandingPage() {
             <span className="font-mono text-xs tracking-widest text-primary uppercase">
               What Curate is built on
             </span>
-            <h2 className="font-serif font-black text-4xl sm:text-5xl lg:text-6xl text-foreground mt-4 leading-[1.05]">
+            <h2 className="font-sans font-semibold text-4xl sm:text-5xl lg:text-6xl text-foreground mt-4 leading-[1.05]">
               Four ideas. One home for writing.
             </h2>
             <p className="mt-6 text-lg text-muted-foreground leading-relaxed">
@@ -543,7 +543,7 @@ export default function LandingPage() {
                   <span className="font-mono text-[11px] tracking-widest text-muted-foreground uppercase">
                     {p.tag}
                   </span>
-                  <h3 className="font-serif font-bold text-xl text-foreground mt-1 mb-2">
+                  <h3 className="font-sans font-semibold text-xl text-foreground mt-1 mb-2">
                     {p.title}
                   </h3>
                   <p className="text-muted-foreground text-[15px] leading-relaxed">
@@ -564,7 +564,7 @@ export default function LandingPage() {
           <span className="font-mono text-xs tracking-widest text-primary uppercase">
             The problem
           </span>
-          <h2 className="font-serif font-black text-4xl sm:text-5xl lg:text-6xl text-foreground mt-4 leading-[1.05]">
+          <h2 className="font-sans font-semibold text-4xl sm:text-5xl lg:text-6xl text-foreground mt-4 leading-[1.05]">
             Where Web3 content platforms went wrong.
           </h2>
         </div>
@@ -581,7 +581,7 @@ export default function LandingPage() {
                     {String(i + 1).padStart(2, "0")} / {String(problems.length).padStart(2, "0")}
                   </span>
                 </div>
-                <h3 className="font-serif font-bold text-3xl sm:text-4xl text-foreground mb-4">
+                <h3 className="font-sans font-semibold text-3xl sm:text-4xl text-foreground mb-4">
                   {p.title}
                 </h3>
                 <p className="text-muted-foreground text-lg leading-relaxed max-w-2xl">
@@ -602,7 +602,7 @@ export default function LandingPage() {
             <span className="font-mono text-xs tracking-widest text-primary uppercase">
               The fix
             </span>
-            <h2 className="font-serif font-black text-4xl sm:text-5xl lg:text-6xl text-foreground mt-4 leading-[1.05]">
+            <h2 className="font-sans font-semibold text-4xl sm:text-5xl lg:text-6xl text-foreground mt-4 leading-[1.05]">
               Restoring balance in creation.
             </h2>
           </div>
@@ -625,7 +625,7 @@ export default function LandingPage() {
                   <ArrowUpRight className="w-5 h-5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
                 <div>
-                  <h3 className="font-serif font-bold text-2xl text-foreground mb-2">
+                  <h3 className="font-sans font-semibold text-2xl text-foreground mb-2">
                     {s.title}
                   </h3>
                   <p className="text-muted-foreground leading-relaxed">
@@ -653,7 +653,7 @@ export default function LandingPage() {
           </span>
           <ScrollRevealText
             text="We think the internet got the incentives backwards. Attention should follow quality, not capital. Trust should be earned through transparency, not assumed through branding. So we built a platform where every score can be inspected, every vote costs what it should, and every creator starts on equal footing — fairness, transparency, and equity, wired directly into the protocol."
-            className="font-serif font-bold text-3xl sm:text-4xl lg:text-5xl text-foreground leading-tight mt-10"
+            className="font-sans font-semibold text-3xl sm:text-4xl lg:text-5xl text-foreground leading-tight mt-10"
           />
         </div>
       </section>
@@ -667,7 +667,7 @@ export default function LandingPage() {
             <span className="font-mono text-xs tracking-widest text-primary uppercase">
               The math
             </span>
-            <h3 className="font-serif font-black text-3xl sm:text-4xl text-foreground mt-4 mb-6">
+            <h3 className="font-sans font-semibold text-3xl sm:text-4xl text-foreground mt-4 mb-6">
               Why one whale can&apos;t outvote a hundred creators.
             </h3>
             <p className="text-muted-foreground text-lg leading-relaxed">
@@ -726,7 +726,7 @@ export default function LandingPage() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.7 }}
-            className="font-serif font-black text-4xl sm:text-6xl lg:text-7xl text-foreground leading-[1.02] mb-8"
+            className="font-sans font-semibold text-4xl sm:text-6xl lg:text-7xl text-foreground leading-[1.02] mb-8"
           >
             Join the rebalance.
           </motion.h2>
@@ -760,7 +760,7 @@ export default function LandingPage() {
               <Button
                 size="lg"
                 variant="outline"
-                className="border-2 border-border text-foreground hover:bg-background rounded-full px-10 py-6 text-base font-semibold"
+                className="border border-border text-foreground hover:bg-background rounded-full px-10 py-6 text-base font-semibold"
               >
                 Read Whitepaper
               </Button>
@@ -1093,7 +1093,7 @@ function HorizontalFlow() {
           <span className="font-mono text-xs tracking-widest text-primary uppercase">
             The experience flow
           </span>
-          <h2 className="font-serif font-black text-4xl sm:text-5xl text-foreground mt-4">
+          <h2 className="font-sans font-semibold text-4xl sm:text-5xl text-foreground mt-4">
             Three steps. No shortcuts for whales.
           </h2>
         </div>
@@ -1108,7 +1108,7 @@ function HorizontalFlow() {
                   <div className="font-mono text-7xl sm:text-8xl font-bold text-border mb-6">
                     {item.step}
                   </div>
-                  <h3 className="font-serif font-black text-4xl sm:text-5xl text-foreground mb-2">
+                  <h3 className="font-sans font-semibold text-4xl sm:text-5xl text-foreground mb-2">
                     {item.title}
                   </h3>
                   <p className="text-lg text-muted-foreground font-medium mb-6">
