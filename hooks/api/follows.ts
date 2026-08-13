@@ -25,8 +25,6 @@ export interface FollowUser {
     bio?: string;
     location?: string;
     website?: string;
-    xHandle?: string;
-    github?: string;
     profilePic?: string;
     // Optional fields that may not be present in all responses
     id?: number;

@@ -3,10 +3,10 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Loader2, Users, Trophy, FileText } from "lucide-react";
-import { CommentIcon, FlagIcon, ClapIcon } from "@/components/icons";
+import { CommentIcon, FlagIcon, ClapIcon, WalletIcon } from "@/components/icons";
 import { useAccount, useBalance } from "wagmi";
-import { useCatTokenBalance } from "@/hooks/wagmi/useCatTokenBalance";
 import {
+  useReadCuratAiTokenBalanceOf,
   useReadCurateAiSettlementGetClaimableAmount,
   useWriteCurateAiSettlementClaimRewards,
 } from "@/hooks/wagmi/contracts";
@@ -26,17 +26,45 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useUserProfile } from "@/hooks/api/profile";
 
 // Wallet Widget Component
-const WalletWidget = () => {
-  const { address, isConnected } = useAccount();
+//
+// On the signed-in user's own profile this shows the connected wallet's
+// balances plus claimable settlement rewards (with a claim action). When
+// viewing someone else's profile it shows *that* account's on-chain balances
+// (read-only, no claim) alongside their wallet address — on-chain balances are
+// public, so the viewer doesn't need to be connected to see them.
+const WalletWidget = ({
+  walletAddress,
+  isOwnProfile,
+}: {
+  walletAddress?: string;
+  isOwnProfile: boolean;
+}) => {
+  const { address: connectedAddress } = useAccount();
   const { contracts } = useContractAddresses();
+
+  // Whose balances to display: own profile → connected wallet; another
+  // profile → that user's registered wallet address.
+  const displayAddress = (
+    isOwnProfile ? connectedAddress : walletAddress
+  ) as `0x${string}` | undefined;
+
   const {
-    balance: catBalance,
+    data: catBalance,
     isLoading: isCatBalanceLoading,
     refetch: refetchCatBalance,
-  } = useCatTokenBalance();
-  const { data: sonicBalance, isLoading: isSonicBalanceLoading } = useBalance({
-    address: address,
+  } = useReadCuratAiTokenBalanceOf({
+    address: contracts?.token as `0x${string}`,
+    args: displayAddress ? [displayAddress] : undefined,
     query: {
+      enabled: !!contracts && !!displayAddress,
+      refetchInterval: RPC_POLL_INTERVAL_MS,
+      staleTime: RPC_POLL_INTERVAL_MS,
+    },
+  });
+  const { data: sonicBalance, isLoading: isSonicBalanceLoading } = useBalance({
+    address: displayAddress,
+    query: {
+      enabled: !!displayAddress,
       refetchInterval: RPC_POLL_INTERVAL_MS,
       staleTime: RPC_POLL_INTERVAL_MS,
     },
@@ -93,9 +121,11 @@ const WalletWidget = () => {
     refetch: refetchClaimable,
   } = useReadCurateAiSettlementGetClaimableAmount({
     address: contracts?.settle as `0x${string}`,
-    args: address ? [address] : undefined,
+    args: connectedAddress ? [connectedAddress] : undefined,
     query: {
-      enabled: !!address && !!contracts,
+      // Claimable rewards are only ever shown/claimed for the signed-in user's
+      // own connected wallet.
+      enabled: isOwnProfile && !!connectedAddress && !!contracts,
       refetchInterval: RPC_POLL_INTERVAL_MS,
       staleTime: RPC_POLL_INTERVAL_MS,
     },
@@ -138,15 +168,19 @@ const WalletWidget = () => {
     }
   };
 
-  if (!isConnected || !address) {
+  if (!displayAddress) {
     return (
       <div className="bg-muted rounded-lg p-3 border border-border">
         <p className="text-xs text-muted-foreground">
-          Connect your wallet to view balances
+          {isOwnProfile
+            ? "Connect your wallet to view balances"
+            : "This user has no wallet address"}
         </p>
       </div>
     );
   }
+
+  const shortAddress = `${displayAddress.slice(0, 6)}…${displayAddress.slice(-4)}`;
 
   return (
     <div className="bg-muted rounded-lg p-3 border border-border">
@@ -156,6 +190,15 @@ const WalletWidget = () => {
           </div>
         ) : (
           <div className="space-y-2.5">
+            {/* Wallet address — shown when viewing another user's balances so
+                the numbers are clearly attributed to that account. */}
+            {!isOwnProfile && (
+              <div className="flex items-center gap-1.5 border-b border-border pb-2.5 text-muted-foreground">
+                <WalletIcon className="h-3.5 w-3.5" />
+                <span className="font-mono text-xs">{shortAddress}</span>
+              </div>
+            )}
+
             {/* CAT Balance */}
             <div className="space-y-0.5">
               <div className="flex items-center justify-between">
@@ -182,7 +225,8 @@ const WalletWidget = () => {
               </p>
             </div>
 
-            {/* Claimable Rewards */}
+            {/* Claimable Rewards — only for the signed-in user's own wallet */}
+            {isOwnProfile && (
             <div className="space-y-1.5 border-t border-border pt-2.5">
               <div className="flex items-center justify-between">
                 <p className="text-xs text-muted-foreground">
@@ -207,6 +251,7 @@ const WalletWidget = () => {
                 Claim Rewards
               </SuccessButton>
             </div>
+            )}
           </div>
         )}
       </div>
@@ -263,6 +308,7 @@ const UserItem = ({ user }: { user: FollowUser }) => {
 
 interface ProfileLeftSidebarProps {
   userUuid: string;
+  isOwnProfile: boolean;
 }
 
 // Stats Item Component
@@ -320,7 +366,10 @@ const StatItem = ({
   </div>
 );
 
-export const ProfileLeftSidebar = ({ userUuid }: ProfileLeftSidebarProps) => {
+export const ProfileLeftSidebar = ({
+  userUuid,
+  isOwnProfile,
+}: ProfileLeftSidebarProps) => {
   const [activeTab, setActiveTab] = useState<"followers" | "following">(
     "followers"
   );
@@ -343,7 +392,7 @@ export const ProfileLeftSidebar = ({ userUuid }: ProfileLeftSidebarProps) => {
   const totalScores = profileData?.stats?.scoresCount || 0;
   const totalComments = profileData?.stats?.commentsCount || 0;
   const totalFlags = profileData?.stats?.flagsCount || 0;
-  const totalClaps = 42; // Static value as requested
+  const totalClaps = profileData?.stats?.clapsCount || 0;
 
   return (
     <motion.aside
@@ -355,7 +404,10 @@ export const ProfileLeftSidebar = ({ userUuid }: ProfileLeftSidebarProps) => {
       <div className="space-y-6">
         {/* Wallet + Stats */}
         <div>
-          <WalletWidget />
+          <WalletWidget
+            walletAddress={profileData?.walletAddress}
+            isOwnProfile={isOwnProfile}
+          />
 
           <div className="mt-4 space-y-1">
             <StatItem

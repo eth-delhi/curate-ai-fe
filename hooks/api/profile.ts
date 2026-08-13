@@ -8,8 +8,6 @@ export interface UpdateProfileDto {
   bio?: string;
   location?: string;
   website?: string;
-  xHandle?: string;
-  github?: string;
   profilePic?: string; // IPFS hash for profile picture
 }
 
@@ -21,8 +19,6 @@ export interface ProfileResponse {
   bio?: string;
   location?: string;
   website?: string;
-  xHandle?: string;
-  github?: string;
   profilePic?: string;
   createdAt: string;
   updatedAt: string;
@@ -43,8 +39,6 @@ export interface UserProfileResponse {
     bio?: string;
     location?: string;
     website?: string;
-    xHandle?: string;
-    github?: string;
     profilePic?: string;
     createdAt: string;
     updatedAt: string;
@@ -54,6 +48,7 @@ export interface UserProfileResponse {
     scoresCount: number;
     commentsCount: number;
     flagsCount: number;
+    clapsCount: number;
   };
 }
 

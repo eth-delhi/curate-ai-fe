@@ -10,9 +10,8 @@ import {
   markInterestsOnboardingSeen,
 } from "@/utils/onboarding";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
-import { TypingMessage } from "@/components/auth/TypingMessage";
+import { INK, PAPER, display } from "@/components/brutal";
 import {
   clearStoredReferralCode,
   getStoredReferralCode,
@@ -66,18 +65,15 @@ export default function AuthCallbackPage() {
   }, [magic, mutateAsync, setToken, router]);
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.4 }}
-        className="text-center"
-      >
-        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground mx-auto mb-5" />
-        <h2 className="text-xl font-serif font-semibold text-foreground min-h-[1.75rem]">
-          <TypingMessage />
-        </h2>
-      </motion.div>
-    </div>
+    <main className="relative min-h-[100svh] w-full overflow-hidden" style={{ backgroundColor: PAPER, color: INK }}>
+      <div className="relative z-10 grid min-h-[100svh] place-items-center px-6">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-5 w-5 animate-spin" />
+          <p className={`${display} text-[11px] font-medium uppercase tracking-[0.28em] text-[#0A0A0A]/70`}>
+            Finishing sign-in
+          </p>
+        </div>
+      </div>
+    </main>
   );
 }

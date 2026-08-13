@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Source_Serif_4, Geist_Mono } from "next/font/google";
+import { Inter, Source_Serif_4, Geist_Mono, Archivo } from "next/font/google";
 import "react-toastify/dist/ReactToastify.css";
 import "./globals.css";
 import { ToastContainer } from "react-toastify";
@@ -26,6 +26,15 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// Heavy neutral grotesque for the studio hero display type (Archivo Black
+// energy). Landing-only: exposed as a CSS variable, so it changes nothing
+// elsewhere in the app until a surface opts in via `var(--font-archivo)`.
+const archivo = Archivo({
+  variable: "--font-archivo",
+  subsets: ["latin"],
+  weight: ["500", "700", "900"],
+});
+
 export const metadata: Metadata = {
   title: "Curate AI — Rebuilding Trust in Content",
   description:
@@ -40,7 +49,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${inter.variable} ${sourceSerif.variable} ${geistMono.variable} antialiased`}
+        className={`${inter.variable} ${sourceSerif.variable} ${geistMono.variable} ${archivo.variable} antialiased`}
       >
         <QueryProvider>
           <RpcUrlProvider>

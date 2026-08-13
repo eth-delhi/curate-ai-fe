@@ -56,8 +56,6 @@ import {
   Calendar,
   MapPin,
   LinkIcon,
-  Twitter,
-  Github,
   Settings as SettingsIcon,
   FileText,
   BarChart2,
@@ -302,81 +300,17 @@ function WalletTab() {
     }
   })();
 
-  // TEMP DEBUG — remove after diagnosing disabled-button issue
-  useEffect(() => {
-    console.log("[WalletTab debug]", {
-      sendMode,
-      userAddress,
-      isLoading,
-      isTransferring,
-      recipientAddress,
-      isAddressValid: isAddress(recipientAddress || ""),
-      walletLookup,
-      transferButtonDisabled:
-        isLoading ||
-        isTransferring ||
-        !userAddress ||
-        (sendMode === "address"
-          ? !isAddress(recipientAddress)
-          : !walletLookup?.walletAddress),
-    });
-  }, [
-    sendMode,
-    userAddress,
-    isLoading,
-    isTransferring,
-    recipientAddress,
-    walletLookup,
-  ]);
-
   return (
     <div className="space-y-6">
-      {/* Balance Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* CAT Balance Card */}
-        <div className="bg-background rounded-xl p-6 border border-border shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center">
-              <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center mr-3">
-                <WalletIcon className="w-6 h-6 text-accent-foreground" />
-              </div>
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground">
-                  {TOKEN_DISPLAY_NAMES.CAT} Balance
-                </h3>
-                <p className="text-2xl font-bold text-foreground">
-                  {formatCatBalance()}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* SONIC Balance Card */}
-        <div className="bg-background rounded-xl p-6 border border-border shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center">
-              <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center mr-3">
-                <WalletIcon className="w-6 h-6 text-accent-foreground" />
-              </div>
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground">
-                  {TOKEN_DISPLAY_NAMES.SONIC} Balance
-                </h3>
-                <p className="text-2xl font-bold text-foreground">
-                  {sonicBalance ? formatGasTokenBalance() : "0.00"}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Transfer Form */}
       <div className="bg-background rounded-xl p-6 border border-border shadow-sm">
-        <h2 className="text-xl font-bold text-foreground mb-6">
-          Transfer Tokens
-        </h2>
+        <div className="mb-6">
+          <h2 className="text-xl font-bold text-foreground">Send Tokens</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Transfer {TOKEN_DISPLAY_NAMES.CAT} or {TOKEN_DISPLAY_NAMES.SONIC} to
+            another wallet address or CurateAI username.
+          </p>
+        </div>
 
         {/* Token Type Tabs */}
         <div className="mb-6">
@@ -674,8 +608,6 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
     bio: "",
     location: "",
     website: "",
-    xHandle: "",
-    github: "",
   });
 
   // Original values from API (for comparison)
@@ -685,8 +617,6 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
     bio: "",
     location: "",
     website: "",
-    xHandle: "",
-    github: "",
   });
 
   // Track if we've initialized originalValues to prevent re-initialization
@@ -764,10 +694,6 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
         bio: profileData.profile?.bio || "",
         location: profileData.profile?.location || "",
         website: profileData.profile?.website || "",
-        twitter: profileData.profile?.xHandle
-          ? `@${profileData.profile.xHandle}`
-          : "",
-        github: profileData.profile?.github || "",
         joinDate: profileData.createdAt
           ? formatDistanceToNow(new Date(profileData.createdAt), {
               addSuffix: false,
@@ -788,8 +714,6 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
         bio: "",
         location: "",
         website: "",
-        twitter: "",
-        github: "",
         joinDate: "",
         followers: 0,
         following: 0,
@@ -806,8 +730,6 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
         bio: (profileData.profile.bio || "").trim(),
         location: (profileData.profile.location || "").trim(),
         website: (profileData.profile.website || "").trim(),
-        xHandle: (profileData.profile.xHandle || "").trim(),
-        github: (profileData.profile.github || "").trim(),
       };
 
       if (!hasInitialized.current) {
@@ -932,8 +854,6 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
         bio?: string;
         location?: string;
         website?: string;
-        xHandle?: string;
-        github?: string;
         profilePic?: string;
       } = {};
 
@@ -973,18 +893,6 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
           updateData.website = trimmedWebsite;
         }
         // If changed to empty, don't include it in the update (field remains unchanged)
-      }
-      if (hasChanged(formData.xHandle, originalValues.xHandle)) {
-        console.log(
-          `xHandle changed: "${originalValues.xHandle}" -> "${formData.xHandle}"`
-        );
-        updateData.xHandle = formData.xHandle.trim();
-      }
-      if (hasChanged(formData.github, originalValues.github)) {
-        console.log(
-          `Github changed: "${originalValues.github}" -> "${formData.github}"`
-        );
-        updateData.github = formData.github.trim();
       }
 
       // Check if there are any changes
@@ -1094,8 +1002,8 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
           --tw-prose-quote-borders: #e6e5e0;
           --tw-prose-captions: #6b6b6b;
           --tw-prose-code: #1a1a1a;
-          --tw-prose-pre-code: #1a1a1a;
-          --tw-prose-pre-bg: #fafaf8;
+          --tw-prose-pre-code: #e6e5e0;
+          --tw-prose-pre-bg: #1a1a1a;
           --tw-prose-th-borders: #e6e5e0;
           --tw-prose-td-borders: #e6e5e0;
         }
@@ -1120,7 +1028,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
       {/* Main Content Area - Below Navbar */}
       <div className="pt-[61px]">
         <div className="mx-auto flex w-full max-w-[1400px] items-start px-4 md:px-6">
-          <ProfileLeftSidebar userUuid={id} />
+          <ProfileLeftSidebar userUuid={id} isOwnProfile={isOwnProfile} />
           {/* Main Content */}
           <main className="min-w-0 flex-1 py-8 lg:border-l lg:border-border lg:pl-10">
               {/* Profile Header */}
@@ -1159,7 +1067,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                           alt={userData.name}
                           className="object-cover w-full h-full"
                         />
-                        <AvatarFallback className="text-3xl bg-muted-foreground text-background">
+                        <AvatarFallback className="text-3xl bg-primary text-primary-foreground">
                           {userData.name
                             .split(" ")
                             .map((n) => n[0])
@@ -1260,7 +1168,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                         </div>
                       </div>
 
-                      {/* Right side - Follow button and Social Links */}
+                      {/* Right side - Follow button */}
                       <div className="flex flex-col items-start md:items-end gap-4">
                         {!isOwnProfile && currentUserId && (
                           <Button
@@ -1294,31 +1202,6 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                             )}
                           </Button>
                         )}
-
-                        {/* Social Links */}
-                        <div className="flex flex-col gap-2 items-end">
-                          {userData.twitter && (
-                            <a
-                              href={`https://twitter.com/${userData.twitter.replace(
-                                "@",
-                                ""
-                              )}`}
-                              className="flex items-center text-muted-foreground hover:text-foreground text-sm"
-                            >
-                              <Twitter className="h-4 w-4 mr-1.5" />
-                              <span>{userData.twitter}</span>
-                            </a>
-                          )}
-                          {userData.github && (
-                            <a
-                              href={`https://github.com/${userData.github}`}
-                              className="flex items-center text-foreground hover:text-foreground text-sm"
-                            >
-                              <Github className="h-4 w-4 mr-1.5" />
-                              <span>{userData.github}</span>
-                            </a>
-                          )}
-                        </div>
                       </div>
                     </div>
                   </div>
@@ -1617,55 +1500,6 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                                 />
                                 <p className="text-xs text-muted-foreground mt-1">
                                   Must be a valid URL
-                                </p>
-                              </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                              {/* X (Twitter) Handle */}
-                              <div>
-                                <label
-                                  htmlFor="xHandle"
-                                  className="block text-sm font-medium text-foreground mb-2"
-                                >
-                                  X (Twitter) Handle
-                                </label>
-                                <div className="flex items-center">
-                                  <span className="text-muted-foreground mr-2">@</span>
-                                  <Input
-                                    id="xHandle"
-                                    name="xHandle"
-                                    value={formData.xHandle}
-                                    onChange={handleInputChange}
-                                    className="border-border"
-                                    maxLength={50}
-                                    placeholder="username"
-                                  />
-                                </div>
-                                <p className="text-xs text-muted-foreground mt-1">
-                                  Max 50 characters (without @)
-                                </p>
-                              </div>
-
-                              {/* GitHub */}
-                              <div>
-                                <label
-                                  htmlFor="github"
-                                  className="block text-sm font-medium text-foreground mb-2"
-                                >
-                                  GitHub
-                                </label>
-                                <Input
-                                  id="github"
-                                  name="github"
-                                  value={formData.github}
-                                  onChange={handleInputChange}
-                                  className="border-border"
-                                  maxLength={50}
-                                  placeholder="username"
-                                />
-                                <p className="text-xs text-muted-foreground mt-1">
-                                  Max 50 characters
                                 </p>
                               </div>
                             </div>
