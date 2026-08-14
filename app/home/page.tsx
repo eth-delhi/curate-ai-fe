@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect } from "react";
+import { MotionConfig, useReducedMotion } from "framer-motion";
 import { useHomeRevampData } from "@/hooks/useHomeRevampData";
 import HomeNavbar from "@/components/ui/HomeNavbar";
+import { AmbientDots } from "@/components/brutal";
 import {
   FeedSection,
   LeftSidebar,
@@ -12,6 +14,7 @@ import {
 } from "@/components/home-revamp";
 
 export default function HomeRevampPage() {
+  const reduced = useReducedMotion();
   const {
     feedPosts,
     activeTab,
@@ -48,7 +51,9 @@ export default function HomeRevampPage() {
   }
 
   return (
-    <div className="home-page min-h-screen bg-background text-foreground">
+    <MotionConfig reducedMotion="user">
+    <div className="home-page relative min-h-screen bg-background text-foreground">
+      <AmbientDots still={!!reduced} />
       <style jsx global>{`
         /* Scoped to this page subtree so we don’t change app-wide metrics after client nav. */
         .home-page {
@@ -88,13 +93,13 @@ export default function HomeRevampPage() {
 
       <HomeNavbar maxWidth={1400} />
 
-      <div className="pt-[61px]">
+      <div className="relative z-10 pt-[61px]">
         <div className="mx-auto flex max-w-[1400px] items-start px-4 md:px-6">
-          <aside className="sticky top-[61px] hidden w-[240px] shrink-0 self-start py-8 pr-8 lg:block">
+          <aside className="sticky top-[61px] hidden w-[248px] shrink-0 self-start py-10 pr-10 lg:block">
             <LeftSidebar onTopicClick={handleTagClick} />
           </aside>
 
-          <main className="min-w-0 flex-1 px-0 py-4 lg:border-x lg:border-border lg:px-12">
+          <main className="min-w-0 flex-1 px-0 py-4 lg:border-x lg:border-[color:var(--border)] lg:px-14">
             <FeedSection
               posts={feedPosts}
               activeTab={activeTab}
@@ -108,11 +113,12 @@ export default function HomeRevampPage() {
             />
           </main>
 
-          <aside className="sticky top-[61px] hidden w-[352px] shrink-0 self-start py-8 pl-10 xl:block">
+          <aside className="sticky top-[61px] hidden w-[352px] shrink-0 self-start py-10 pl-12 xl:block">
             <RightSidebar onTopicClick={handleTagClick} />
           </aside>
         </div>
       </div>
     </div>
+    </MotionConfig>
   );
 }

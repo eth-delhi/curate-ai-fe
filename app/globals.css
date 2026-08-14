@@ -76,6 +76,24 @@
   --ring: #0A0A0A;
 }
 
+/* Home feed ("/home") — BRUTALIST MONOCHROME, matching the landing + login.
+   Cool off-white paper, pure ink, ink hairline rules, sharp corners. Every
+   component under `.home-page` inherits this canvas; individual components add
+   the poster display face (Archivo) and hairline structure on top. Home-only
+   (placed after the shared block so post/profile keep their palette). */
+.home-page {
+  --background: #F5F4F0;
+  --foreground: #0A0A0A;
+  --muted: #EAE9E3;
+  --muted-foreground: #57534B;
+  --border: rgba(10, 10, 10, 0.16);
+  --input: rgba(10, 10, 10, 0.16);
+  --accent: #E8E7E1;
+  --accent-foreground: #0A0A0A;
+  --ring: #0A0A0A;
+  --radius: 0rem; /* sharp corners everywhere; rounded-md/lg collapse to 0 */
+}
+
 /* Landing page ("/") — keeps the light paper background but swaps the brand
    blue for ink-black across every component that reads these tokens (navbar,
    buttons, eyebrow labels, marquee, progress bar). Monochrome, editorial, no

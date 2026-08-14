@@ -46,8 +46,8 @@ function ProfileRow({
           className="h-8 w-8 shrink-0 rounded-full object-cover"
         />
       ) : (
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted">
-          <User className="h-4 w-4 text-muted-foreground" />
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#0A0A0A]/10">
+          <User className="h-4 w-4 text-[#0A0A0A]/60" />
         </span>
       )}
       <div className="min-w-0">
@@ -76,8 +76,8 @@ function PostRow({
       onClick={onNavigate}
       className="flex items-start gap-3 px-4 py-2.5 transition-colors duration-150 hover:bg-accent"
     >
-      <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-muted">
-        <FileText className="h-4 w-4 text-muted-foreground" />
+      <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[#0A0A0A]/[0.06]">
+        <FileText className="h-4 w-4 text-[#0A0A0A]/60" />
       </span>
       <div className="min-w-0">
         <p className="truncate text-sm font-medium text-foreground">
@@ -140,15 +140,15 @@ export default function NavbarSearch({
       ref={containerRef}
       className={`relative hidden min-w-0 justify-center md:flex md:px-4 ${className}`}
     >
-      <div className="relative w-full max-w-[360px]">
-        <div className="flex w-full items-center gap-3 rounded-[24px] border border-transparent bg-muted px-5 py-2.5 transition-colors duration-150 focus-within:border-primary/30 focus-within:bg-background">
-          <Search className="h-5 w-5 shrink-0 text-muted-foreground" />
+      <div className="relative w-full max-w-[300px] transition-[max-width] duration-200 ease-out focus-within:max-w-[420px]">
+        <div className="flex w-full items-center gap-3 border-b border-[#0A0A0A]/30 px-1 py-2 transition-colors duration-150 focus-within:border-[#0A0A0A]">
+          <Search className="h-4 w-4 shrink-0 text-[#0A0A0A]/50" />
           <input
             type="text"
             value={value}
             placeholder="Search posts and people"
             aria-label="Search"
-            className="w-full bg-transparent text-[15px] text-foreground outline-none placeholder:text-muted-foreground"
+            className="w-full bg-transparent text-[13px] text-[#0A0A0A] outline-none placeholder:uppercase placeholder:tracking-[0.14em] placeholder:text-[#0A0A0A]/40"
             onChange={(e) => {
               setValue(e.target.value);
               setOpen(true);
@@ -164,12 +164,12 @@ export default function NavbarSearch({
             }}
           />
           {isFetching && (
-            <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
+            <Loader2 className="h-4 w-4 shrink-0 animate-spin text-[#0A0A0A]/50" />
           )}
         </div>
 
         {showDropdown && (
-          <div className="absolute left-0 right-0 z-[10001] mt-2 max-h-[70vh] overflow-y-auto rounded-xl border border-border bg-background shadow-xl">
+          <div className="absolute left-0 right-0 z-[10001] mt-2 max-h-[70vh] overflow-y-auto rounded-xl border border-[color:var(--border)] bg-[#F5F4F0] shadow-xl">
             {!hasResults && !isFetching ? (
               <div className="px-4 py-6 text-center text-sm text-muted-foreground">
                 No matches for &ldquo;{trimmed}&rdquo;
@@ -211,10 +211,10 @@ export default function NavbarSearch({
             <button
               type="button"
               onClick={goToResults}
-              className="flex w-full items-center gap-2 border-t border-border px-4 py-3 text-left text-sm font-medium text-primary transition-colors duration-150 hover:bg-accent"
+              className="flex w-full items-center gap-2 border-t border-[color:var(--border)] px-4 py-3 text-left text-[11px] font-bold uppercase tracking-[0.12em] text-[#0A0A0A] transition-colors duration-150 hover:bg-[#0A0A0A]/[0.04]"
             >
-              <Search className="h-4 w-4" />
-              See all results for &ldquo;{trimmed}&rdquo;
+              <Search className="h-3.5 w-3.5" />
+              See all results
             </button>
           </div>
         )}

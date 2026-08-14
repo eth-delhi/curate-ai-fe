@@ -2,12 +2,12 @@
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
+import { display } from "@/components/brutal";
 import { Logo } from "@/components/ui/Logo";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   User,
   LogOut,
-  PenSquare,
   Loader2,
   ChevronDown,
   Copy,
@@ -16,7 +16,7 @@ import {
   Search,
 } from "lucide-react";
 import NavbarSearch from "@/components/ui/NavbarSearch";
-import { BellIcon, WalletIcon } from "@/components/icons";
+import { BellIcon } from "@/components/icons";
 import { useUserProfile } from "@/hooks/api/profile";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -193,24 +193,21 @@ const WalletMenu = ({ userId }: { userId: string | null }) => {
         ref={buttonRef}
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
-        className="flex items-center gap-2 whitespace-nowrap rounded-full border border-border bg-muted/50 px-3 py-1.5 text-xs font-medium text-foreground shadow-sm transition-colors duration-150 hover:border-primary/40"
+        className="flex items-center gap-2 whitespace-nowrap border-b border-[#0A0A0A]/30 pb-0.5 text-[11px] font-medium uppercase tracking-[0.1em] text-[#0A0A0A] transition-colors duration-150 hover:border-[#0A0A0A]"
       >
         {isLoading ? (
-          <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+          <Loader2 className="h-3.5 w-3.5 animate-spin text-[#0A0A0A]/50" />
         ) : (
           <>
-            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary/10">
-              <WalletIcon className="h-2.5 w-2.5 text-primary" />
-            </span>
-            <span>
+            <span className="tabular-nums">
               {formattedCatBalance} {TOKEN_DISPLAY_NAMES.CAT}
             </span>
-            <span className="text-muted-foreground">·</span>
-            <span>
+            <span className="text-[#0A0A0A]/40">·</span>
+            <span className="tabular-nums">
               {formattedNativeBalance} {TOKEN_DISPLAY_NAMES.SONIC}
             </span>
             <ChevronDown
-              className={`h-3.5 w-3.5 text-muted-foreground transition-transform duration-150 ${
+              className={`h-3 w-3 text-[#0A0A0A]/50 transition-transform duration-150 ${
                 isOpen ? "rotate-180" : ""
               }`}
             />
@@ -221,20 +218,20 @@ const WalletMenu = ({ userId }: { userId: string | null }) => {
       {isOpen && (
         <div
           ref={panelRef}
-          className="fixed w-72 overflow-hidden rounded-xl border border-border bg-background shadow-xl"
+          className="fixed w-72 overflow-hidden rounded-xl border border-[color:var(--border)] bg-[#F5F4F0] shadow-xl"
           style={{ top: `${position.top}px`, right: `${position.right}px`, zIndex: 10001 }}
         >
-          <div className="border-b border-border bg-muted/40 px-4 py-4">
-            <p className="text-xs font-medium text-muted-foreground">
+          <div className="border-b border-[color:var(--border)] px-4 py-4">
+            <p className="text-[10px] uppercase tracking-[0.18em] text-[#0A0A0A]/45">
               Wallet balance
             </p>
-            <p className="mt-1 text-2xl font-semibold text-foreground">
+            <p className={`${display} mt-1.5 text-[26px] font-black leading-none tracking-tight text-[#0A0A0A]`}>
               {formattedCatBalance}{" "}
-              <span className="text-sm font-medium text-muted-foreground">
+              <span className="text-[13px] text-[#0A0A0A]/45">
                 {TOKEN_DISPLAY_NAMES.CAT}
               </span>
             </p>
-            <p className="text-sm text-muted-foreground">
+            <p className="mt-1 text-[12px] tabular-nums text-[#0A0A0A]/55">
               {formattedNativeBalance} {TOKEN_DISPLAY_NAMES.SONIC}
             </p>
           </div>
@@ -243,22 +240,22 @@ const WalletMenu = ({ userId }: { userId: string | null }) => {
             <button
               type="button"
               onClick={handleCopy}
-              className="flex w-full items-center justify-between gap-2 rounded-lg border border-border bg-muted/50 px-3 py-2 text-left transition-colors duration-150 hover:bg-muted"
+              className="flex w-full items-center justify-between gap-2 rounded-lg border border-[color:var(--border)] px-3 py-2 text-left transition-colors duration-150 hover:bg-[#0A0A0A]/[0.04]"
             >
-              <span className="truncate font-mono text-xs text-foreground">
+              <span className="truncate font-mono text-[11px] text-[#0A0A0A]">
                 {shortAddress}
               </span>
               {isCopied ? (
-                <Check className="h-3.5 w-3.5 shrink-0 text-primary" />
+                <Check className="h-3.5 w-3.5 shrink-0 text-[#0A0A0A]" />
               ) : (
-                <Copy className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                <Copy className="h-3.5 w-3.5 shrink-0 text-[#0A0A0A]/50" />
               )}
             </button>
 
             <Link
               href={userId ? `/profile/${userId}?tab=wallet` : "/auth"}
               onClick={() => setIsOpen(false)}
-              className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition-colors duration-150 hover:bg-primary/90"
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg border border-[#0A0A0A] bg-[#0A0A0A] px-3 py-2 text-[11px] font-bold uppercase tracking-[0.14em] text-[#F5F4F0] transition-colors duration-150 hover:bg-[#F5F4F0] hover:text-[#0A0A0A]"
             >
               <Send className="h-4 w-4" />
               Send tokens
@@ -357,7 +354,7 @@ export default function HomeNavbar({
 
   return (
     <nav
-      className={`fixed top-0 left-0 right-0 w-full border-b border-border/70 bg-background/85 shadow-[0_1px_0_rgba(7,47,95,0.06)] backdrop-blur-md z-[9999] ${className}`}
+      className={`fixed top-0 left-0 right-0 w-full border-b border-[color:var(--border)] bg-[#F5F4F0]/90 backdrop-blur-md z-[9999] ${className}`}
     >
       <div className="w-full">
         <div
@@ -368,10 +365,11 @@ export default function HomeNavbar({
           <div className="flex min-w-0 items-center justify-between gap-3 md:justify-start">
             <Link
               href="/home"
-              className="flex shrink-0 items-center gap-2 text-foreground transition-opacity duration-150 hover:opacity-90"
+              aria-label="Curate AI home"
+              className="flex shrink-0 items-center gap-2 transition-opacity duration-150 hover:opacity-90"
             >
-              <Logo className="h-8 w-8 shrink-0 text-foreground" />
-              <span className="font-serif text-[24px] font-bold leading-none tracking-tight text-foreground">
+              <Logo className="h-8 w-8 shrink-0 text-[#0A0A0A]" />
+              <span className="text-[22px] font-bold leading-none tracking-tight text-[#0A0A0A]">
                 Curate AI
               </span>
             </Link>
@@ -388,13 +386,13 @@ export default function HomeNavbar({
                     fit on one row; sign-in is still reachable from /auth. */}
                 <Link
                   href="/auth"
-                  className="hidden rounded-full border border-foreground bg-transparent px-4 py-[7px] text-sm font-medium text-foreground transition-colors duration-150 hover:bg-accent sm:inline-flex"
+                  className="hidden text-[11px] font-medium uppercase tracking-[0.14em] text-[#0A0A0A] underline-offset-4 transition-colors duration-150 hover:underline sm:inline-flex"
                 >
                   Sign in
                 </Link>
                 <Link
                   href="/auth"
-                  className="rounded-full border-none bg-primary px-[18px] py-2 text-sm font-medium text-primary-foreground transition-colors duration-150 hover:bg-primary/90"
+                  className="border-[1.5px] border-[#0A0A0A] bg-[#0A0A0A] px-4 py-2 text-[11px] font-bold uppercase tracking-[0.14em] text-[#F5F4F0] transition-colors duration-150 hover:bg-[#F5F4F0] hover:text-[#0A0A0A]"
                 >
                   Get started
                 </Link>
@@ -405,7 +403,7 @@ export default function HomeNavbar({
                 <Link
                   href="/search"
                   aria-label="Search"
-                  className="flex h-9 w-9 shrink-0 items-center justify-center text-muted-foreground transition-colors duration-150 hover:text-foreground md:hidden"
+                  className="flex h-9 w-9 shrink-0 items-center justify-center text-[#0A0A0A]/70 transition-colors duration-150 hover:text-[#0A0A0A] md:hidden"
                 >
                   <Search className="h-5 w-5 stroke-[1.5]" />
                 </Link>
@@ -414,11 +412,11 @@ export default function HomeNavbar({
 
                 <Link
                   href="/create"
-                  className="flex shrink-0 items-center gap-2.5 whitespace-nowrap text-[15px] font-medium text-muted-foreground transition-colors duration-150 hover:text-foreground"
                   aria-label="Write"
+                  className={`group relative shrink-0 whitespace-nowrap text-[11px] font-bold uppercase tracking-[0.18em] text-[#0A0A0A] ${display}`}
                 >
-                  <PenSquare className="h-6 w-6 stroke-[1.5]" />
-                  <span className="hidden sm:inline">Write</span>
+                  Write
+                  <span className="absolute -bottom-1 left-0 h-px w-full origin-left scale-x-0 bg-[#0A0A0A] transition-transform duration-150 ease-linear group-hover:scale-x-100" />
                 </Link>
 
                 <div className="relative shrink-0">
@@ -443,9 +441,9 @@ export default function HomeNavbar({
                     className="relative flex h-9 w-9 shrink-0 items-center justify-center"
                     aria-label="Notifications"
                   >
-                    <BellIcon className="h-5 w-5 stroke-[1.5] text-muted-foreground" />
+                    <BellIcon className="h-5 w-5 stroke-[1.5] text-[#0A0A0A]/70" />
                     {unreadCount > 0 && (
-                      <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">
+                      <span className="absolute -right-1 -top-1 flex h-4 min-w-[16px] items-center justify-center border border-[#0A0A0A] bg-[#0A0A0A] px-1 text-[9px] font-bold tabular-nums text-[#F5F4F0]">
                         {unreadCount > 9 ? "9+" : unreadCount}
                       </span>
                     )}
@@ -453,15 +451,15 @@ export default function HomeNavbar({
 
                   {isNotificationsOpen && (
                     <div
-                      className="fixed bg-background border border-border rounded-lg shadow-xl w-80 max-h-96 overflow-y-auto"
+                      className="fixed w-80 max-h-96 overflow-y-auto rounded-xl border border-[color:var(--border)] bg-[#F5F4F0] shadow-xl"
                       style={{
                         top: `${notificationDropdownPosition.top}px`,
                         right: `${notificationDropdownPosition.right}px`,
                         zIndex: 10001,
                       }}
                     >
-                      <div className="p-4 border-b border-border">
-                        <h3 className="text-sm font-semibold text-foreground">
+                      <div className="border-b border-[color:var(--border)] px-4 py-3">
+                        <h3 className={`${display} text-[10px] font-bold uppercase tracking-[0.2em] text-[#0A0A0A]`}>
                           Notifications
                         </h3>
                       </div>
@@ -558,16 +556,16 @@ export default function HomeNavbar({
                     setIsProfileOpen(!isProfileOpen);
                     setIsNotificationsOpen(false);
                   }}
-                  className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-primary"
+                  className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-[#0A0A0A]"
                   aria-label="Profile menu"
                 >
-                  <Avatar className="h-9 w-9 shrink-0 rounded-full">
+                  <Avatar className="h-full w-full shrink-0 rounded-full">
                     <AvatarImage
                       src={profilePicUrl || undefined}
                       alt="Profile"
                       className="h-full w-full object-cover"
                     />
-                    <AvatarFallback className="flex h-full w-full items-center justify-center text-center text-xs font-medium leading-none bg-primary text-primary-foreground">
+                    <AvatarFallback className="flex h-full w-full items-center justify-center rounded-full text-center text-[11px] font-bold leading-none bg-[#0A0A0A] text-[#F5F4F0]">
                       {isProfileLoading || !currentUserProfile ? (
                         <User className="h-4 w-4" />
                       ) : (
@@ -579,7 +577,7 @@ export default function HomeNavbar({
 
                 {isProfileOpen && (
                   <div
-                    className="fixed w-52 rounded-lg border border-border bg-background shadow-xl"
+                    className="fixed w-52 overflow-hidden rounded-xl border border-[color:var(--border)] bg-[#F5F4F0] shadow-xl"
                     style={{
                       top: `${profileDropdownPosition.top}px`,
                       right: `${profileDropdownPosition.right}px`,

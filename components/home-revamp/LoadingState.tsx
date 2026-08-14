@@ -1,32 +1,30 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Logo } from "@/components/ui/Logo";
+import { display } from "@/components/brutal";
 
 interface LoadingStateProps {
   message?: string;
 }
 
-export const LoadingState = ({
-  message = "Loading posts...",
-}: LoadingStateProps) => {
+export const LoadingState = ({ message = "Loading posts" }: LoadingStateProps) => {
   return (
-    <div className="flex h-screen bg-background items-center justify-center">
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-        className="text-center"
-      >
-        <motion.div
-          animate={{ scale: [1, 1.1, 1], opacity: [0.6, 1, 0.6] }}
+    <div className="flex h-screen items-center justify-center bg-[#F5F4F0]">
+      <div className="text-center">
+        <motion.span
+          animate={{ opacity: [0.4, 1, 0.4] }}
           transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
-          className="mx-auto mb-4 w-10 h-10 text-primary"
+          className={`mx-auto mb-5 grid h-12 w-12 place-items-center text-center text-[11px] font-black uppercase leading-[0.82] tracking-tight ${display}`}
+          style={{ backgroundColor: "#0A0A0A", color: "#F5F4F0" }}
         >
-          <Logo className="w-10 h-10" />
-        </motion.div>
-        <p className="text-muted-foreground">{message}</p>
-      </motion.div>
+          CURATE
+          <br />
+          AI
+        </motion.span>
+        <p className="text-[10px] uppercase tracking-[0.22em] text-[#0A0A0A]/50">
+          {message}
+        </p>
+      </div>
     </div>
   );
 };
