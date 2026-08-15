@@ -47,7 +47,7 @@ export function useWagmiConfig() {
     // Wait for the DB-backed RPC URL (GET /settings/rpc-url) before building
     // the client — the tunnel URL rotates, so wagmi must not construct its
     // transport against a stale/undefined endpoint.
-    // if (!rpcUrl) return; // TEMP offline preview — REVERT before commit
+    if (!rpcUrl) return;
 
     const resolvedUrl = getNetworkUrl(rpcUrl);
     const chain = {

@@ -17,7 +17,6 @@ import {
   PAPER,
   EXPO,
   display,
-  AmbientDots,
   CustomCursor,
   NeuralCloud,
   ParticleBirds,
@@ -52,30 +51,32 @@ const HEADLINE = [
   { text: "THE REST.", indent: 0 },
 ];
 
-function Hero({ animate }: { animate: boolean }) {
-  const { scrollY } = useScroll();
-  const headY = useTransform(scrollY, [0, 700], [0, -70]);
+// Nav height (logo + top/bottom padding) that the hero's own centering math
+// compensates for now that the nav lives outside the hero as a sticky sibling.
+const NAV_H = 92;
+
+function SiteNav({ animate }: { animate: boolean }) {
+  const [scrolled, setScrolled] = useState(false);
   const marqueeSeg = "BUILDING AI × WEB3";
 
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 24);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   return (
-    <section data-hero className="relative min-h-[100svh] w-full overflow-hidden">
-      {/* Focal cloud. When animating, the page-level CloudGlobe renders the cloud
-          here (it later rains down into the section-two globe). Under reduced
-          motion CloudGlobe shows only the globe, so keep a static cloud here. */}
-      {!animate && (
-        <div className="pointer-events-none absolute inset-y-0 right-0 z-0 w-[92%] sm:w-[74%] lg:w-[62%]">
-          <NeuralCloud still />
-        </div>
-      )}
-
-      {/* Scroll-scrubbed flock — rests as ambient dust at the baseline, coheres
-          into pigeons and lifts through the cloud as the hero scrolls away */}
-      <div className="pointer-events-none absolute inset-0 z-[1]" aria-hidden>
-        <ParticleBirds still={!animate} />
-      </div>
-
-      {/* Nav */}
-      <header className="relative z-20 mx-auto flex w-full max-w-[1600px] items-center justify-between px-5 pt-6 sm:px-8 lg:px-12">
+    <header
+      className="sticky top-0 z-50 w-full transition-[background-color,box-shadow] duration-300 ease-out"
+      style={{
+        backgroundColor: scrolled ? "rgba(245,244,240,0.72)" : "rgba(245,244,240,0)",
+        backdropFilter: scrolled ? "blur(10px)" : "none",
+        WebkitBackdropFilter: scrolled ? "blur(10px)" : "none",
+        boxShadow: scrolled ? "0 1px 0 0 rgba(10,10,10,0.08)" : "0 1px 0 0 rgba(10,10,10,0)",
+      }}
+    >
+      <div className="relative mx-auto flex w-full max-w-[1600px] items-center justify-between px-5 pt-6 pb-3 sm:px-8 lg:px-12">
         <a href="/" data-cursor className="inline-block" aria-label="Curate AI home">
           <Logo className="h-14 w-14 shrink-0 text-foreground" />
         </a>
@@ -110,12 +111,40 @@ function Hero({ animate }: { animate: boolean }) {
             <NavLink key={l} label={l} />
           ))}
         </nav>
-      </header>
+      </div>
+    </header>
+  );
+}
+
+function Hero({ animate }: { animate: boolean }) {
+  const { scrollY } = useScroll();
+  const headY = useTransform(scrollY, [0, 700], [0, -70]);
+
+  return (
+    <section
+      data-hero
+      className="relative w-full overflow-hidden"
+      style={{ minHeight: `calc(100svh - ${NAV_H}px)` }}
+    >
+      {/* Focal cloud. When animating, the page-level CloudGlobe renders the cloud
+          here (it later rains down into the section-two globe). Under reduced
+          motion CloudGlobe shows only the globe, so keep a static cloud here. */}
+      {!animate && (
+        <div className="pointer-events-none absolute inset-y-0 right-0 z-0 w-[92%] sm:w-[74%] lg:w-[62%]">
+          <NeuralCloud still />
+        </div>
+      )}
+
+      {/* Scroll-scrubbed flock — rests as ambient dust at the baseline, coheres
+          into pigeons and lifts through the cloud as the hero scrolls away */}
+      <div className="pointer-events-none absolute inset-0 z-[1]" aria-hidden>
+        <ParticleBirds still={!animate} />
+      </div>
 
       {/* Content */}
       <motion.div
-        className="relative z-10 mx-auto flex min-h-[calc(100svh-88px)] w-full max-w-[1600px] flex-col justify-center px-5 pb-16 pt-10 sm:px-8 lg:px-12"
-        style={{ y: animate ? headY : 0 }}
+        className="relative z-10 mx-auto flex w-full max-w-[1600px] flex-col justify-center px-5 pb-16 pt-10 sm:px-8 lg:px-12"
+        style={{ y: animate ? headY : 0, minHeight: `calc(100svh - ${NAV_H}px)` }}
       >
         <h1 className={`${display} font-black uppercase leading-[0.86] tracking-[-0.02em] text-[clamp(1.75rem,8.2vw,8rem)]`}>
           {HEADLINE.map((line, i) => (
@@ -527,12 +556,11 @@ export default function LandingPage() {
       className={`relative w-full overflow-x-clip ${cursorOn ? "cursor-none" : ""}`}
       style={{ backgroundColor: PAPER, color: INK }}
     >
-      <AmbientDots still={!animate} />
-
       {/* One particle journey: hero cloud → rain → section-two globe (fixed layer) */}
       <CloudGlobe still={!animate} />
 
       <div className="relative z-10">
+        <SiteNav animate={animate} />
         <Hero animate={animate} />
         <SignalSection animate={animate} />
         <ProblemSection animate={animate} reduced={reduced} />
