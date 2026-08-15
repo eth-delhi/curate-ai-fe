@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import HomeNavbar from "@/components/ui/HomeNavbar";
-import { AmbientDots, display } from "@/components/brutal";
+import { display } from "@/components/brutal";
 import { usePosts } from "@/hooks/api/posts";
 import {
   useUpdateProfile,
@@ -1000,7 +1000,6 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
 
   return (
     <div className="profile-page relative min-h-screen bg-background text-foreground">
-      <AmbientDots still={false} />
       <style jsx global>{`
         .profile-page {
           font-family: var(--font-sans), system-ui, sans-serif;
@@ -1123,10 +1122,10 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                       />
                     </div>
 
-                    <div className="flex-grow flex flex-col md:flex-row gap-6">
+                    <div className="flex min-w-0 flex-grow flex-col gap-6 md:flex-row">
                       {/* Left side - Name, Bio, Info */}
-                      <div className="flex-1">
-                        <h1 className={`${display} text-[clamp(1.9rem,4vw,3rem)] font-black uppercase leading-[0.95] tracking-tight text-[#0A0A0A]`}>
+                      <div className="min-w-0 flex-1">
+                        <h1 className={`${display} truncate text-[clamp(1.9rem,4vw,3rem)] font-black uppercase leading-[0.95] tracking-tight text-[#0A0A0A]`}>
                           {userData.name}
                         </h1>
 

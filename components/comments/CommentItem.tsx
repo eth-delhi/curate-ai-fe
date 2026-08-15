@@ -4,8 +4,8 @@ import React, { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { User, ThumbsUp, Edit, Trash2, Send, X, Loader2 } from "lucide-react";
+import { User, Edit, Trash2, Send, X, Loader2 } from "lucide-react";
+import { UpvoteIcon } from "@/components/icons";
 import { formatDistanceToNow } from "date-fns";
 import { useAccount } from "wagmi";
 import {
@@ -14,12 +14,18 @@ import {
   useDeleteComment,
 } from "@/hooks/api/comments";
 import { ConfirmDeleteModal } from "@/components/ui/ConfirmDeleteModal";
-import { showToast } from "@/utils/showToast";
 
 interface CommentItemProps {
   comment: CommentDto;
   postUuid: string;
 }
+
+// Small "You" tag used on the current user's own comments/replies.
+const OwnerTag = () => (
+  <span className="border border-[#0A0A0A] px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-[#0A0A0A]">
+    You
+  </span>
+);
 
 export const CommentItem: React.FC<CommentItemProps> = ({
   comment,
@@ -38,7 +44,6 @@ export const CommentItem: React.FC<CommentItemProps> = ({
 
   const handleEdit = async () => {
     if (!editContent.trim()) return;
-
     try {
       await updateCommentMutation.mutateAsync({
         uuid: comment.uuid,
@@ -46,11 +51,8 @@ export const CommentItem: React.FC<CommentItemProps> = ({
       });
       setIsEditing(false);
     } catch (error) {
+      // No toast on this page — leave the editor open so the user can retry.
       console.error("Failed to update comment:", error);
-      showToast({
-        message: "Failed to update comment. Please try again.",
-        type: "error",
-      });
     }
   };
 
@@ -60,49 +62,33 @@ export const CommentItem: React.FC<CommentItemProps> = ({
       setShowDeleteModal(false);
     } catch (error) {
       console.error("Failed to delete comment:", error);
-      showToast({
-        message: "Failed to delete comment. Please try again.",
-        type: "error",
-      });
     }
   };
 
-  const openDeleteModal = () => {
-    setShowDeleteModal(true);
-  };
-
-  const formatWalletAddress = (address: string) => {
-    return `${address.slice(0, 6)}...${address.slice(-4)}`;
-  };
+  const formatWalletAddress = (address: string) =>
+    `${address.slice(0, 6)}...${address.slice(-4)}`;
 
   return (
-    <div className="border-b border-border pb-6 last:border-0">
+    <div className="border-b border-[color:var(--border)] py-5">
       <div className="mb-2 flex items-start gap-3">
-        <Avatar className="h-8 w-8 border border-border">
+        <Avatar className="h-8 w-8">
           <AvatarImage src="/placeholder.svg" alt="User" />
-          <AvatarFallback className="bg-muted text-muted-foreground">
+          <AvatarFallback className="bg-[#0A0A0A]/10 text-[#0A0A0A]">
             <User className="h-4 w-4" />
           </AvatarFallback>
         </Avatar>
         <div className="flex-1">
           <div className="mb-1 flex items-center gap-2">
-            <p className="text-[14px] font-medium text-foreground">
+            <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#0A0A0A]">
               {formatWalletAddress(comment.userWalletAddress)}
             </p>
-            {isOwner && (
-              <Badge
-                variant="secondary"
-                className="border border-border bg-muted text-[11px] text-muted-foreground"
-              >
-                You
-              </Badge>
-            )}
+            {isOwner && <OwnerTag />}
           </div>
-          <p className="text-[12px] text-muted-foreground">
+          <p className="text-[10px] uppercase tracking-[0.12em] text-[#0A0A0A]/45">
             {formatDistanceToNow(new Date(comment.createdAt), {
               addSuffix: true,
             })}
-            {comment.updatedAt !== comment.createdAt && " (edited)"}
+            {comment.updatedAt !== comment.createdAt && " · edited"}
           </p>
         </div>
       </div>
@@ -113,8 +99,8 @@ export const CommentItem: React.FC<CommentItemProps> = ({
             <Textarea
               value={editContent}
               onChange={(e) => setEditContent(e.target.value)}
-              className="mb-2 min-h-[90px] rounded-xl border-input bg-background text-[14px] leading-[1.6] text-foreground focus-visible:ring-1 focus-visible:ring-ring"
-              placeholder="Edit your comment..."
+              className="mb-2 min-h-[90px] rounded-none border border-[#0A0A0A]/40 bg-transparent text-[14px] leading-[1.6] text-[#0A0A0A] focus-visible:border-[#0A0A0A] focus-visible:ring-0"
+              placeholder="Edit your comment…"
             />
             <div className="flex gap-2">
               <Button
@@ -123,12 +109,12 @@ export const CommentItem: React.FC<CommentItemProps> = ({
                 disabled={
                   updateCommentMutation.isPending || !editContent.trim()
                 }
-                className="rounded-full bg-primary text-primary-foreground transition-colors duration-150 hover:bg-primary/90"
+                className="rounded-none border border-[#0A0A0A] bg-[#0A0A0A] text-[10px] font-bold uppercase tracking-[0.14em] text-[#F5F4F0] transition-colors duration-150 hover:bg-[#F5F4F0] hover:text-[#0A0A0A]"
               >
                 {updateCommentMutation.isPending ? (
-                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                  <Loader2 className="mr-1 h-3 w-3 animate-spin" />
                 ) : (
-                  <Send className="h-3 w-3 mr-1" />
+                  <Send className="mr-1 h-3 w-3" />
                 )}
                 Save
               </Button>
@@ -139,22 +125,22 @@ export const CommentItem: React.FC<CommentItemProps> = ({
                   setIsEditing(false);
                   setEditContent(comment.content);
                 }}
-                className="rounded-full border-border text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground"
+                className="rounded-none border border-[#0A0A0A] bg-transparent text-[10px] font-bold uppercase tracking-[0.14em] text-[#0A0A0A] transition-colors duration-150 hover:bg-[#0A0A0A] hover:text-[#F5F4F0]"
               >
-                <X className="h-3 w-3 mr-1" />
+                <X className="mr-1 h-3 w-3" />
                 Cancel
               </Button>
             </div>
           </div>
         ) : (
-          <p className="mb-3 text-[15px] leading-[1.65] text-foreground">
+          <p className="mb-3 text-[15px] leading-[1.65] text-[#0A0A0A]/85">
             {comment.content}
           </p>
         )}
 
-        <div className="flex items-center gap-4">
-          <button className="flex items-center gap-1 text-[12px] text-muted-foreground transition-colors duration-150 hover:text-foreground">
-            <ThumbsUp className="h-3 w-3" />
+        <div className="flex items-center gap-4 text-[10px] font-medium uppercase tracking-[0.12em] text-[#0A0A0A]/55">
+          <button className="flex items-center gap-1.5 transition-colors duration-150 hover:text-[#0A0A0A]">
+            <UpvoteIcon className="h-3.5 w-3.5" />
             <span>0</span>
           </button>
 
@@ -162,15 +148,15 @@ export const CommentItem: React.FC<CommentItemProps> = ({
             <>
               <button
                 onClick={() => setIsEditing(true)}
-                className="flex items-center gap-1 text-[12px] text-muted-foreground transition-colors duration-150 hover:text-foreground"
+                className="flex items-center gap-1.5 transition-colors duration-150 hover:text-[#0A0A0A]"
               >
                 <Edit className="h-3 w-3" />
                 Edit
               </button>
               <button
-                onClick={openDeleteModal}
+                onClick={() => setShowDeleteModal(true)}
                 disabled={deleteCommentMutation.isPending}
-                className="flex items-center gap-1 text-[12px] text-muted-foreground transition-colors duration-150 hover:text-destructive"
+                className="flex items-center gap-1.5 transition-colors duration-150 hover:text-[#0A0A0A]"
               >
                 <Trash2 className="h-3 w-3" />
                 Delete
@@ -181,35 +167,28 @@ export const CommentItem: React.FC<CommentItemProps> = ({
 
         {/* Replies */}
         {comment.replies && comment.replies.length > 0 && (
-          <div className="mt-4 space-y-4">
+          <div className="mt-5 space-y-5">
             {comment.replies.map((reply) => (
               <div
                 key={reply.uuid}
-                className="ml-4 border-l-2 border-border pl-4"
+                className="ml-1 border-l border-[color:var(--border)] pl-4"
               >
                 <div className="mb-2 flex items-start gap-3">
-                  <Avatar className="h-6 w-6 border border-border">
+                  <Avatar className="h-6 w-6">
                     <AvatarImage src="/placeholder.svg" alt="User" />
-                    <AvatarFallback className="bg-muted text-muted-foreground">
+                    <AvatarFallback className="bg-[#0A0A0A]/10 text-[#0A0A0A]">
                       <User className="h-3 w-3" />
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
                     <div className="mb-1 flex items-center gap-2">
-                      <p className="text-[13px] font-medium text-foreground">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#0A0A0A]">
                         {formatWalletAddress(reply.userWalletAddress)}
                       </p>
                       {userAddress?.toLowerCase() ===
-                        reply.userWalletAddress.toLowerCase() && (
-                        <Badge
-                          variant="secondary"
-                          className="border border-border bg-muted text-[11px] text-muted-foreground"
-                        >
-                          You
-                        </Badge>
-                      )}
+                        reply.userWalletAddress.toLowerCase() && <OwnerTag />}
                     </div>
-                    <p className="text-[12px] text-muted-foreground">
+                    <p className="text-[10px] uppercase tracking-[0.12em] text-[#0A0A0A]/45">
                       {formatDistanceToNow(new Date(reply.createdAt), {
                         addSuffix: true,
                       })}
@@ -217,7 +196,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({
                   </div>
                 </div>
                 <div className="ml-9">
-                  <p className="text-[14px] leading-[1.65] text-foreground">
+                  <p className="text-[14px] leading-[1.65] text-[#0A0A0A]/85">
                     {reply.content}
                   </p>
                 </div>

@@ -38,6 +38,7 @@ import { SuccessButton, useActionStatus } from "@/components/ui/SuccessButton";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import HomeNavbar from "@/components/ui/HomeNavbar";
+import { display } from "@/components/brutal";
 import { X, Check, Loader2, Flame } from "lucide-react";
 import { showToast } from "@/utils/showToast";
 
@@ -622,7 +623,7 @@ export default function CreateRevampPage() {
   ]);
 
   return (
-    <div className="flex flex-col h-screen bg-background checkered-bg">
+    <div className="create-page flex flex-col h-screen bg-background checkered-bg">
       <style jsx global>{`
         /* Subtle checkered texture, retinted to near-white/neutral tones */
         .checkered-bg {
@@ -641,7 +642,7 @@ export default function CreateRevampPage() {
         .prose {
           --tw-prose-headings: #1a1a1a;
           --tw-prose-body: #1a1a1a;
-          --tw-prose-links: #072f5f;
+          --tw-prose-links: #0A0A0A;
           --tw-prose-bold: #1a1a1a;
           --tw-prose-counters: #6b6b6b;
           --tw-prose-bullets: #6b6b6b;
@@ -680,7 +681,7 @@ export default function CreateRevampPage() {
         /* Style links in editor - accent indigo */
         .prose a,
         .ProseMirror a {
-          color: #072f5f !important;
+          color: #0A0A0A !important;
           text-decoration: underline !important;
         }
 
@@ -802,7 +803,7 @@ export default function CreateRevampPage() {
         }
 
         .ProseMirror img.ProseMirror-selectednode {
-          outline: 3px solid #072f5f;
+          outline: 3px solid #0A0A0A;
           outline-offset: 2px;
         }
 
@@ -838,10 +839,10 @@ export default function CreateRevampPage() {
                     <div className="flex items-center gap-4 py-4">
                       <input
                         type="text"
-                        placeholder="Title..."
+                        placeholder="Title"
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
-                        className="flex-1 min-w-0 text-2xl font-serif font-bold text-foreground border-0 focus:outline-none focus:ring-0 placeholder-muted-foreground"
+                        className="flex-1 min-w-0 border-0 bg-transparent text-3xl font-black tracking-tight text-[#0A0A0A] placeholder-[#0A0A0A]/30 focus:outline-none focus:ring-0 font-[family-name:var(--font-archivo)]"
                       />
                       <div className="flex shrink-0 items-center gap-4">
                         <div className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground w-20">
@@ -862,7 +863,7 @@ export default function CreateRevampPage() {
                         <span
                           className={`hidden md:inline text-xs ${
                             isOverLimit
-                              ? "text-destructive font-medium"
+                              ? "text-[#0A0A0A] font-medium"
                               : "text-muted-foreground"
                           }`}
                         >
@@ -877,7 +878,7 @@ export default function CreateRevampPage() {
                             isNotApprovedToPost
                           }
                           size="sm"
-                          className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                          className="rounded-none border border-[#0A0A0A] bg-[#0A0A0A] px-5 text-[11px] font-bold uppercase tracking-[0.14em] text-[#F5F4F0] transition-colors duration-150 hover:bg-[#F5F4F0] hover:text-[#0A0A0A]"
                         >
                           {isNotApprovedToPost
                             ? "Not approved to post"
@@ -903,17 +904,12 @@ export default function CreateRevampPage() {
                           <button
                             ref={resetTriggerRef}
                             onClick={toggleResetPopover}
-                            title={
-                              postResetBurnAmount !== undefined
-                                ? `Burn ${postResetBurnAmount.toString()} CAT to post again immediately`
-                                : undefined
-                            }
-                            className="inline-flex items-center gap-1.5 rounded-md border border-destructive/40 bg-destructive/5 px-2.5 py-1.5 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10"
+                            className="inline-flex items-center gap-2 rounded-none border border-[#0A0A0A] bg-transparent px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[#0A0A0A] transition-colors duration-150 hover:bg-[#0A0A0A] hover:text-[#F5F4F0]"
                           >
                             <Flame className="h-3.5 w-3.5" />
                             Reset cooldown
                             {postResetBurnAmount !== undefined
-                              ? ` (burn ${postResetBurnAmount.toString()} CAT)`
+                              ? ` · Burn ${postResetBurnAmount.toString()} CAT`
                               : ""}
                           </button>
 
@@ -928,36 +924,34 @@ export default function CreateRevampPage() {
                                   top: resetPopoverPosition.top,
                                   left: resetPopoverPosition.left,
                                 }}
-                                className="z-[100] w-72 rounded-lg border border-border bg-background p-3 shadow-lg"
+                                className="z-[100] w-72 border-[1.5px] border-[#0A0A0A] bg-[#F5F4F0] p-4 shadow-[6px_6px_0_0_rgba(10,10,10,0.18)]"
                               >
-                                <div className="space-y-2.5">
+                                <div className="space-y-3">
                                   <div className="flex items-center justify-between">
-                                    <span className="flex items-center gap-1.5 text-sm font-medium text-foreground">
-                                      <Flame className="h-4 w-4 text-destructive" />
+                                    <span className={`${display} flex items-center gap-1.5 text-[11px] font-black uppercase tracking-[0.12em] text-[#0A0A0A]`}>
+                                      <Flame className="h-4 w-4" />
                                       Reset cooldown
                                     </span>
                                     <button
                                       onClick={() => setIsResetPopoverOpen(false)}
-                                      className="text-muted-foreground hover:text-foreground"
+                                      className="text-[#0A0A0A]/50 transition-colors hover:text-[#0A0A0A]"
                                     >
                                       <X className="h-4 w-4" />
                                     </button>
                                   </div>
-                                  <p className="text-xs leading-relaxed text-muted-foreground">
+                                  <p className="text-[12px] leading-relaxed text-[#0A0A0A]/60">
                                     This will burn{" "}
-                                    <span className="font-medium text-foreground">
+                                    <span className="font-bold text-[#0A0A0A]">
                                       {postResetBurnAmount !== undefined
                                         ? postResetBurnAmount.toString()
                                         : "500"}{" "}
                                       CAT
                                     </span>{" "}
-                                    from your wallet and immediately reset
-                                    your daily post cooldown. This
-                                    can&apos;t be undone.
+                                    from your wallet and immediately reset your
+                                    daily post cooldown. This can&apos;t be undone.
                                   </p>
                                   <SuccessButton
                                     size="sm"
-                                    variant="destructive"
                                     onClick={handleResetCooldown}
                                     status={resetCooldownStatus}
                                     disabled={
@@ -970,7 +964,7 @@ export default function CreateRevampPage() {
                                         Burning...
                                       </>
                                     }
-                                    className="w-full"
+                                    className="w-full rounded-none border border-[#0A0A0A] bg-[#0A0A0A] text-[11px] font-bold uppercase tracking-[0.14em] text-[#F5F4F0] transition-colors duration-150 hover:bg-[#F5F4F0] hover:text-[#0A0A0A]"
                                   >
                                     <Flame className="mr-1.5 h-4 w-4" />
                                     Burn &amp; reset
@@ -1027,71 +1021,67 @@ export default function CreateRevampPage() {
 
       {/* Tag Input Modal */}
       {isTagModalOpen && (
-        <div className="fixed inset-0 backdrop-blur-sm bg-foreground/10 flex items-center justify-center z-50">
-          <div className="bg-background border border-border rounded-lg shadow-sm p-6 w-96 max-w-md mx-4">
-            <h3 className="text-lg font-semibold mb-4 text-foreground">
-              Add Tags to Your Post
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0A0A0A]/30 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md border-[1.5px] border-[#0A0A0A] bg-[#F5F4F0] p-6 shadow-[8px_8px_0_0_rgba(10,10,10,0.18)]">
+            <h3 className={`${display} text-xl font-black uppercase tracking-tight text-[#0A0A0A]`}>
+              Add tags
             </h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Add up to 5 tags to help readers discover your post
+            <p className="mt-1.5 text-[13px] text-[#0A0A0A]/55">
+              Add up to 5 tags to help readers discover your post.
             </p>
 
-            <div className="space-y-4">
+            <div className="mt-5 space-y-4">
               {/* Current Tags */}
               {tags.length > 0 && (
                 <div className="flex flex-wrap gap-2">
                   {tags.map((tag) => (
-                    <Badge
+                    <span
                       key={tag}
-                      variant="secondary"
-                      className="bg-accent text-accent-foreground hover:bg-accent/80 px-3 py-1"
+                      className="inline-flex items-center gap-1.5 border border-[#0A0A0A] px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.1em] text-[#0A0A0A]"
                     >
                       #{tag}
                       <button
                         onClick={() => handleRemoveTag(tag)}
-                        className="ml-2 text-muted-foreground hover:text-foreground"
+                        className="text-[#0A0A0A]/50 transition-colors hover:text-[#0A0A0A]"
                       >
                         <X className="h-3 w-3" />
                       </button>
-                    </Badge>
+                    </span>
                   ))}
                 </div>
               )}
 
               {/* Tag Input */}
               {tags.length < 5 && (
-                <div className="relative">
-                  <input
-                    ref={tagInputRef}
-                    type="text"
-                    placeholder="Add a tag..."
-                    value={tagInput}
-                    onChange={(e) => setTagInput(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    className="w-full bg-muted border border-border text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-border focus:border-border placeholder-muted-foreground text-foreground"
-                  />
-                </div>
+                <input
+                  ref={tagInputRef}
+                  type="text"
+                  placeholder="Add a tag"
+                  value={tagInput}
+                  onChange={(e) => setTagInput(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  className="w-full rounded-none border border-[#0A0A0A]/40 bg-transparent px-3 py-2 text-sm text-[#0A0A0A] placeholder:uppercase placeholder:tracking-[0.1em] placeholder:text-[#0A0A0A]/40 focus:border-[#0A0A0A] focus:outline-none focus:ring-0"
+                />
               )}
 
-              <div className="text-xs text-muted-foreground">
+              <div className="text-[10px] uppercase tracking-[0.12em] text-[#0A0A0A]/45">
                 {tags.length}/5 tags added
               </div>
             </div>
 
-            <div className="flex justify-end gap-3 mt-6">
-              <Button
-                variant="outline"
+            <div className="mt-6 flex justify-end gap-3">
+              <button
                 onClick={() => setIsTagModalOpen(false)}
-                className="border-border"
+                className="rounded-none border border-[#0A0A0A] bg-transparent px-5 py-2 text-[11px] font-bold uppercase tracking-[0.14em] text-[#0A0A0A] transition-colors duration-150 hover:bg-[#0A0A0A] hover:text-[#F5F4F0]"
               >
                 Cancel
-              </Button>
-              <Button
+              </button>
+              <button
                 onClick={handleTagModalConfirm}
-                className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                className="rounded-none border border-[#0A0A0A] bg-[#0A0A0A] px-5 py-2 text-[11px] font-bold uppercase tracking-[0.14em] text-[#F5F4F0] transition-colors duration-150 hover:bg-[#F5F4F0] hover:text-[#0A0A0A]"
               >
-                Continue to Publish
-              </Button>
+                Continue
+              </button>
             </div>
           </div>
         </div>
@@ -1099,35 +1089,34 @@ export default function CreateRevampPage() {
 
       {/* Low Balance Modal */}
       {isLowBalanceModalOpen && (
-        <div className="fixed inset-0 backdrop-blur-sm bg-foreground/10 flex items-center justify-center z-50">
-          <div className="bg-background border border-border rounded-lg shadow-sm p-6 w-96 max-w-md mx-4">
-            <h3 className="text-lg font-semibold mb-4 text-foreground">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0A0A0A]/30 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md border-[1.5px] border-[#0A0A0A] bg-[#F5F4F0] p-6 shadow-[8px_8px_0_0_rgba(10,10,10,0.18)]">
+            <h3 className={`${display} text-xl font-black uppercase tracking-tight text-[#0A0A0A]`}>
               Insufficient balance
             </h3>
-            <p className="text-sm text-muted-foreground mb-6">
+            <p className="mt-2 text-[13px] leading-relaxed text-[#0A0A0A]/60">
               You need at least {MIN_NATIVE_BALANCE_FOR_GAS}{" "}
               {TOKEN_DISPLAY_NAMES.SONIC} to cover the gas fee for publishing.
               Top up your wallet and try again.
             </p>
 
-            <div className="flex justify-end gap-3">
-              <Button
-                variant="outline"
+            <div className="mt-6 flex justify-end gap-3">
+              <button
                 onClick={() => setIsLowBalanceModalOpen(false)}
-                className="border-border"
+                className="rounded-none border border-[#0A0A0A] bg-transparent px-5 py-2 text-[11px] font-bold uppercase tracking-[0.14em] text-[#0A0A0A] transition-colors duration-150 hover:bg-[#0A0A0A] hover:text-[#F5F4F0]"
               >
                 Cancel
-              </Button>
-              <Button
+              </button>
+              <button
                 onClick={() => {
                   setIsLowBalanceModalOpen(false);
                   const userId = getUserIdFromToken();
                   router.push(userId ? `/profile/${userId}` : "/profile");
                 }}
-                className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                className="rounded-none border border-[#0A0A0A] bg-[#0A0A0A] px-5 py-2 text-[11px] font-bold uppercase tracking-[0.14em] text-[#F5F4F0] transition-colors duration-150 hover:bg-[#F5F4F0] hover:text-[#0A0A0A]"
               >
-                Go to Wallet
-              </Button>
+                Go to wallet
+              </button>
             </div>
           </div>
         </div>

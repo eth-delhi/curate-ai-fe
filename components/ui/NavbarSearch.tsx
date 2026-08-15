@@ -36,7 +36,7 @@ function ProfileRow({
     <Link
       href={`/profile/${profile.userUuid}`}
       onClick={onNavigate}
-      className="flex items-center gap-3 px-4 py-2.5 transition-colors duration-150 hover:bg-accent"
+      className="flex items-center gap-3 px-4 py-2.5 transition-colors duration-150 hover:bg-[#0A0A0A]/[0.04]"
     >
       {avatar ? (
         // eslint-disable-next-line @next/next/no-img-element
@@ -74,7 +74,7 @@ function PostRow({
     <Link
       href={`/post/${post.uuid}`}
       onClick={onNavigate}
-      className="flex items-start gap-3 px-4 py-2.5 transition-colors duration-150 hover:bg-accent"
+      className="flex items-start gap-3 px-4 py-2.5 transition-colors duration-150 hover:bg-[#0A0A0A]/[0.04]"
     >
       <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[#0A0A0A]/[0.06]">
         <FileText className="h-4 w-4 text-[#0A0A0A]/60" />
@@ -171,14 +171,14 @@ export default function NavbarSearch({
         {showDropdown && (
           <div className="absolute left-0 right-0 z-[10001] mt-2 max-h-[70vh] overflow-y-auto rounded-xl border border-[color:var(--border)] bg-[#F5F4F0] shadow-xl">
             {!hasResults && !isFetching ? (
-              <div className="px-4 py-6 text-center text-sm text-muted-foreground">
+              <div className="px-4 py-6 text-center text-[11px] font-bold uppercase tracking-[0.14em] text-[#0A0A0A]/45">
                 No matches for &ldquo;{trimmed}&rdquo;
               </div>
             ) : (
               <>
                 {profiles.length > 0 && (
                   <div className="py-1">
-                    <p className="px-4 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    <p className="px-4 pb-1.5 pt-2.5 text-[10px] font-bold uppercase tracking-[0.2em] text-[#0A0A0A]/45">
                       People
                     </p>
                     {profiles.map((profile) => (
@@ -193,7 +193,7 @@ export default function NavbarSearch({
 
                 {posts.length > 0 && (
                   <div className="border-t border-border py-1">
-                    <p className="px-4 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    <p className="px-4 pb-1.5 pt-2.5 text-[10px] font-bold uppercase tracking-[0.2em] text-[#0A0A0A]/45">
                       Posts
                     </p>
                     {posts.map((post) => (

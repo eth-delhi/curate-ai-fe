@@ -57,7 +57,7 @@ import {
   useClapCount,
   useMaxClapsPerUser,
 } from "@/hooks/api/claps";
-import { showToast } from "@/utils/showToast";
+import { Tooltip } from "@/components/brutal";
 import { useAuth } from "@/hooks/useAuth";
 import { createClapDebouncer } from "@/utils/clapDebounce";
 import { UpvoteCountBurst } from "@/components/UpvoteCountBurst";
@@ -72,6 +72,13 @@ const MarkdownPreview = dynamic(
 // BigInt() rather than a `500_000_000n` literal because the TS target predates
 // BigInt literals (matches the rest of this file).
 const MAX_VOTE_AMOUNT = BigInt(500000000);
+
+// Toasts are intentionally disabled on this page. Blocked actions are shown as
+// a disabled control + tooltip instead of a popup; this no-op keeps the
+// existing guard/return flow intact without ever surfacing a toast.
+const showToast = (..._args: unknown[]) => {
+  void _args;
+};
 
 // Renders <img> tags from post content with the fast S3 URL as the primary
 // src, falling back to the pinned IPFS gateway URL (data-ipfs-fallback,
@@ -768,7 +775,7 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
         .prose {
           --tw-prose-headings: #1a1a1a;
           --tw-prose-body: #1a1a1a;
-          --tw-prose-links: #072f5f;
+          --tw-prose-links: #0A0A0A;
           --tw-prose-bold: #1a1a1a;
           --tw-prose-counters: #6b6b6b;
           --tw-prose-bullets: #e6e5e0;
@@ -1167,8 +1174,8 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
           border-color: #1a1a1a !important;
         }
         [data-radix-slider-thumb]:hover {
-          background-color: #072f5f !important;
-          border-color: #072f5f !important;
+          background-color: #0A0A0A !important;
+          border-color: #0A0A0A !important;
         }
 
         /* Smaller slider in upvote popover */
@@ -1223,17 +1230,17 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
                   </div>
 
                   {/* Title */}
-                  <h1 className="mb-6 font-serif text-[28px] font-bold leading-[1.2] tracking-tight text-foreground sm:text-[34px] sm:leading-[1.15] md:text-[40px]">
+                  <h1 className="mb-6 font-[family-name:var(--font-archivo)] text-[30px] font-black leading-[1.05] tracking-[-0.01em] text-[#0A0A0A] sm:text-[38px] md:text-[46px]">
                     {postData.title}
                   </h1>
 
                   {/* Tags */}
                   {postData.tags && postData.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mb-6">
+                    <div className="mb-6 flex flex-wrap gap-x-3 gap-y-1.5">
                       {postData.tags.map((tag) => (
                         <span
                           key={tag}
-                          className="cursor-pointer text-[13px] text-muted-foreground transition-colors hover:text-foreground"
+                          className="cursor-pointer text-[10px] uppercase tracking-[0.14em] text-[#0A0A0A]/50 transition-colors hover:text-[#0A0A0A]"
                         >
                           {tag.startsWith("#") ? tag : `#${tag}`}
                         </span>
@@ -1241,12 +1248,12 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
                     </div>
                   )}
 
-                  {/* Engagement Metrics */}
-                  <div className="mb-4 flex items-center gap-4 text-[13px] text-muted-foreground">
+                  {/* Byline */}
+                  <div className="mb-4 flex min-w-0 items-center gap-2.5 text-[11px] font-bold uppercase tracking-[0.12em] text-[#0A0A0A]/55">
                     {authorUuid ? (
                       <Link
                         href={`/profile/${authorUuid}`}
-                        className="font-medium text-foreground hover:underline"
+                        className="max-w-[45%] truncate text-[#0A0A0A] underline-offset-4 hover:underline"
                       >
                         {authorProfile?.profile?.fullName ||
                           authorProfile?.profile?.username ||
@@ -1254,38 +1261,43 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
                           "Anonymous"}
                       </Link>
                     ) : (
-                      <span className="font-medium text-foreground">
+                      <span className="max-w-[45%] truncate text-[#0A0A0A]">
                         {authorProfile?.profile?.fullName ||
                           authorProfile?.profile?.username ||
                           postData.author?.email?.split("@")[0] ||
                           "Anonymous"}
                       </span>
                     )}
-                    <span>·</span>
-                    <span className="text-muted-foreground">
-                      {`${postData?.xMinRead ?? 0} min read`}
-                    </span>
-                    <span>·</span>
-                    <div className="flex items-center gap-1">
+                    <span className="shrink-0 text-[#0A0A0A]/30">·</span>
+                    <span className="shrink-0">{`${postData?.xMinRead ?? 0} min read`}</span>
+                    <span className="shrink-0 text-[#0A0A0A]/30">·</span>
+                    <span className="inline-flex shrink-0 items-center gap-1.5">
                       <UpvoteIcon className="h-3.5 w-3.5" />
-                      <span>{displayedScore}</span>
-                    </div>
+                      {displayedScore}
+                    </span>
                   </div>
 
+                  {/* AI score — measurement tick, matching the feed */}
                   {typeof postData.aiRating?.rating === "number" && (
-                    <div
-                      className="mb-4 h-1 w-16 rounded-full bg-muted overflow-hidden"
-                      title={`AI rating: ${postData.aiRating.rating}/100`}
-                    >
-                      <div
-                        className="h-full rounded-full bg-primary/60"
-                        style={{
-                          width: `${Math.min(
-                            100,
-                            Math.max(0, postData.aiRating.rating)
-                          )}%`,
-                        }}
-                      />
+                    <div className="mb-4 flex items-center gap-2.5">
+                      <span className="text-[11px] font-semibold uppercase tracking-wide text-[#0A0A0A]/55">
+                        AI
+                      </span>
+                      <div className="h-1.5 w-28 overflow-hidden rounded-full bg-[#0A0A0A]/12">
+                        <div
+                          className="h-full rounded-full bg-[#0A0A0A]"
+                          style={{
+                            width: `${Math.min(
+                              100,
+                              Math.max(0, postData.aiRating.rating)
+                            )}%`,
+                          }}
+                        />
+                      </div>
+                      <span className="text-[12px] font-semibold tabular-nums text-[#0A0A0A]">
+                        {Math.round(postData.aiRating.rating)}
+                        <span className="font-normal text-[#0A0A0A]/45">/100</span>
+                      </span>
                     </div>
                   )}
                 </div>
@@ -1305,27 +1317,22 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
                   <div className="flex items-center justify-between gap-4">
                     {/* Left Group: Clap, Comment, Upvote */}
                     <div className="flex items-center gap-4 sm:gap-6">
-                      <div className="relative">
+                      <div className="relative group/tt">
                         <motion.button
                           whileTap={{ scale: 0.95 }}
                           animate={isClapping ? { scale: [1, 1.2, 1] } : {}}
                           transition={{ duration: 0.3 }}
                           onClick={handleClap}
-                          disabled={isClapPending || (isAuthenticated && hasReachedMax)}
+                          aria-disabled={
+                            isClapPending || (isAuthenticated && hasReachedMax) || !isAuthenticated
+                          }
                           className={`flex items-center gap-1.5 text-[14px] transition-colors ${
                             !isAuthenticated || hasReachedMax
-                              ? "cursor-not-allowed text-muted-foreground/50"
+                              ? "cursor-not-allowed text-[#0A0A0A]/35"
                               : userClapCount > 0
-                              ? "text-foreground"
-                              : "text-muted-foreground hover:text-foreground"
+                              ? "text-[#0A0A0A]"
+                              : "text-[#0A0A0A]/60 hover:text-[#0A0A0A]"
                           }`}
-                          title={
-                            !isAuthenticated
-                              ? "Sign in to clap on posts"
-                              : hasReachedMax
-                              ? `You can only clap ${maxClapsPerUser} times on a post`
-                              : `Clap (${userClapCount}/${maxClapsPerUser})`
-                          }
                         >
                           {isClapPending ? (
                             <Loader2 className="h-5 w-5 animate-spin" />
@@ -1344,6 +1351,17 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
                             {isClapCountLoading ? "..." : totalClapCount}
                           </span>
                         </motion.button>
+
+                        {(!isAuthenticated || hasReachedMax) && (
+                          <span
+                            role="tooltip"
+                            className="pointer-events-none absolute bottom-full left-1/2 z-[9998] mb-2 w-max max-w-[220px] -translate-x-1/2 whitespace-normal border border-[#0A0A0A] bg-[#0A0A0A] px-2.5 py-1.5 text-center text-[10px] font-bold uppercase leading-snug tracking-[0.12em] text-[#F5F4F0] opacity-0 shadow-[3px_3px_0_0_rgba(10,10,10,0.18)] transition-opacity duration-150 group-hover/tt:opacity-100"
+                          >
+                            {!isAuthenticated
+                              ? "Sign in to clap"
+                              : `Max ${maxClapsPerUser} claps reached`}
+                          </span>
+                        )}
 
                         {clapAnimations.map((anim) => (
                           <motion.div
@@ -1364,7 +1382,7 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
                             className="pointer-events-none absolute left-1/2 top-0 z-10 -translate-x-1/2 whitespace-nowrap"
                             style={{ transformOrigin: "center bottom" }}
                           >
-                            <span className="rounded-full border border-border bg-background/95 px-2.5 py-1 text-base font-bold text-foreground shadow-md backdrop-blur-sm">
+                            <span className="border border-[#0A0A0A] bg-[#F5F4F0] px-2 py-0.5 text-sm font-bold text-[#0A0A0A]">
                               +1
                             </span>
                           </motion.div>
@@ -1385,101 +1403,59 @@ export default function BlogPostView({ params }: BlogPostViewProps) {
                         </span>
                       </button>
 
-                      <div className="group relative" ref={scorePopoverRef}>
-                        <button
-                          onClick={() => {
-                            if (!isAuthenticated) {
-                              showToast({
-                                message: "Sign in to upvote posts",
-                                type: "info",
-                              });
-                              return;
-                            }
-                            if (isCurator === false) {
-                              showToast({
-                                message: "Only curators can upvote posts",
-                                type: "info",
-                              });
-                              return;
-                            }
-                            if (hasVotedOnPost === true) {
-                              showToast({
-                                message: "You've already voted on this post.",
-                                type: "info",
-                              });
-                              return;
-                            }
-                            if (!isPostOnChainFailed) {
-                              setShowScorePopover(!showScorePopover);
-                            }
-                          }}
-                          aria-disabled={
-                            isPostOnChainFailed || hasVotedOnPost === true
-                          }
-                          title={
-                            !isAuthenticated
-                              ? "Sign in to upvote posts"
+                      <div className="relative" ref={scorePopoverRef}>
+                        {(() => {
+                          const upvoteBlockedReason = isPostOnChainFailed
+                            ? "Not yet on-chain — try again shortly"
+                            : !isAuthenticated
+                              ? "Sign in to upvote"
                               : isCurator === false
-                              ? "Only curators can upvote posts"
-                              : hasVotedOnPost === true
-                              ? "You've already voted on this post"
-                              : undefined
-                          }
-                          className={`flex items-center gap-1.5 text-[14px] transition-colors ${
-                            hasVotedOnPost === true
-                              ? "cursor-not-allowed text-foreground"
-                              : isPostOnChainFailed ||
-                                !isAuthenticated ||
-                                isCurator === false
-                              ? "cursor-not-allowed text-muted-foreground opacity-50"
-                              : "text-muted-foreground hover:text-foreground"
-                          }`}
-                        >
-                          <UpvoteIcon className="h-5 w-5" />
-                          <span className="relative inline-flex text-[14px] font-medium">
-                            {/* Static count keeps the layout width stable; the
-                                burst overlays it, absolutely centered, so the
-                                zoom/settle animation never shifts the row. */}
-                            <span className={voteBurst ? "invisible" : ""}>
-                              {displayedScore}
-                            </span>
-                            {voteBurst && (
-                              <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-                                <UpvoteCountBurst
-                                  fromScore={voteBurst.from}
-                                  amount={voteBurst.amount}
-                                  onComplete={() => {
-                                    setVoteBurst(null);
-                                    refetchBalance();
-                                    refetchVotePower();
-                                  }}
-                                />
-                              </span>
-                            )}
-                          </span>
-                        </button>
-
-                        {isPostOnChainFailed && (
-                          <span className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 hidden w-60 -translate-x-1/2 rounded-md border border-border bg-background px-2.5 py-1.5 text-center text-xs leading-relaxed text-muted-foreground shadow-md group-hover:block">
-                            This post has failed to update to the blockchain.
-                            It will be added in some time.
-                          </span>
-                        )}
-
-                        {!isPostOnChainFailed &&
-                          isAuthenticated &&
-                          isCurator !== false &&
-                          hasVotedOnPost === true && (
-                          <span className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 hidden w-52 -translate-x-1/2 rounded-md border border-border bg-background px-2.5 py-1.5 text-center text-xs leading-relaxed text-muted-foreground shadow-md group-hover:block">
-                            You&apos;ve already voted on this post.
-                          </span>
-                        )}
-
-                        {!isPostOnChainFailed && isAuthenticated && isCurator === false && (
-                          <span className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 hidden w-52 -translate-x-1/2 rounded-md border border-border bg-background px-2.5 py-1.5 text-center text-xs leading-relaxed text-muted-foreground shadow-md group-hover:block">
-                            Only curators can upvote posts.
-                          </span>
-                        )}
+                                ? "Only curators can upvote"
+                                : hasVotedOnPost === true
+                                  ? "You've already upvoted this post"
+                                  : null;
+                          const canUpvote = !upvoteBlockedReason;
+                          return (
+                            <Tooltip label={upvoteBlockedReason}>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (canUpvote)
+                                    setShowScorePopover(!showScorePopover);
+                                }}
+                                aria-disabled={!canUpvote}
+                                className={`flex items-center gap-1.5 text-[14px] transition-colors ${
+                                  canUpvote
+                                    ? "text-[#0A0A0A]/60 hover:text-[#0A0A0A]"
+                                    : "cursor-not-allowed text-[#0A0A0A]/35"
+                                }`}
+                              >
+                                <UpvoteIcon className="h-5 w-5" />
+                                <span className="relative inline-flex text-[14px] font-medium">
+                                  {/* Static count keeps the layout width stable; the
+                                      burst overlays it, absolutely centered, so the
+                                      zoom/settle animation never shifts the row. */}
+                                  <span className={voteBurst ? "invisible" : ""}>
+                                    {displayedScore}
+                                  </span>
+                                  {voteBurst && (
+                                    <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+                                      <UpvoteCountBurst
+                                        fromScore={voteBurst.from}
+                                        amount={voteBurst.amount}
+                                        onComplete={() => {
+                                          setVoteBurst(null);
+                                          refetchBalance();
+                                          refetchVotePower();
+                                        }}
+                                      />
+                                    </span>
+                                  )}
+                                </span>
+                              </button>
+                            </Tooltip>
+                          );
+                        })()}
 
                         {showScorePopover &&
                           !isPostOnChainFailed &&

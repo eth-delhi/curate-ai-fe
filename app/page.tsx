@@ -20,6 +20,8 @@ import {
   AmbientDots,
   CustomCursor,
   NeuralCloud,
+  ParticleBirds,
+  CloudGlobe,
 } from "@/components/brutal";
 import { Logo } from "@/components/ui/Logo";
 
@@ -53,21 +55,24 @@ const HEADLINE = [
 function Hero({ animate }: { animate: boolean }) {
   const { scrollY } = useScroll();
   const headY = useTransform(scrollY, [0, 700], [0, -70]);
-  const focalY = useTransform(scrollY, [0, 700], [0, 70]);
   const marqueeSeg = "BUILDING AI × WEB3";
 
   return (
     <section data-hero className="relative min-h-[100svh] w-full overflow-hidden">
-      {/* Focal — neural cloud, right third, behind the headline */}
-      <motion.div
-        className="pointer-events-none absolute inset-y-0 right-0 z-0 w-[92%] sm:w-[74%] lg:w-[62%]"
-        style={{ y: animate ? focalY : 0 }}
-        initial={animate ? { opacity: 0, scale: 0.92 } : false}
-        animate={animate ? { opacity: 1, scale: 1 } : undefined}
-        transition={animate ? { duration: 1.1, delay: 0.7, ease: EXPO } : undefined}
-      >
-        <NeuralCloud still={!animate} />
-      </motion.div>
+      {/* Focal cloud. When animating, the page-level CloudGlobe renders the cloud
+          here (it later rains down into the section-two globe). Under reduced
+          motion CloudGlobe shows only the globe, so keep a static cloud here. */}
+      {!animate && (
+        <div className="pointer-events-none absolute inset-y-0 right-0 z-0 w-[92%] sm:w-[74%] lg:w-[62%]">
+          <NeuralCloud still />
+        </div>
+      )}
+
+      {/* Scroll-scrubbed flock — rests as ambient dust at the baseline, coheres
+          into pigeons and lifts through the cloud as the hero scrolls away */}
+      <div className="pointer-events-none absolute inset-0 z-[1]" aria-hidden>
+        <ParticleBirds still={!animate} />
+      </div>
 
       {/* Nav */}
       <header className="relative z-20 mx-auto flex w-full max-w-[1600px] items-center justify-between px-5 pt-6 sm:px-8 lg:px-12">
@@ -161,7 +166,87 @@ function Hero({ animate }: { animate: boolean }) {
 }
 
 // ===========================================================================
-// SECTION 2 — THE PROBLEM (two-column indictment)
+// SECTION 2 — SIGNAL (cloud → rain → globe, the mission beat)
+// ===========================================================================
+const SIGNAL_HEAD = ["EVERY IDEA", "DESERVES TO", "BE FOUND."];
+
+function SignalSection({ animate }: { animate: boolean }) {
+  const ref = useRef<HTMLElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-25% 0px -25% 0px" });
+  const show = !animate || inView;
+
+  return (
+    // Tall scroll track; the text pins while the page-level CloudGlobe rains the
+    // hero cloud down and reassembles it into the globe in the right zone.
+    <section data-signal ref={ref} className="relative" style={{ height: "160vh" }}>
+      <div className="sticky top-0 flex h-[100svh] w-full items-center overflow-hidden">
+        <div className="mx-auto flex h-full w-full max-w-[1600px] flex-col px-5 sm:px-8 lg:flex-row lg:items-center lg:px-12">
+          {/* Left — mission copy */}
+          <div className="relative z-10 flex w-full shrink-0 flex-col justify-center pt-24 pb-6 lg:w-[43%] lg:pt-0 lg:pb-0 lg:pr-10">
+            <motion.p
+              className={`${display} text-[10px] font-medium uppercase tracking-[0.3em] text-[#0A0A0A]/55 sm:text-[11px]`}
+              initial={animate ? { opacity: 0, y: 12 } : false}
+              animate={show ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 0.5, ease: EXPO }}
+            >
+              From noise to signal
+            </motion.p>
+
+            <h2 className={`${display} mt-5 font-black uppercase leading-[0.9] tracking-[-0.02em] text-[clamp(1.9rem,4.6vw,4rem)]`}>
+              {SIGNAL_HEAD.map((line, i) => (
+                <span key={line} className="block overflow-hidden pr-1">
+                  <motion.span
+                    className="block will-change-transform"
+                    initial={animate ? { y: "112%" } : false}
+                    animate={show ? { y: "0%" } : {}}
+                    transition={{ duration: 0.7, ease: EXPO, delay: animate ? 0.1 + i * 0.1 : 0 }}
+                  >
+                    {line}
+                  </motion.span>
+                </span>
+              ))}
+            </h2>
+
+            <motion.p
+              className={`${display} mt-8 max-w-sm text-[10px] font-medium uppercase leading-[2] tracking-[0.14em] text-[#0A0A0A]/55 sm:text-[11px] sm:leading-[1.9] sm:tracking-[0.2em]`}
+              initial={animate ? { opacity: 0, y: 14 } : false}
+              animate={show ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 0.6, delay: animate ? 0.5 : 0, ease: EXPO }}
+            >
+              We turn scattered writing into structured, provable knowledge — surfaced
+              on merit, for everyone, everywhere.
+            </motion.p>
+
+            <motion.a
+              href="#problem"
+              data-cursor
+              className={`group mt-9 inline-flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-[0.2em] ${display}`}
+              style={{ color: INK }}
+              initial={animate ? { opacity: 0, y: 14 } : false}
+              animate={show ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 0.6, delay: animate ? 0.62 : 0, ease: EXPO }}
+            >
+              <span className="relative">
+                See how it works
+                <span
+                  className="absolute -bottom-1 left-0 h-[1.5px] w-full origin-left transition-all duration-300 ease-out group-hover:h-[3px]"
+                  style={{ backgroundColor: INK }}
+                />
+              </span>
+              <ArrowUpRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+            </motion.a>
+          </div>
+
+          {/* Right — reserves the zone where the page-level CloudGlobe forms */}
+          <div className="w-full flex-1 min-h-[44svh] lg:h-full lg:min-h-0" aria-hidden />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ===========================================================================
+// SECTION 3 — THE PROBLEM (two-column indictment)
 // ===========================================================================
 const COLUMNS = [
   {
@@ -444,8 +529,12 @@ export default function LandingPage() {
     >
       <AmbientDots still={!animate} />
 
+      {/* One particle journey: hero cloud → rain → section-two globe (fixed layer) */}
+      <CloudGlobe still={!animate} />
+
       <div className="relative z-10">
         <Hero animate={animate} />
+        <SignalSection animate={animate} />
         <ProblemSection animate={animate} reduced={reduced} />
       </div>
 

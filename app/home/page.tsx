@@ -1,10 +1,9 @@
 "use client";
 
 import { useEffect } from "react";
-import { MotionConfig, useReducedMotion } from "framer-motion";
+import { MotionConfig } from "framer-motion";
 import { useHomeRevampData } from "@/hooks/useHomeRevampData";
 import HomeNavbar from "@/components/ui/HomeNavbar";
-import { AmbientDots } from "@/components/brutal";
 import {
   FeedSection,
   LeftSidebar,
@@ -14,7 +13,6 @@ import {
 } from "@/components/home-revamp";
 
 export default function HomeRevampPage() {
-  const reduced = useReducedMotion();
   const {
     feedPosts,
     activeTab,
@@ -53,7 +51,6 @@ export default function HomeRevampPage() {
   return (
     <MotionConfig reducedMotion="user">
     <div className="home-page relative min-h-screen bg-background text-foreground">
-      <AmbientDots still={!!reduced} />
       <style jsx global>{`
         /* Scoped to this page subtree so we don’t change app-wide metrics after client nav. */
         .home-page {
