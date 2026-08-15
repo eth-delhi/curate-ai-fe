@@ -94,6 +94,22 @@
   --radius: 0rem; /* sharp corners everywhere; rounded-md/lg collapse to 0 */
 }
 
+/* Profile / wallet ("/profile/[id]") — same reconciled brutalist canvas as the
+   home feed so the app reads as one product. Cool paper, ink, hairline rules,
+   sharp token corners (explicit rounded-full keeps avatars circular). */
+.profile-page {
+  --background: #F5F4F0;
+  --foreground: #0A0A0A;
+  --muted: #EAE9E3;
+  --muted-foreground: #57534B;
+  --border: rgba(10, 10, 10, 0.16);
+  --input: rgba(10, 10, 10, 0.16);
+  --accent: #E8E7E1;
+  --accent-foreground: #0A0A0A;
+  --ring: #0A0A0A;
+  --radius: 0rem;
+}
+
 /* Landing page ("/") — keeps the light paper background but swaps the brand
    blue for ink-black across every component that reads these tokens (navbar,
    buttons, eyebrow labels, marquee, progress bar). Monochrome, editorial, no

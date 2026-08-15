@@ -4,6 +4,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Loader2, Users, Trophy, FileText } from "lucide-react";
 import { CommentIcon, FlagIcon, ClapIcon, WalletIcon } from "@/components/icons";
+import { display } from "@/components/brutal";
 import { useAccount, useBalance } from "wagmi";
 import {
   useReadCuratAiTokenBalanceOf,
@@ -170,11 +171,11 @@ const WalletWidget = ({
 
   if (!displayAddress) {
     return (
-      <div className="bg-muted rounded-lg p-3 border border-border">
-        <p className="text-xs text-muted-foreground">
+      <div className="border-t border-[color:var(--border)] pt-5">
+        <p className="text-[12px] text-[#0A0A0A]/55">
           {isOwnProfile
-            ? "Connect your wallet to view balances"
-            : "This user has no wallet address"}
+            ? "Connect your wallet to view balances."
+            : "This user has no wallet address."}
         </p>
       </div>
     );
@@ -183,58 +184,57 @@ const WalletWidget = ({
   const shortAddress = `${displayAddress.slice(0, 6)}…${displayAddress.slice(-4)}`;
 
   return (
-    <div className="bg-muted rounded-lg p-3 border border-border">
+    <div className="border-t border-[color:var(--border)] pt-5">
       {isLoading ? (
-          <div className="flex items-center justify-center py-2">
-            <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+        <div className="flex items-center justify-center py-2">
+          <Loader2 className="w-4 h-4 animate-spin text-[#0A0A0A]/50" />
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {/* Wallet address — attributed to the viewed account. */}
+          {!isOwnProfile && (
+            <div className="flex items-center gap-1.5 border-b border-[color:var(--border)] pb-3 text-[#0A0A0A]/55">
+              <WalletIcon className="h-3.5 w-3.5" />
+              <span className="font-mono text-[11px]">{shortAddress}</span>
+            </div>
+          )}
+
+          {/* CAT balance */}
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#0A0A0A]/55">
+              CAT balance
+            </p>
+            <div className="mt-1 flex items-baseline gap-2">
+              <span className={`${display} text-[26px] font-black leading-none tracking-tight text-[#0A0A0A] tabular-nums`}>
+                {formattedCatBalance}
+              </span>
+              <span className="text-[11px] text-[#0A0A0A]/45">${catUsdValue}</span>
+            </div>
           </div>
-        ) : (
-          <div className="space-y-2.5">
-            {/* Wallet address — shown when viewing another user's balances so
-                the numbers are clearly attributed to that account. */}
-            {!isOwnProfile && (
-              <div className="flex items-center gap-1.5 border-b border-border pb-2.5 text-muted-foreground">
-                <WalletIcon className="h-3.5 w-3.5" />
-                <span className="font-mono text-xs">{shortAddress}</span>
-              </div>
-            )}
 
-            {/* CAT Balance */}
-            <div className="space-y-0.5">
-              <div className="flex items-center justify-between">
-                <p className="text-xs text-muted-foreground">CAT</p>
-                <p className="text-xs font-semibold text-foreground">
-                  ${catUsdValue}
-                </p>
-              </div>
-              <p className="text-sm font-bold text-foreground">
-                {formattedCatBalance} CAT
-              </p>
+          {/* SONIC balance */}
+          <div className="border-t border-[color:var(--border)] pt-4">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#0A0A0A]/55">
+              SONIC balance
+            </p>
+            <div className="mt-1 flex items-baseline gap-2">
+              <span className={`${display} text-[22px] font-black leading-none tracking-tight text-[#0A0A0A] tabular-nums`}>
+                {formattedSonicBalance}
+              </span>
+              <span className="text-[11px] text-[#0A0A0A]/45">${sonicUsdValue}</span>
             </div>
+          </div>
 
-            {/* Sonic Balance */}
-            <div className="space-y-0.5">
+          {/* Claimable Rewards — only for the signed-in user's own wallet */}
+          {isOwnProfile && (
+            <div className="border-t border-[color:var(--border)] pt-4">
               <div className="flex items-center justify-between">
-                <p className="text-xs text-muted-foreground">SONIC</p>
-                <p className="text-xs font-semibold text-foreground">
-                  ${sonicUsdValue}
-                </p>
-              </div>
-              <p className="text-sm font-bold text-foreground">
-                {formattedSonicBalance} SONIC
-              </p>
-            </div>
-
-            {/* Claimable Rewards — only for the signed-in user's own wallet */}
-            {isOwnProfile && (
-            <div className="space-y-1.5 border-t border-border pt-2.5">
-              <div className="flex items-center justify-between">
-                <p className="text-xs text-muted-foreground">
+                <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#0A0A0A]/55">
                   Claimable rewards
-                </p>
-                <p className="text-sm font-bold text-foreground">
+                </span>
+                <span className={`${display} text-[13px] font-bold text-[#0A0A0A] tabular-nums`}>
                   {isClaimableLoading ? "…" : `${formattedClaimable} CAT`}
-                </p>
+                </span>
               </div>
               <SuccessButton
                 onClick={handleClaim}
@@ -246,15 +246,15 @@ const WalletWidget = ({
                     Claiming...
                   </>
                 }
-                className="flex w-full items-center justify-center gap-1.5 rounded-md bg-primary px-2 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+                className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-none border border-[#0A0A0A] bg-transparent px-2 py-2 text-[11px] font-bold uppercase tracking-[0.14em] text-[#0A0A0A] transition-colors duration-150 hover:bg-[#0A0A0A] hover:text-[#F5F4F0] disabled:cursor-not-allowed disabled:opacity-40"
               >
                 Claim Rewards
               </SuccessButton>
             </div>
-            )}
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 };
 
@@ -284,11 +284,11 @@ const UserItem = ({ user }: { user: FollowUser }) => {
   return (
     <Link
       href={`/profile/${user.uuid}`}
-      className="flex items-center gap-2 py-2 hover:bg-accent rounded px-1 transition-colors duration-150"
+      className="group flex items-center gap-2.5 py-2"
     >
-      <Avatar className="w-8 h-8 flex-shrink-0">
+      <Avatar className="h-8 w-8 flex-shrink-0">
         <AvatarImage src={avatarUrl || undefined} alt={displayName} />
-        <AvatarFallback className="bg-muted text-muted-foreground text-xs">
+        <AvatarFallback className="bg-[#0A0A0A]/10 text-[11px] font-bold text-[#0A0A0A]">
           {displayName
             .split(" ")
             .map((n) => n[0])
@@ -296,11 +296,11 @@ const UserItem = ({ user }: { user: FollowUser }) => {
             .toUpperCase()}
         </AvatarFallback>
       </Avatar>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm text-foreground font-medium truncate">
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[13px] font-semibold text-[#0A0A0A] underline-offset-4 group-hover:underline">
           {displayName}
         </p>
-        <p className="text-xs text-muted-foreground truncate">{username}</p>
+        <p className="truncate text-[11px] text-[#0A0A0A]/45">{username}</p>
       </div>
     </Link>
   );
@@ -316,8 +316,6 @@ const StatItem = ({
   icon: Icon,
   label,
   value,
-  highlighted = false,
-  small = false,
 }: {
   icon: React.ElementType;
   label: string;
@@ -325,44 +323,14 @@ const StatItem = ({
   highlighted?: boolean;
   small?: boolean;
 }) => (
-  <div
-    className={`flex items-center justify-between w-full ${
-      highlighted ? "py-3 -mx-6 px-6" : small ? "py-1.5" : "py-2"
-    }`}
-  >
-    <div className="flex items-center gap-2">
-      <Icon
-        className={`${
-          highlighted
-            ? "w-5 h-5 text-foreground"
-            : small
-            ? "w-3.5 h-3.5 text-muted-foreground"
-            : "w-4 h-4 text-muted-foreground"
-        }`}
-      />
-      <p
-        className={`${
-          highlighted
-            ? "text-base font-medium text-foreground"
-            : small
-            ? "text-xs text-muted-foreground"
-            : "text-sm text-muted-foreground"
-        }`}
-      >
-        {label}:
-      </p>
-    </div>
-    <p
-      className={`${
-        highlighted
-          ? "text-base font-semibold text-foreground"
-          : small
-          ? "text-xs font-semibold text-foreground"
-          : "text-sm font-semibold text-foreground"
-      }`}
-    >
+  <div className="flex items-center justify-between border-b border-[color:var(--border)] py-2.5">
+    <span className="flex items-center gap-2 text-[10px] uppercase tracking-[0.14em] text-[#0A0A0A]/55">
+      <Icon className="h-3.5 w-3.5 shrink-0 text-[#0A0A0A]/45" />
+      {label}
+    </span>
+    <span className={`${display} text-[13px] font-bold text-[#0A0A0A] tabular-nums`}>
       {value}
-    </p>
+    </span>
   </div>
 );
 
@@ -409,84 +377,50 @@ export const ProfileLeftSidebar = ({
             isOwnProfile={isOwnProfile}
           />
 
-          <div className="mt-4 space-y-1">
-            <StatItem
-              icon={FileText}
-              label="Total posts"
-              value={totalPosts}
-              small={true}
-            />
-            <StatItem
-              icon={Trophy}
-              label="Total scores"
-              value={totalScores}
-              small={true}
-            />
-            <StatItem
-              icon={CommentIcon}
-              label="Comments"
-              value={totalComments}
-              small={true}
-            />
-            <StatItem icon={FlagIcon} label="Flags" value={totalFlags} small={true} />
-            <StatItem icon={ClapIcon} label="Claps" value={totalClaps} small={true} />
+          <div className="mt-6 border-t border-[color:var(--border)]">
+            <StatItem icon={FileText} label="Total posts" value={totalPosts} />
+            <StatItem icon={Trophy} label="Total scores" value={totalScores} />
+            <StatItem icon={CommentIcon} label="Comments" value={totalComments} />
+            <StatItem icon={FlagIcon} label="Flags" value={totalFlags} />
+            <StatItem icon={ClapIcon} label="Claps" value={totalClaps} />
           </div>
         </div>
 
         {/* Followers/Following */}
         <div className="border-t border-border pt-6">
           {/* Tabs */}
-          <div className="flex gap-1 mb-4 border-b border-border">
-            <button
-              onClick={() => setActiveTab("followers")}
-              className={`flex-1 py-2 px-3 text-sm font-medium transition-colors duration-150 relative ${
-                activeTab === "followers"
-                  ? "text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Followers
-              {activeTab === "followers" && (
-                <motion.div
-                  layoutId="profile-sidebar-tab-indicator"
-                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"
-                  transition={{ type: "spring", stiffness: 500, damping: 35 }}
-                />
-              )}
-            </button>
-            <button
-              onClick={() => setActiveTab("following")}
-              className={`flex-1 py-2 px-3 text-sm font-medium transition-colors duration-150 relative ${
-                activeTab === "following"
-                  ? "text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Following
-              {activeTab === "following" && (
-                <motion.div
-                  layoutId="profile-sidebar-tab-indicator"
-                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"
-                  transition={{ type: "spring", stiffness: 500, damping: 35 }}
-                />
-              )}
-            </button>
+          <div className="mb-4 flex gap-6 border-b border-[color:var(--border)]">
+            {(["followers", "following"] as const).map((t) => (
+              <button
+                key={t}
+                onClick={() => setActiveTab(t)}
+                className={`relative py-2.5 text-[11px] font-bold uppercase tracking-[0.16em] transition-colors duration-150 ${
+                  activeTab === t
+                    ? "text-[#0A0A0A]"
+                    : "text-[#0A0A0A]/45 hover:text-[#0A0A0A]"
+                }`}
+              >
+                {t}
+                {activeTab === t && (
+                  <motion.div
+                    layoutId="profile-sidebar-tab-indicator"
+                    className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#0A0A0A]"
+                    transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                  />
+                )}
+              </button>
+            ))}
           </div>
 
           {/* Count Display */}
           <div className="mb-4">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Users className="w-4 h-4" />
-              <span>
-                {activeTab === "followers"
-                  ? `${followersCount} ${
-                      followersCount === 1 ? "follower" : "followers"
-                    }`
-                  : `${followingCount} ${
-                      followingCount === 1 ? "following" : "following"
-                    }`}
-              </span>
-            </div>
+            <span className="text-[10px] uppercase tracking-[0.16em] text-[#0A0A0A]/55">
+              {activeTab === "followers"
+                ? `${followersCount} ${
+                    followersCount === 1 ? "Follower" : "Followers"
+                  }`
+                : `${followingCount} Following`}
+            </span>
           </div>
 
           {/* List */}
@@ -497,8 +431,10 @@ export const ProfileLeftSidebar = ({
                   <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
                 </div>
               ) : followers.length === 0 ? (
-                <div className="text-center py-8">
-                  <p className="text-sm text-muted-foreground">No followers yet</p>
+                <div className="py-12 text-center">
+                  <p className="text-[11px] uppercase tracking-[0.16em] text-[#0A0A0A]/45">
+                    No followers yet
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-1">
@@ -512,8 +448,10 @@ export const ProfileLeftSidebar = ({
                 <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
               </div>
             ) : following.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-sm text-muted-foreground">Not following anyone yet</p>
+              <div className="py-12 text-center">
+                <p className="text-[11px] uppercase tracking-[0.16em] text-[#0A0A0A]/45">
+                  Not following anyone yet
+                </p>
               </div>
             ) : (
               <div className="space-y-1">

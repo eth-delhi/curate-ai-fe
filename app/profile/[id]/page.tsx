@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import HomeNavbar from "@/components/ui/HomeNavbar";
+import { AmbientDots, display } from "@/components/brutal";
 import { usePosts } from "@/hooks/api/posts";
 import {
   useUpdateProfile,
@@ -302,40 +303,54 @@ function WalletTab() {
 
   return (
     <div className="space-y-6">
-      {/* Transfer Form */}
-      <div className="bg-background rounded-xl p-6 border border-border shadow-sm">
-        <div className="mb-6">
-          <h2 className="text-xl font-bold text-foreground">Send Tokens</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
+      {/* Transfer form — sits on the page, no card */}
+      <div>
+        <div className="mb-6 border-t border-[color:var(--border)] pt-8">
+          <h2 className={`${display} text-2xl font-black uppercase tracking-tight text-[#0A0A0A]`}>
+            Send Tokens
+          </h2>
+          <p className="mt-1.5 text-[13px] text-[#0A0A0A]/55">
             Transfer {TOKEN_DISPLAY_NAMES.CAT} or {TOKEN_DISPLAY_NAMES.SONIC} to
             another wallet address or CurateAI username.
           </p>
         </div>
 
-        {/* Token Type Tabs */}
-        <div className="mb-6">
-          <div className="flex gap-2 border-b border-border">
-            <button
-              onClick={() => setActiveTokenTab("CAT")}
-              className={`px-4 py-2 text-sm font-medium transition-colors ${
-                activeTokenTab === "CAT"
-                  ? "text-primary border-b-2 border-primary"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {TOKEN_DISPLAY_NAMES.CAT}
-            </button>
-            <button
-              onClick={() => setActiveTokenTab("SONIC")}
-              className={`px-4 py-2 text-sm font-medium transition-colors ${
-                activeTokenTab === "SONIC"
-                  ? "text-primary border-b-2 border-primary"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {TOKEN_DISPLAY_NAMES.SONIC}
-            </button>
-          </div>
+        {/* Token type sub-tabs */}
+        <div className="mb-6 flex gap-6 border-b border-[color:var(--border)]">
+          <button
+            onClick={() => setActiveTokenTab("CAT")}
+            className={`relative py-2.5 text-[11px] font-bold uppercase tracking-[0.16em] transition-colors ${
+              activeTokenTab === "CAT"
+                ? "text-[#0A0A0A]"
+                : "text-[#0A0A0A]/45 hover:text-[#0A0A0A]"
+            }`}
+          >
+            {TOKEN_DISPLAY_NAMES.CAT}
+            {activeTokenTab === "CAT" && (
+              <motion.span
+                layoutId="wallet-token-tab"
+                className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#0A0A0A]"
+                transition={{ type: "spring", stiffness: 500, damping: 35 }}
+              />
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTokenTab("SONIC")}
+            className={`relative py-2.5 text-[11px] font-bold uppercase tracking-[0.16em] transition-colors ${
+              activeTokenTab === "SONIC"
+                ? "text-[#0A0A0A]"
+                : "text-[#0A0A0A]/45 hover:text-[#0A0A0A]"
+            }`}
+          >
+            {TOKEN_DISPLAY_NAMES.SONIC}
+            {activeTokenTab === "SONIC" && (
+              <motion.span
+                layoutId="wallet-token-tab"
+                className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#0A0A0A]"
+                transition={{ type: "spring", stiffness: 500, damping: 35 }}
+              />
+            )}
+          </button>
         </div>
 
         {/* Transfer Form */}
@@ -344,7 +359,7 @@ function WalletTab() {
             <div className="flex items-center justify-between mb-2">
               <label
                 htmlFor="recipient"
-                className="block text-sm font-medium text-foreground"
+                className="block text-[10px] font-bold uppercase tracking-[0.16em] text-[#0A0A0A]/55"
               >
                 Send by
               </label>
@@ -352,10 +367,10 @@ function WalletTab() {
                 <DropdownMenuTrigger asChild>
                   <button
                     type="button"
-                    className="flex items-center gap-1 text-sm font-medium text-primary hover:text-primary/80"
+                    className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-[0.12em] text-[#0A0A0A] transition-opacity duration-150 hover:opacity-70"
                   >
                     {sendMode === "address" ? "Wallet Address" : "Username"}
-                    <ChevronDown className="w-4 h-4" />
+                    <ChevronDown className="w-3.5 h-3.5" />
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
@@ -377,7 +392,7 @@ function WalletTab() {
                   placeholder="0x..."
                   value={recipientAddress}
                   onChange={(e) => setRecipientAddress(e.target.value)}
-                  className="border-border font-mono text-sm"
+                  className="rounded-none border-0 border-b border-[#0A0A0A] bg-transparent px-0 font-mono text-[13px] shadow-none transition-all duration-150 placeholder:uppercase placeholder:tracking-[0.1em] placeholder:text-[#0A0A0A]/40 focus-visible:border-b-2 focus-visible:ring-0"
                 />
                 {isAddress(debouncedAddress) && (
                   <div className="mt-2 text-sm">
@@ -387,12 +402,12 @@ function WalletTab() {
                         Checking address...
                       </span>
                     ) : usernameLookup ? (
-                      <span className="flex items-center gap-1 text-green-600">
+                      <span className="flex items-center gap-1 text-[#0A0A0A]">
                         <Check className="w-3.5 h-3.5" />
                         Sending to @{usernameLookup.username}
                       </span>
                     ) : (
-                      <span className="flex items-start gap-1 text-amber-600">
+                      <span className="flex items-start gap-1 text-[#0A0A0A]/55">
                         <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
                         This wallet isn&apos;t part of the CurateAI ecosystem
                         yet, but you can still send — it&apos;s a standard
@@ -410,7 +425,7 @@ function WalletTab() {
                   placeholder="username"
                   value={recipientUsername}
                   onChange={(e) => setRecipientUsername(e.target.value)}
-                  className="border-border text-sm"
+                  className="rounded-none border-0 border-b border-[#0A0A0A] bg-transparent px-0 text-[14px] shadow-none transition-all duration-150 placeholder:uppercase placeholder:tracking-[0.1em] placeholder:text-[#0A0A0A]/40 focus-visible:border-b-2 focus-visible:ring-0"
                 />
                 {debouncedUsername.trim().length > 0 && (
                   <div className="mt-2 text-sm">
@@ -420,7 +435,7 @@ function WalletTab() {
                         Looking up user...
                       </span>
                     ) : walletLookup ? (
-                      <span className="flex items-center gap-1 text-green-600 font-mono">
+                      <span className="flex items-center gap-1 text-[#0A0A0A] font-mono">
                         <Check className="w-3.5 h-3.5 shrink-0" />
                         Sending to {walletLookup.walletAddress}
                       </span>
@@ -439,7 +454,7 @@ function WalletTab() {
           <div>
             <label
               htmlFor="amount"
-              className="block text-sm font-medium text-foreground mb-2"
+              className="block text-[10px] font-bold uppercase tracking-[0.16em] text-[#0A0A0A]/55"
             >
               Amount (
               {activeTokenTab === "CAT"
@@ -447,7 +462,7 @@ function WalletTab() {
                 : TOKEN_DISPLAY_NAMES.SONIC}
               )
             </label>
-            <div className="relative">
+            <div className="relative mt-1">
               <Input
                 id="amount"
                 type="number"
@@ -455,15 +470,15 @@ function WalletTab() {
                 placeholder="0.00"
                 value={transferAmount}
                 onChange={(e) => setTransferAmount(e.target.value)}
-                className="border-border"
+                className="rounded-none border-0 border-b border-[#0A0A0A] bg-transparent px-0 pr-16 text-[16px] shadow-none transition-all duration-150 placeholder:text-[#0A0A0A]/40 focus-visible:border-b-2 focus-visible:ring-0"
               />
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+              <div className="absolute right-0 top-1/2 -translate-y-1/2 text-[11px] font-bold uppercase tracking-[0.14em] text-[#0A0A0A]/45">
                 {activeTokenTab === "CAT"
                   ? TOKEN_DISPLAY_NAMES.CAT
                   : TOKEN_DISPLAY_NAMES.SONIC}
               </div>
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="mt-2 text-right text-[10px] uppercase tracking-[0.14em] text-[#0A0A0A]/45">
               Available:{" "}
               {activeTokenTab === "CAT"
                 ? formatCatBalance()
@@ -498,7 +513,7 @@ function WalletTab() {
                 Transferring...
               </>
             }
-            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+            className="w-full rounded-none border border-[#0A0A0A] bg-[#0A0A0A] text-[12px] font-bold uppercase tracking-[0.16em] text-[#F5F4F0] transition-colors duration-150 hover:bg-[#F5F4F0] hover:text-[#0A0A0A]"
           >
             <Send className="w-4 h-4 mr-2" />
             Transfer{" "}
@@ -508,7 +523,7 @@ function WalletTab() {
           </SuccessButton>
 
           {!userAddress && (
-            <p className="text-sm text-amber-600 text-center">
+            <p className="text-sm text-[#0A0A0A]/55 text-center">
               Please connect your wallet to transfer tokens
             </p>
           )}
@@ -984,7 +999,8 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
     followUserMutation.isPending || unfollowUserMutation.isPending;
 
   return (
-    <div className="profile-page min-h-screen bg-background text-foreground">
+    <div className="profile-page relative min-h-screen bg-background text-foreground">
+      <AmbientDots still={false} />
       <style jsx global>{`
         .profile-page {
           font-family: var(--font-sans), system-ui, sans-serif;
@@ -1026,11 +1042,11 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
       <HomeNavbar maxWidth={1400} />
 
       {/* Main Content Area - Below Navbar */}
-      <div className="pt-[61px]">
+      <div className="relative z-10 pt-[61px]">
         <div className="mx-auto flex w-full max-w-[1400px] items-start px-4 md:px-6">
           <ProfileLeftSidebar userUuid={id} isOwnProfile={isOwnProfile} />
           {/* Main Content */}
-          <main className="min-w-0 flex-1 py-8 lg:border-l lg:border-border lg:pl-10">
+          <main className="min-w-0 flex-1 py-8 lg:border-l lg:border-[color:var(--border)] lg:pl-10">
               {/* Profile Header */}
               {isProfileLoading ? (
                 <div className="mb-8 border-b border-border pb-8">
@@ -1044,7 +1060,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
               ) : isProfileError ? (
                 <div className="mb-8 border-b border-border pb-8">
                   <div className="flex flex-col items-center justify-center py-12">
-                    <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
+                    <AlertCircle className="w-12 h-12 text-[#0A0A0A]/70 mb-4" />
                     <p className="text-muted-foreground">Failed to load profile</p>
                   </div>
                 </div>
@@ -1110,62 +1126,77 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                     <div className="flex-grow flex flex-col md:flex-row gap-6">
                       {/* Left side - Name, Bio, Info */}
                       <div className="flex-1">
-                        <div className="mb-4">
-                          <h1 className="text-3xl font-serif font-bold text-foreground mb-1">
-                            {userData.name}
-                          </h1>
-                          <p className="text-muted-foreground">@{userData.username}</p>
+                        <h1 className={`${display} text-[clamp(1.9rem,4vw,3rem)] font-black uppercase leading-[0.95] tracking-tight text-[#0A0A0A]`}>
+                          {userData.name}
+                        </h1>
+
+                        {/* Single bulleted meta row */}
+                        <div className="mt-3 flex flex-wrap items-center gap-x-2.5 gap-y-1.5 text-[11px] uppercase tracking-[0.14em] text-[#0A0A0A]/55">
+                          <span>@{userData.username}</span>
+
                           {userData.walletAddress && (
-                            <button
-                              type="button"
-                              onClick={() =>
-                                handleCopyWalletAddress(userData.walletAddress)
-                              }
-                              title={userData.walletAddress}
-                              className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-                            >
-                              <WalletIcon className="h-3.5 w-3.5" />
-                              <span className="font-mono">
-                                {`${userData.walletAddress.slice(0, 6)}...${userData.walletAddress.slice(-4)}`}
+                            <>
+                              <span className="text-[#0A0A0A]/30">·</span>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleCopyWalletAddress(userData.walletAddress)
+                                }
+                                title={userData.walletAddress}
+                                className="inline-flex items-center gap-1.5 normal-case transition-colors duration-150 hover:text-[#0A0A0A]"
+                              >
+                                <WalletIcon className="h-3.5 w-3.5" />
+                                <span className="font-mono">
+                                  {`${userData.walletAddress.slice(0, 6)}...${userData.walletAddress.slice(-4)}`}
+                                </span>
+                                {isAddressCopied ? (
+                                  <Check className="h-3.5 w-3.5" />
+                                ) : (
+                                  <Copy className="h-3.5 w-3.5" />
+                                )}
+                              </button>
+                            </>
+                          )}
+
+                          {userData.location && (
+                            <>
+                              <span className="text-[#0A0A0A]/30">·</span>
+                              <span className="inline-flex items-center gap-1.5">
+                                <MapPin className="h-3.5 w-3.5" />
+                                {userData.location}
                               </span>
-                              {isAddressCopied ? (
-                                <Check className="h-3.5 w-3.5 text-primary" />
-                              ) : (
-                                <Copy className="h-3.5 w-3.5" />
-                              )}
-                            </button>
+                            </>
+                          )}
+
+                          {userData.website && (
+                            <>
+                              <span className="text-[#0A0A0A]/30">·</span>
+                              <a
+                                href={userData.website}
+                                className="inline-flex items-center gap-1.5 normal-case underline-offset-4 transition-colors duration-150 hover:text-[#0A0A0A] hover:underline"
+                              >
+                                <LinkIcon className="h-3.5 w-3.5" />
+                                {userData.website.replace(/^https?:\/\//, "")}
+                              </a>
+                            </>
+                          )}
+
+                          {userData.joinDate && (
+                            <>
+                              <span className="text-[#0A0A0A]/30">·</span>
+                              <span className="inline-flex items-center gap-1.5">
+                                <Calendar className="h-3.5 w-3.5" />
+                                Joined {userData.joinDate}
+                              </span>
+                            </>
                           )}
                         </div>
 
                         {userData.bio && (
-                          <p className="text-foreground mb-4">{userData.bio}</p>
+                          <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-[#0A0A0A]/70">
+                            {userData.bio}
+                          </p>
                         )}
-
-                        <div className="flex flex-wrap gap-y-3 gap-x-6 text-sm text-muted-foreground">
-                          {userData.location && (
-                            <div className="flex items-center">
-                              <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
-                              {userData.location}
-                            </div>
-                          )}
-                          {userData.website && (
-                            <div className="flex items-center">
-                              <LinkIcon className="h-4 w-4 mr-2 text-muted-foreground" />
-                              <a
-                                href={userData.website}
-                                className="text-muted-foreground hover:underline"
-                              >
-                                {userData.website.replace(/^https?:\/\//, "")}
-                              </a>
-                            </div>
-                          )}
-                          {userData.joinDate && (
-                            <div className="flex items-center">
-                              <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
-                              Joined {userData.joinDate}
-                            </div>
-                          )}
-                        </div>
                       </div>
 
                       {/* Right side - Follow button */}
@@ -1176,10 +1207,10 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                               isFollowing ? handleUnfollow : handleFollow
                             }
                             disabled={isFollowPending || isFollowStatusLoading}
-                            className={`${
+                            className={`rounded-none border border-[#0A0A0A] px-5 text-[11px] font-bold uppercase tracking-[0.14em] transition-colors duration-150 ${
                               isFollowing
-                                ? "bg-muted hover:bg-muted text-foreground"
-                                : "bg-primary hover:bg-primary/90 text-primary-foreground"
+                                ? "bg-[#0A0A0A] text-[#F5F4F0] hover:bg-[#F5F4F0] hover:text-[#0A0A0A]"
+                                : "bg-transparent text-[#0A0A0A] hover:bg-[#0A0A0A] hover:text-[#F5F4F0]"
                             }`}
                           >
                             {isFollowPending ? (
@@ -1217,7 +1248,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                 {isOwnProfile ? (
                   <div className="w-full">
                     {/* Tabs */}
-                    <div className="mb-6 flex gap-8 overflow-x-auto border-b border-border">
+                    <div className="mb-6 flex gap-8 overflow-x-auto border-b border-[color:var(--border)]">
                       {[
                         { key: "posts", label: "Posts" },
                         { key: "drafts", label: "Drafts" },
@@ -1229,17 +1260,17 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                         <button
                           key={tab.key}
                           onClick={() => setActiveTab(tab.key)}
-                          className={`relative shrink-0 whitespace-nowrap py-4 text-[15px] font-medium transition-colors ${
+                          className={`relative shrink-0 whitespace-nowrap py-4 text-[11px] font-bold uppercase tracking-[0.16em] transition-colors ${
                             activeTab === tab.key
-                              ? "text-primary"
-                              : "text-muted-foreground hover:text-foreground"
+                              ? "text-[#0A0A0A]"
+                              : "text-[#0A0A0A]/45 hover:text-[#0A0A0A]"
                           }`}
                         >
                           {tab.label}
                           {activeTab === tab.key && (
                             <motion.span
                               layoutId="profile-tab-indicator-own"
-                              className="absolute bottom-0 left-0 right-0 h-[2px] bg-primary"
+                              className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#0A0A0A]"
                               transition={{ type: "spring", stiffness: 500, damping: 35 }}
                             />
                           )}
@@ -1261,7 +1292,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                             </div>
                           ) : isPostsError ? (
                             <div className="flex flex-col items-center justify-center py-12">
-                              <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
+                              <AlertCircle className="w-12 h-12 text-[#0A0A0A]/70 mb-4" />
                               <p className="text-muted-foreground">
                                 Failed to load posts
                               </p>
@@ -1293,7 +1324,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                             </div>
                           ) : draftsError ? (
                             <div className="flex flex-col items-center justify-center py-12">
-                              <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
+                              <AlertCircle className="w-12 h-12 text-[#0A0A0A]/70 mb-4" />
                               <p className="text-muted-foreground">
                                 Failed to load drafts
                               </p>
@@ -1358,7 +1389,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                             </div>
                           ) : isScoredPostsError ? (
                             <div className="flex flex-col items-center justify-center py-12">
-                              <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
+                              <AlertCircle className="w-12 h-12 text-[#0A0A0A]/70 mb-4" />
                               <p className="text-muted-foreground">
                                 Failed to load scored posts
                               </p>
@@ -1382,8 +1413,8 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
 
                       {/* Settings Tab */}
                       {activeTab === "settings" && (
-                        <div className="rounded-xl border border-border bg-background p-6 shadow-sm sm:p-8">
-                          <h2 className="text-xl font-bold text-foreground mb-6">
+                        <div className="border-t border-[color:var(--border)] pt-8">
+                          <h2 className={`${display} mb-6 text-2xl font-black uppercase tracking-tight text-[#0A0A0A]`}>
                             Profile Settings
                           </h2>
                           <form onSubmit={handleSubmit} className="space-y-6">
@@ -1392,21 +1423,21 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                               <div>
                                 <label
                                   htmlFor="username"
-                                  className="block text-sm font-medium text-foreground mb-2"
+                                  className="mb-2 block text-[10px] font-bold uppercase tracking-[0.16em] text-[#0A0A0A]/55"
                                 >
                                   Username{" "}
-                                  <span className="text-red-500">*</span>
+                                  <span className="text-[#0A0A0A]/70">*</span>
                                 </label>
                                 <Input
                                   id="username"
                                   name="username"
                                   value={formData.username}
                                   onChange={handleInputChange}
-                                  className="border-border"
+                                  className="rounded-none border-0 border-b border-[#0A0A0A] bg-transparent px-0 shadow-none transition-all duration-150 placeholder:uppercase placeholder:tracking-[0.1em] placeholder:text-[#0A0A0A]/40 focus-visible:border-b-2 focus-visible:ring-0"
                                   maxLength={30}
                                   required
                                 />
-                                <p className="text-xs text-muted-foreground mt-1">
+                                <p className="mt-2 text-[10px] uppercase tracking-[0.12em] text-[#0A0A0A]/40">
                                   Max 30 characters
                                 </p>
                               </div>
@@ -1415,21 +1446,21 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                               <div>
                                 <label
                                   htmlFor="fullName"
-                                  className="block text-sm font-medium text-foreground mb-2"
+                                  className="mb-2 block text-[10px] font-bold uppercase tracking-[0.16em] text-[#0A0A0A]/55"
                                 >
                                   Full Name{" "}
-                                  <span className="text-red-500">*</span>
+                                  <span className="text-[#0A0A0A]/70">*</span>
                                 </label>
                                 <Input
                                   id="fullName"
                                   name="fullName"
                                   value={formData.fullName}
                                   onChange={handleInputChange}
-                                  className="border-border"
+                                  className="rounded-none border-0 border-b border-[#0A0A0A] bg-transparent px-0 shadow-none transition-all duration-150 placeholder:uppercase placeholder:tracking-[0.1em] placeholder:text-[#0A0A0A]/40 focus-visible:border-b-2 focus-visible:ring-0"
                                   maxLength={100}
                                   required
                                 />
-                                <p className="text-xs text-muted-foreground mt-1">
+                                <p className="mt-2 text-[10px] uppercase tracking-[0.12em] text-[#0A0A0A]/40">
                                   Max 100 characters
                                 </p>
                               </div>
@@ -1448,11 +1479,11 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                                 name="bio"
                                 value={formData.bio}
                                 onChange={handleInputChange}
-                                className="border-border min-h-[100px]"
+                                className="min-h-[100px] rounded-none border-0 border-b border-[#0A0A0A] bg-transparent px-0 shadow-none transition-all duration-150 placeholder:uppercase placeholder:tracking-[0.1em] placeholder:text-[#0A0A0A]/40 focus-visible:border-b-2 focus-visible:ring-0"
                                 maxLength={300}
                                 rows={4}
                               />
-                              <p className="text-xs text-muted-foreground mt-1">
+                              <p className="mt-2 text-[10px] uppercase tracking-[0.12em] text-[#0A0A0A]/40">
                                 {formData.bio.length}/300 characters
                               </p>
                             </div>
@@ -1462,7 +1493,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                               <div>
                                 <label
                                   htmlFor="location"
-                                  className="block text-sm font-medium text-foreground mb-2"
+                                  className="mb-2 block text-[10px] font-bold uppercase tracking-[0.16em] text-[#0A0A0A]/55"
                                 >
                                   Location
                                 </label>
@@ -1471,11 +1502,11 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                                   name="location"
                                   value={formData.location}
                                   onChange={handleInputChange}
-                                  className="border-border"
+                                  className="rounded-none border-0 border-b border-[#0A0A0A] bg-transparent px-0 shadow-none transition-all duration-150 placeholder:uppercase placeholder:tracking-[0.1em] placeholder:text-[#0A0A0A]/40 focus-visible:border-b-2 focus-visible:ring-0"
                                   maxLength={100}
                                   placeholder="e.g., San Francisco, CA"
                                 />
-                                <p className="text-xs text-muted-foreground mt-1">
+                                <p className="mt-2 text-[10px] uppercase tracking-[0.12em] text-[#0A0A0A]/40">
                                   Max 100 characters
                                 </p>
                               </div>
@@ -1484,7 +1515,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                               <div>
                                 <label
                                   htmlFor="website"
-                                  className="block text-sm font-medium text-foreground mb-2"
+                                  className="mb-2 block text-[10px] font-bold uppercase tracking-[0.16em] text-[#0A0A0A]/55"
                                 >
                                   Website
                                 </label>
@@ -1494,22 +1525,22 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                                   type="url"
                                   value={formData.website}
                                   onChange={handleInputChange}
-                                  className="border-border"
+                                  className="rounded-none border-0 border-b border-[#0A0A0A] bg-transparent px-0 shadow-none transition-all duration-150 placeholder:uppercase placeholder:tracking-[0.1em] placeholder:text-[#0A0A0A]/40 focus-visible:border-b-2 focus-visible:ring-0"
                                   maxLength={200}
                                   placeholder="https://example.com"
                                 />
-                                <p className="text-xs text-muted-foreground mt-1">
+                                <p className="mt-2 text-[10px] uppercase tracking-[0.12em] text-[#0A0A0A]/40">
                                   Must be a valid URL
                                 </p>
                               </div>
                             </div>
 
                             {/* Submit Button */}
-                            <div className="flex justify-end gap-4 pt-4">
+                            <div className="flex justify-end gap-4 border-t border-[color:var(--border)] pt-6">
                               <Button
                                 type="button"
                                 variant="outline"
-                                className="border-border text-muted-foreground"
+                                className="rounded-none border border-[#0A0A0A] bg-transparent px-5 text-[11px] font-bold uppercase tracking-[0.14em] text-[#0A0A0A] transition-colors duration-150 hover:bg-[#0A0A0A] hover:text-[#F5F4F0]"
                                 onClick={() => {
                                   // Reset form to original values
                                   setFormData({ ...originalValues });
@@ -1519,7 +1550,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                               </Button>
                               <SuccessButton
                                 type="submit"
-                                className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                                className="rounded-none border border-[#0A0A0A] bg-[#0A0A0A] px-5 text-[11px] font-bold uppercase tracking-[0.14em] text-[#F5F4F0] transition-colors duration-150 hover:bg-[#F5F4F0] hover:text-[#0A0A0A]"
                                 status={saveProfileStatus}
                                 loadingChildren={
                                   <>
@@ -1554,7 +1585,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                   // Other user's profile - show Posts and Scored tabs
                   <div className="w-full">
                     {/* Tabs */}
-                    <div className="mb-6 flex gap-8 overflow-x-auto border-b border-border">
+                    <div className="mb-6 flex gap-8 overflow-x-auto border-b border-[color:var(--border)]">
                       {[
                         { key: "posts", label: "Posts" },
                         { key: "scored", label: "Scored" },
@@ -1562,17 +1593,17 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                         <button
                           key={tab.key}
                           onClick={() => setActiveTab(tab.key)}
-                          className={`relative shrink-0 whitespace-nowrap py-4 text-[15px] font-medium transition-colors ${
+                          className={`relative shrink-0 whitespace-nowrap py-4 text-[11px] font-bold uppercase tracking-[0.16em] transition-colors ${
                             activeTab === tab.key
-                              ? "text-primary"
-                              : "text-muted-foreground hover:text-foreground"
+                              ? "text-[#0A0A0A]"
+                              : "text-[#0A0A0A]/45 hover:text-[#0A0A0A]"
                           }`}
                         >
                           {tab.label}
                           {activeTab === tab.key && (
                             <motion.span
                               layoutId="profile-tab-indicator-other"
-                              className="absolute bottom-0 left-0 right-0 h-[2px] bg-primary"
+                              className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#0A0A0A]"
                               transition={{ type: "spring", stiffness: 500, damping: 35 }}
                             />
                           )}
@@ -1594,7 +1625,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                             </div>
                           ) : isPostsError ? (
                             <div className="flex flex-col items-center justify-center py-12">
-                              <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
+                              <AlertCircle className="w-12 h-12 text-[#0A0A0A]/70 mb-4" />
                               <p className="text-muted-foreground">
                                 Failed to load posts
                               </p>
@@ -1626,7 +1657,7 @@ export default function ProfileRevampPage({ params }: ProfileRevampPageProps) {
                             </div>
                           ) : isScoredPostsError ? (
                             <div className="flex flex-col items-center justify-center py-12">
-                              <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
+                              <AlertCircle className="w-12 h-12 text-[#0A0A0A]/70 mb-4" />
                               <p className="text-muted-foreground">
                                 Failed to load scored posts
                               </p>

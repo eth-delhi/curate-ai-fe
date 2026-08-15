@@ -14,9 +14,11 @@ import {
   Check,
   Send,
   Search,
+  Settings,
+  FileText,
 } from "lucide-react";
 import NavbarSearch from "@/components/ui/NavbarSearch";
-import { BellIcon } from "@/components/icons";
+import { BellIcon, WalletIcon } from "@/components/icons";
 import { useUserProfile } from "@/hooks/api/profile";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -59,6 +61,15 @@ const getUserIdFromToken = (): string | null => {
 const getIpfsUrl = (hash?: string | null): string | null => {
   if (!hash) return null;
   return `https://gateway.pinata.cloud/ipfs/${hash}`;
+};
+
+// Mask an email for the account menu, e.g. "su••••••••@gmail.com".
+const maskEmail = (email?: string): string => {
+  if (!email) return "";
+  const [local, domain] = email.split("@");
+  if (!domain) return email;
+  const visible = local.slice(0, 2);
+  return `${visible}${"•".repeat(Math.max(3, local.length - 2))}@${domain}`;
 };
 
 // Format notification message based on type
@@ -577,23 +588,83 @@ export default function HomeNavbar({
 
                 {isProfileOpen && (
                   <div
-                    className="fixed w-52 overflow-hidden rounded-xl border border-[color:var(--border)] bg-[#F5F4F0] shadow-xl"
+                    className="fixed w-64 overflow-hidden rounded-xl border border-[color:var(--border)] bg-[#F5F4F0] shadow-xl"
                     style={{
                       top: `${profileDropdownPosition.top}px`,
                       right: `${profileDropdownPosition.right}px`,
                       zIndex: 10001,
                     }}
                   >
-                    <div className="py-1">
-                      <a
-                        href={userId ? `/profile/${userId}` : "/profile"}
-                        onClick={() => setIsProfileOpen(false)}
-                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-foreground transition-colors duration-150 hover:bg-accent"
-                      >
-                        <User className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium">Profile</span>
-                      </a>
-                      <div className="my-1 border-t border-border"></div>
+                    {/* Header — avatar + name + view profile */}
+                    <a
+                      href={userId ? `/profile/${userId}` : "/auth"}
+                      onClick={() => setIsProfileOpen(false)}
+                      className="flex items-center gap-3 px-4 py-4 transition-colors duration-150 hover:bg-[#0A0A0A]/[0.04]"
+                    >
+                      <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#0A0A0A]">
+                        {profilePicUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={profilePicUrl}
+                            alt=""
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-[13px] font-bold text-[#F5F4F0]">
+                            {userInitials}
+                          </span>
+                        )}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="truncate text-[15px] font-semibold text-[#0A0A0A]">
+                          {currentUserProfile?.profile?.fullName || "Your profile"}
+                        </p>
+                        <p className="text-[12px] text-[#0A0A0A]/50">View profile</p>
+                      </div>
+                    </a>
+
+                    <div className="border-t border-[color:var(--border)]" />
+
+                    {/* Account links */}
+                    <div className="py-1.5">
+                      {[
+                        {
+                          label: "Profile",
+                          href: userId ? `/profile/${userId}` : "/auth",
+                          icon: <User className="h-[18px] w-[18px] shrink-0 text-[#0A0A0A]/55" strokeWidth={1.6} />,
+                        },
+                        {
+                          label: "Drafts",
+                          href: userId ? `/profile/${userId}?tab=drafts` : "/auth",
+                          icon: <FileText className="h-[18px] w-[18px] shrink-0 text-[#0A0A0A]/55" strokeWidth={1.6} />,
+                        },
+                        {
+                          label: "Wallet",
+                          href: userId ? `/profile/${userId}?tab=wallet` : "/auth",
+                          icon: <WalletIcon className="h-[18px] w-[18px] shrink-0 text-[#0A0A0A]/55" />,
+                        },
+                        {
+                          label: "Settings",
+                          href: userId ? `/profile/${userId}?tab=settings` : "/auth",
+                          icon: <Settings className="h-[18px] w-[18px] shrink-0 text-[#0A0A0A]/55" strokeWidth={1.6} />,
+                        },
+                      ].map((item) => (
+                        <a
+                          key={item.label}
+                          href={item.href}
+                          onClick={() => setIsProfileOpen(false)}
+                          className="flex items-center gap-3 px-4 py-2.5 text-[14px] text-[#0A0A0A] transition-colors duration-150 hover:bg-[#0A0A0A]/[0.04]"
+                        >
+                          {item.icon}
+                          {item.label}
+                        </a>
+                      ))}
+                    </div>
+
+                    <div className="border-t border-[color:var(--border)]" />
+
+                    {/* Sign out + account email */}
+                    <div className="py-1.5">
                       <button
                         onClick={() => {
                           try {
@@ -628,11 +699,16 @@ export default function HomeNavbar({
                             router.push("/auth");
                           }
                         }}
-                        className="flex w-full cursor-pointer items-center gap-3 px-4 py-2.5 text-left text-sm text-foreground transition-colors duration-150 hover:bg-accent"
+                        className="flex w-full cursor-pointer items-center gap-3 px-4 py-2.5 text-left text-[14px] text-[#0A0A0A] transition-colors duration-150 hover:bg-[#0A0A0A]/[0.04]"
                       >
-                        <LogOut className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium">Logout</span>
+                        <LogOut className="h-[18px] w-[18px] shrink-0 text-[#0A0A0A]/55" strokeWidth={1.6} />
+                        Sign out
                       </button>
+                      {currentUserProfile?.email && (
+                        <p className="truncate px-4 pb-1 pt-0.5 text-[12px] text-[#0A0A0A]/45">
+                          {maskEmail(currentUserProfile.email)}
+                        </p>
+                      )}
                     </div>
                   </div>
                 )}
