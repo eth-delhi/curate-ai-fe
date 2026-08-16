@@ -10,7 +10,7 @@
  * ========================================================================== */
 
 import { useEffect, useRef, useState } from "react";
-import { motion, useInView, useScroll, useTransform } from "framer-motion";
+import { motion, useInView, useScroll, useTransform, type MotionValue } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
 import {
   INK,
@@ -21,6 +21,7 @@ import {
   NeuralCloud,
   ParticleBirds,
   CloudGlobe,
+  WhaleCircle,
 } from "@/components/brutal";
 import { Logo } from "@/components/ui/Logo";
 
@@ -197,7 +198,7 @@ function Hero({ animate }: { animate: boolean }) {
 // ===========================================================================
 // SECTION 2 — SIGNAL (cloud → rain → globe, the mission beat)
 // ===========================================================================
-const SIGNAL_HEAD = ["EVERY IDEA", "DESERVES TO", "BE FOUND."];
+const SIGNAL_HEAD = ["YOUR DATA", "IS THE", "PRODUCT."];
 
 function SignalSection({ animate }: { animate: boolean }) {
   const ref = useRef<HTMLElement>(null);
@@ -531,6 +532,213 @@ function ProblemSection({ animate, reduced }: { animate: boolean; reduced: boole
 }
 
 // ===========================================================================
+// SECTION 3 — THE WHALE CIRCLE (capture, then countermeasures)
+// A single centered composition — no side text column. Type sits inside the
+// ring's own empty middle, sandwiched between the WhaleCircle's back/front
+// canvases so passing particles can occlude it, and crossfades from one
+// stage's copy to the next in place as the sequence advances.
+// ===========================================================================
+const WHALE_INTRO = {
+  eyebrow: "The whale problem",
+  lines: ["TOKEN WEIGHT", "BECOMES A", "CLOSED LOOP."],
+} as const;
+const CM_TEXT = [
+  {
+    tag: "01 / VOTE CAPS",
+    lines: ["MAX 5% POWER", "ON ANY POST."],
+    small: "Vote your circle daily and returns diminish fast.",
+  },
+  {
+    tag: "02 / AI COUNTERWEIGHT",
+    lines: ["THE MODEL READS", "THE CONTENT."],
+    small: "Coordinated voting patterns are detected and discounted.",
+  },
+  {
+    tag: "03 / CLAPS DECIDE",
+    lines: ["REACH ISN'T", "BOUGHT."],
+    small: "Readers clap. Claps decide what surfaces. Tokens don't.",
+  },
+] as const;
+
+function WhaleCenterBlock({
+  opacity,
+  y,
+  eyebrow,
+  lines,
+  small,
+}: {
+  opacity: MotionValue<number>;
+  y: MotionValue<number>;
+  eyebrow: string;
+  lines: readonly string[];
+  small?: string;
+}) {
+  return (
+    <motion.div
+      className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center px-6 text-center"
+      style={{ opacity, y }}
+    >
+      <p className={`${display} text-[10px] font-medium uppercase tracking-[0.28em] text-[#0A0A0A]/60 sm:text-[11px]`}>
+        {eyebrow}
+      </p>
+      <h2 className={`${display} mt-3 font-black uppercase leading-[0.96] tracking-[-0.02em] text-[clamp(1.4rem,3.6vw,2.4rem)]`}>
+        {lines.map((line) => (
+          <span key={line} className="block">
+            {line}
+          </span>
+        ))}
+      </h2>
+      {small && (
+        <p className="mt-3 max-w-[280px] text-[11.5px] leading-relaxed text-[#0A0A0A]/60">{small}</p>
+      )}
+    </motion.div>
+  );
+}
+
+/** Pinned scroll-scrubbed sequence: rain → whale ring → three countermeasures
+ * → distributed field. Text crossfades in the ring's center, keyed off the
+ * exact same local progress the WhaleCircle canvas uses (from the section's
+ * own box), so copy and visual advance and reverse together, 1:1 with scroll. */
+function WhaleSectionAnimated() {
+  const ref = useRef<HTMLElement>(null);
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end end"] });
+  const p = useTransform(scrollYProgress, [0, 0.85], [0, 1]);
+
+  // Each block's fade-in/hold/fade-out window lines up exactly with the
+  // canvas's own stage boundaries (ring-form 0.15–0.40, cm1/cm2/cm3, settle).
+  const introOp = useTransform(p, [0.2, 0.3, 0.36, 0.4], [0, 1, 1, 0]);
+  const introY = useTransform(p, [0.2, 0.3], [10, 0]);
+  const cm1Op = useTransform(p, [0.4, 0.44, 0.52, 0.567], [0, 1, 1, 0]);
+  const cm1Y = useTransform(p, [0.4, 0.44], [10, 0]);
+  const cm2Op = useTransform(p, [0.567, 0.6, 0.69, 0.733], [0, 1, 1, 0]);
+  const cm2Y = useTransform(p, [0.567, 0.6], [10, 0]);
+  const cm3Op = useTransform(p, [0.733, 0.76, 0.86, 0.9], [0, 1, 1, 0]);
+  const cm3Y = useTransform(p, [0.733, 0.76], [10, 0]);
+  const closeOp = useTransform(p, [0.9, 0.96], [0, 1]);
+  const closeY = useTransform(p, [0.9, 0.96], [12, 0]);
+
+  return (
+    // Tall scroll track; sticky wrapper holds the composition centered while
+    // scroll drives the sequence, then releases at the closing beat.
+    <section data-whale ref={ref} className="relative" style={{ height: "560vh" }}>
+      <div className="sticky top-0 w-full overflow-hidden" style={{ height: "100svh", paddingTop: NAV_H }}>
+        <div className="relative mx-auto h-full w-full max-w-[1600px]">
+          <div className="pointer-events-none absolute inset-0" aria-hidden>
+            <WhaleCircle still={false} />
+          </div>
+
+          <WhaleCenterBlock opacity={introOp} y={introY} eyebrow={WHALE_INTRO.eyebrow} lines={WHALE_INTRO.lines} />
+          <WhaleCenterBlock opacity={cm1Op} y={cm1Y} eyebrow={CM_TEXT[0].tag} lines={CM_TEXT[0].lines} small={CM_TEXT[0].small} />
+          <WhaleCenterBlock opacity={cm2Op} y={cm2Y} eyebrow={CM_TEXT[1].tag} lines={CM_TEXT[1].lines} small={CM_TEXT[1].small} />
+          <WhaleCenterBlock opacity={cm3Op} y={cm3Y} eyebrow={CM_TEXT[2].tag} lines={CM_TEXT[2].lines} small={CM_TEXT[2].small} />
+
+          <motion.div
+            className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center px-6 text-center"
+            style={{ opacity: closeOp, y: closeY }}
+          >
+            <p className={`${display} max-w-md font-black uppercase leading-snug tracking-tight text-[clamp(1.1rem,2.6vw,1.6rem)]`}>
+              Weight doesn&apos;t decide what matters.
+              <br />
+              Readers do.
+            </p>
+            <a
+              href="#"
+              data-cursor
+              className={`group pointer-events-auto mt-5 inline-flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-[0.2em] ${display}`}
+              style={{ color: INK }}
+            >
+              <span className="relative">
+                Read the protocol
+                <span
+                  className="absolute -bottom-1 left-0 h-[1.5px] w-full origin-left transition-all duration-300 ease-out group-hover:h-[3px]"
+                  style={{ backgroundColor: INK }}
+                />
+              </span>
+              <ArrowUpRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+            </a>
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/** Reduced-motion / pre-mount fallback: no pin, no scroll-scrub, no centered
+ * ring — a static distributed field with all four text blocks stacked as a
+ * plain, fully accessible list. */
+function WhaleSectionStatic() {
+  return (
+    <section className="relative px-5 py-24 sm:px-8 sm:py-28 lg:px-12">
+      <div className="mx-auto max-w-[900px] text-center">
+        <p className={`${display} text-[10px] font-medium uppercase tracking-[0.3em] text-[#0A0A0A]/55 sm:text-[11px]`}>
+          {WHALE_INTRO.eyebrow}
+        </p>
+        <h2 className={`${display} mx-auto mt-4 max-w-lg font-black uppercase leading-[0.94] tracking-[-0.02em] text-[clamp(1.6rem,4.4vw,2.75rem)]`}>
+          {WHALE_INTRO.lines.map((line) => (
+            <span key={line} className="block">
+              {line}
+            </span>
+          ))}
+        </h2>
+
+        <div className="mx-auto mt-10 max-w-lg text-left">
+          {CM_TEXT.map((c, i) => (
+            <div
+              key={c.tag}
+              className="grid grid-cols-[2.5rem_1fr] gap-3 border-t py-4 sm:grid-cols-[3rem_1fr]"
+              style={{ borderColor: "rgba(10,10,10,0.14)" }}
+            >
+              <span
+                className={`${display} block text-xl font-black tabular-nums sm:text-2xl`}
+                style={{ WebkitTextStroke: `1.3px ${INK}`, color: "transparent" }}
+              >
+                {`0${i + 1}`}
+              </span>
+              <div>
+                <h4 className={`${display} text-[13px] font-black uppercase leading-tight tracking-tight sm:text-sm`}>
+                  {c.lines.join(" ")}
+                </h4>
+                <p className="mt-1.5 text-[12px] font-normal leading-relaxed text-[#0A0A0A]/60 sm:text-[12.5px]">
+                  {c.small}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="mx-auto mt-8 max-w-lg border-t pt-6" style={{ borderColor: "rgba(10,10,10,0.14)" }}>
+          <p className={`${display} text-base font-black uppercase leading-snug tracking-tight sm:text-lg`}>
+            Weight doesn&apos;t decide what matters. Readers do.
+          </p>
+          <a
+            href="#"
+            className={`group mt-4 inline-flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-[0.2em] ${display}`}
+            style={{ color: INK }}
+          >
+            <span className="relative">
+              Read the protocol
+              <span
+                className="absolute -bottom-1 left-0 h-[1.5px] w-full origin-left transition-all duration-300 ease-out group-hover:h-[3px]"
+                style={{ backgroundColor: INK }}
+              />
+            </span>
+            <ArrowUpRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+          </a>
+        </div>
+
+        <div className="relative mx-auto mt-14 h-[38vh] min-h-[260px] w-full max-w-3xl">
+          <WhaleCircle still />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function WhaleSection({ animate }: { animate: boolean }) {
+  return animate ? <WhaleSectionAnimated /> : <WhaleSectionStatic />;
+}
+
+// ===========================================================================
 // PAGE
 // ===========================================================================
 export default function LandingPage() {
@@ -563,6 +771,7 @@ export default function LandingPage() {
         <SiteNav animate={animate} />
         <Hero animate={animate} />
         <SignalSection animate={animate} />
+        <WhaleSection animate={animate} />
         <ProblemSection animate={animate} reduced={reduced} />
       </div>
 

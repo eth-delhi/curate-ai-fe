@@ -588,6 +588,54 @@ function buildGlobePts(N: number): GlobePt[] {
   return pts;
 }
 
+// ---------------------------------------------------------------------------
+// Data-transfer arcs — a few great-circle routes between real-world hub
+// coordinates, rendered as a faint static dotted path plus small "packet"
+// dots that loop along it with a short comet trail. Drawn with the exact same
+// spin/tilt projection and front/back dimming as the globe's dust, so they
+// read as part of the same object rather than an overlay. Only appears once
+// the globe has fully formed (gated on scroll progress), never during the
+// rain/formation stages.
+// ---------------------------------------------------------------------------
+function vec3(lat: number, lng: number) {
+  const la = (lat * Math.PI) / 180, lo = (lng * Math.PI) / 180;
+  const cl = Math.cos(la);
+  return { x: cl * Math.sin(lo), y: Math.sin(la), z: cl * Math.cos(lo) };
+}
+function slerp3(a: { x: number; y: number; z: number }, b: { x: number; y: number; z: number }, t: number) {
+  const dot = Math.min(1, Math.max(-1, a.x * b.x + a.y * b.y + a.z * b.z));
+  const omega = Math.acos(dot);
+  if (omega < 1e-6) return a;
+  const s = Math.sin(omega);
+  const wa = Math.sin((1 - t) * omega) / s;
+  const wb = Math.sin(t * omega) / s;
+  return { x: a.x * wa + b.x * wb, y: a.y * wa + b.y * wb, z: a.z * wa + b.z * wb };
+}
+// Real hub coordinates, chosen to land inside the CONTINENTS masses above.
+const ARC_HUBS = {
+  ny: vec3(40.7, -74),
+  london: vec3(51.5, -0.1),
+  beijing: vec3(39.9, 116.4),
+  saopaulo: vec3(-23.5, -46.6),
+  lagos: vec3(6.5, 3.4),
+};
+const ARC_ROUTES = [
+  [ARC_HUBS.ny, ARC_HUBS.london],
+  [ARC_HUBS.london, ARC_HUBS.beijing],
+  [ARC_HUBS.saopaulo, ARC_HUBS.lagos],
+] as const;
+const ARC_LIFT = 0.16; // arcs bulge gently outside the globe's radius, like a flight path
+function arcPoint(route: readonly [{ x: number; y: number; z: number }, { x: number; y: number; z: number }], t: number) {
+  const p = slerp3(route[0], route[1], t);
+  const lift = 1 + ARC_LIFT * Math.sin(Math.PI * t);
+  return { x: p.x * lift, y: p.y * lift, z: p.z * lift };
+}
+const ARC_ROUTE_SAMPLES = 40;
+const ARC_CLUSTERS = 4; // simultaneous data-transfer bursts in flight per route
+const ARC_CLUSTER_DOTS = 6; // dots bunched into each burst
+const ARC_CLUSTER_SPREAD = 0.02; // how tightly a burst's dots bunch (route fraction) — cluster, not a trail
+const ARC_SPEED = 0.34; // fraction of the route travelled per t-unit — fast, visible transfer
+
 export function CloudGlobe({ still }: { still: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -628,6 +676,12 @@ export function CloudGlobe({ still }: { still: boolean }) {
     };
     let globePts: GlobePt[] | null = null;
     let parts: Part[] = [];
+
+    // Static route dot-paths for the data-transfer arcs (geometry only; screen
+    // position is reprojected every frame as the globe spins).
+    const arcPaths = ARC_ROUTES.map((route) =>
+      Array.from({ length: ARC_ROUTE_SAMPLES }, (_, i) => arcPoint(route, i / (ARC_ROUTE_SAMPLES - 1)))
+    );
 
     const resize = () => {
       vw = window.innerWidth; vh = window.innerHeight;
@@ -719,6 +773,44 @@ export function CloudGlobe({ still }: { still: boolean }) {
         ctx.globalAlpha = a;
         ctx.fillRect(pt.x, pt.y, s, s);
       }
+
+      // Data-transfer arcs — only once the globe is essentially fully formed.
+      const arcT = smooth(0.88, 1.0, p);
+      if (arcT > 0.001) {
+        const project = (lp: { x: number; y: number; z: number }) => {
+          const x1 = lp.x * cosA + lp.z * sinA;
+          const z1 = -lp.x * sinA + lp.z * cosA;
+          const y2 = lp.y * cosP - z1 * sinP;
+          const z2 = lp.y * sinP + z1 * cosP;
+          const front = 0.3 + 0.7 * (z2 * 0.5 + 0.5); // dim (not hide) the far side
+          return { sx: globeX + x1 * Rg, sy: globeY - y2 * Rg, front };
+        };
+        for (let ri = 0; ri < arcPaths.length; ri++) {
+          const path = arcPaths[ri];
+          for (let i = 0; i < path.length; i++) {
+            const { sx, sy, front } = project(path[i]);
+            ctx.globalAlpha = arcT * front * 0.14;
+            ctx.fillRect(sx, sy, 1, 1);
+          }
+          if (!still) {
+            // Bursts of tightly-bunched dots ("cluster, gap, cluster") rather
+            // than a single fading comet — reads as distinct data transfers.
+            for (let cl = 0; cl < ARC_CLUSTERS; cl++) {
+              const phase = cl / ARC_CLUSTERS;
+              const frac = ((t * ARC_SPEED + ri * 0.37 + phase) % 1 + 1) % 1;
+              for (let d = 0; d < ARC_CLUSTER_DOTS; d++) {
+                const j = ((d * 0.618034) % 1) - 0.5; // deterministic bunch jitter
+                const ft = ((frac + j * ARC_CLUSTER_SPREAD) % 1 + 1) % 1;
+                const { sx, sy, front } = project(arcPoint(ARC_ROUTES[ri], ft));
+                const dotS = 1.9 + (d % 2) * 0.5;
+                ctx.globalAlpha = arcT * front * 0.82;
+                ctx.fillRect(sx - dotS / 2, sy - dotS / 2, dotS, dotS);
+              }
+            }
+          }
+        }
+      }
+
       ctx.globalAlpha = 1;
     };
 
@@ -764,4 +856,361 @@ export function CloudGlobe({ still }: { still: boolean }) {
   }, [still]);
 
   return <canvas ref={canvasRef} className="pointer-events-none fixed inset-0 z-[1] h-full w-full" aria-hidden />;
+}
+
+// ---------------------------------------------------------------------------
+// Whale circle — third particle sequence, in the SAME stipple-dot language,
+// making a specific argument: token-weighted voting forms a closed, self-
+// dealing ring; three countermeasures break it apart into a distributed
+// field. Single centered composition — text lives INSIDE the ring, sandwiched
+// between two canvases (back/front) so passing particles can occlude it, and
+// a local density-clear zone keeps it legible without a background plate.
+// Progress `p` is local to the section's own box (independent of page
+// scrollY). Stages:
+//   0.00–0.15   rain — particles fall from above (same grammar as the cloud→
+//               rain stage) and gather loosely near the ring's future spot
+//   0.15–0.40   particles converge into whale silhouettes, a closed inward-
+//               facing ring; vote-streams begin circulating between them
+//   0.40–0.567  cm1 vote caps — the streams thin to a trickle
+//   0.567–0.733 cm2 AI counterweight — an ordered cluster sweeps the ring;
+//               whales it passes lose density and definition
+//   0.733–0.90  cm3 claps — the ring fully disperses into a distributed field
+//   0.90–1.00   the field settles; closing beat holds before the pin releases
+// `still` (reduced motion) paints only the settled distributed field, into
+// the back canvas only — no text-occlusion drama in that mode.
+// ---------------------------------------------------------------------------
+
+// Docker-whale-inspired flat side silhouette: a solid rounded-oval body
+// (blunt at both the nose and the tail base — true curves, not faceted
+// polygon corners, so it stays smooth and legible at any rotation) with a
+// small, distinctly separate triangular fluke swept back off the tail end.
+// Belly slightly fuller than the back for a gentle asymmetry. The practical
+// equivalent, inside a hand-rolled Canvas2D engine, of tracing a real
+// silhouette rather than hand-placing dots — filled by rejection-sampled
+// stipple points, fluke via the same inPoly test as the globe's continents.
+// Local space: x=+nose … -tail, y=- back / + belly.
+const BODY_CX = 0.06, BODY_RX = 0.66;
+const BODY_RY_BACK = 0.32, BODY_RY_BELLY = 0.37;
+const FLUKE_TRI: number[][] = [
+  [-0.48, -0.07], [-0.82, 0.1], [-0.44, 0.18],
+];
+function inWhale(x: number, y: number) {
+  const dx = (x - BODY_CX) / BODY_RX;
+  const dy = y / (y < 0 ? BODY_RY_BACK : BODY_RY_BELLY);
+  if (dx * dx + dy * dy <= 1) return true;
+  return inPoly(x, y, FLUKE_TRI);
+}
+type WhalePt = { x: number; y: number; a: number; s: number };
+function buildWhaleTemplate(n: number): WhalePt[] {
+  const pts: WhalePt[] = [];
+  let tries = 0;
+  while (pts.length < n && tries < n * 50) {
+    tries++;
+    const x = -0.84 + Math.random() * 1.68;
+    const y = -0.36 + Math.random() * 0.76;
+    if (inWhale(x, y)) {
+      pts.push({ x, y, a: 0.48 + Math.random() * 0.3, s: 1.35 + Math.random() * 0.55 });
+    }
+  }
+  return pts;
+}
+
+// Ordered, geometric — concentric evenly-spaced shells, deliberately unlike
+// the whale's organic fill. "Structure versus mass."
+function buildAiTemplate(n: number) {
+  const shells = [0.16, 0.38, 0.6, 0.82, 1.0];
+  const per = Math.round(n / shells.length);
+  const pts: { x: number; y: number }[] = [];
+  shells.forEach((r, si) => {
+    for (let k = 0; k < per; k++) {
+      const ang = (k / per) * Math.PI * 2 + si * 0.35;
+      pts.push({ x: Math.cos(ang) * r, y: Math.sin(ang) * r });
+    }
+  });
+  return pts;
+}
+
+const RING_SQUASH = 0.76; // ring viewed at a slight angle, not a flat wheel
+
+export function WhaleCircle({ still }: { still: boolean }) {
+  const backRef = useRef<HTMLCanvasElement>(null);
+  const frontRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const backCanvas = backRef.current;
+    const frontCanvas = frontRef.current;
+    const host = backCanvas?.parentElement;
+    const section = host?.closest("[data-whale]") as HTMLElement | null;
+    if (!backCanvas || !frontCanvas || !host) return;
+    const bctx = backCanvas.getContext("2d");
+    const fctx = frontCanvas.getContext("2d");
+    if (!bctx || !fctx) return;
+
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    let w = 0, h = 0, raf = 0, alive = true, onScreen = true;
+
+    const lowPower = (navigator.hardwareConcurrency || 8) <= 4 || window.innerWidth < 640;
+    const WHALE_COUNT = lowPower ? 5 : 6;
+    const PTS_PER_WHALE_TARGET = lowPower ? 130 : 210;
+    const AI_N = lowPower ? 90 : 160;
+    const SPIN = (Math.PI * 2) / 30; // idle ring rotation, ~30s/turn before cm2 slows it
+
+    const whaleTpl = buildWhaleTemplate(PTS_PER_WHALE_TARGET);
+    const PTS_PER_WHALE = whaleTpl.length;
+    const aiTpl = buildAiTemplate(AI_N);
+
+    // Ring fills most of the viewport, centered — the text zone is the
+    // ring's own empty middle, sized off the same radius.
+    let ringX = 0, ringY = 0, Rw = 0, whaleLen = 0, boxHW = 0, boxHH = 0;
+    const layout = () => {
+      ringX = w * 0.5;
+      ringY = h * 0.5;
+      Rw = Math.min(w, h) * (w < 640 ? 0.42 : 0.46);
+      whaleLen = Rw * 0.78;
+      boxHW = Rw * 0.5;
+      boxHH = Rw * 0.33;
+    };
+
+    type Part = {
+      tplIdx: number;
+      whaleIdx: number;
+      rx0: number; ry0: number; // rain start (off-screen above)
+      rx1: number; ry1: number; // rain gather point (on-screen, pre-ring)
+      dcx: number; dcy: number; // dispersed-field target (cm3)
+      dph: number;
+      x: number; y: number;
+    };
+    let parts: Part[] = [];
+    type AiPart = { lx: number; ly: number; x: number; y: number };
+    let aiParts: AiPart[] = [];
+
+    const sizeCanvas = (c: HTMLCanvasElement) => {
+      c.width = Math.max(1, Math.floor(w * dpr));
+      c.height = Math.max(1, Math.floor(h * dpr));
+      c.style.width = `${w}px`;
+      c.style.height = `${h}px`;
+    };
+    const resize = () => {
+      const r = host.getBoundingClientRect();
+      w = r.width; h = r.height;
+      sizeCanvas(backCanvas);
+      sizeCanvas(frontCanvas);
+      bctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      fctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      layout();
+    };
+
+    const DISPERSE_CLUSTERS = 26;
+    const seed = () => {
+      parts = [];
+      for (let wi = 0; wi < WHALE_COUNT; wi++) {
+        for (let ti = 0; ti < PTS_PER_WHALE; ti++) {
+          const gatherAng = Math.random() * Math.PI * 2;
+          const gatherR = Rw * (0.2 + Math.random() * 0.7);
+          const rx1 = ringX + Math.cos(gatherAng) * gatherR;
+          const clusterI = Math.floor(Math.random() * DISPERSE_CLUSTERS);
+          const cx = w * (0.05 + (clusterI / Math.max(1, DISPERSE_CLUSTERS - 1)) * 0.9);
+          const cy = h * (0.72 + Math.random() * 0.1 - 0.05);
+          parts.push({
+            tplIdx: ti,
+            whaleIdx: wi,
+            rx0: rx1 + (Math.random() * 2 - 1) * 10,
+            ry0: -h * (0.15 + Math.random() * 0.7),
+            rx1,
+            ry1: ringY + (Math.random() * 2 - 1) * Rw * 0.5,
+            dcx: cx + (Math.random() * 2 - 1) * 18,
+            dcy: cy + (Math.random() * 2 - 1) * 12,
+            dph: Math.random() * Math.PI * 2,
+            x: rx1, y: -h * 0.3,
+          });
+        }
+      }
+      aiParts = aiTpl.map((p) => ({ lx: p.x, ly: p.y, x: ringX, y: ringY }));
+    };
+
+    resize();
+    seed();
+
+    // Local progress from this section's own box — independent of what's
+    // above it in page flow. 0.85 divisor leaves a cushion of scroll where p
+    // stays clamped at 1 (closing beat holds) before the sticky pin releases.
+    const progress = () => {
+      if (!section) return 0;
+      const r = section.getBoundingClientRect();
+      const denom = (r.height - window.innerHeight) * 0.85;
+      return clamp01(-r.top / (denom > 0 ? denom : 1));
+    };
+
+    const whaleBaseAngle = (idx: number) => -Math.PI / 2 + (idx / WHALE_COUNT) * Math.PI * 2;
+    const AI_ENTRY = -Math.PI / 2 - 0.7;
+    const AI_SWEEP = 6.6; // generous — comfortably covers every whale angle with margin
+
+    const step = (p: number, follow: number, t: number) => {
+      bctx.clearRect(0, 0, w, h);
+      fctx.clearRect(0, 0, w, h);
+      bctx.fillStyle = INK;
+      fctx.fillStyle = INK;
+
+      // Any particle whose current position falls inside the text zone
+      // renders on the FRONT canvas (occluding the type); everything else
+      // renders on the BACK canvas (behind it) — the density-thin behind
+      // text falls out of this routing for free, no separate mask needed.
+      const plot = (x: number, y: number, s: number, a: number) => {
+        const ctx =
+          !still && Math.abs(x - ringX) < boxHW && Math.abs(y - ringY) < boxHH ? fctx : bctx;
+        ctx.globalAlpha = a;
+        ctx.fillRect(x - s / 2, y - s / 2, s, s);
+      };
+
+      const rainT = smooth(0.0, 0.15, p);
+      const ringLocal = smooth(0.15, 0.4, p);
+      const cm1 = smooth(0.4, 0.567, p);
+      const cm2 = smooth(0.567, 0.733, p);
+      const cm3 = smooth(0.733, 0.9, p);
+
+      const spinRate = lerp(1, 0.12, cm2);
+      const ringA = (performance.now() / 1000) * SPIN * spinRate + 0.06 * Math.sin(t * 4) * cm2;
+
+      for (let i = 0; i < parts.length; i++) {
+        const pt = parts[i];
+        const tpl = whaleTpl[pt.tplIdx];
+
+        // whale-ring placement — always facing inward, orbiting slowly
+        const baseA = whaleBaseAngle(pt.whaleIdx) + ringA;
+        const wx = ringX + Math.cos(baseA) * Rw;
+        const wy = ringY + Math.sin(baseA) * Rw * RING_SQUASH;
+        const inAng = Math.atan2(-Math.sin(baseA) * RING_SQUASH, -Math.cos(baseA));
+        const cw = Math.cos(inAng), sw = Math.sin(inAng);
+        const lx = tpl.x * whaleLen * 0.5, ly = tpl.y * whaleLen * 0.5;
+        const whX = wx + (lx * cw - ly * sw);
+        const whY = wy + (lx * sw + ly * cw);
+
+        // stage 0→1: rain falls, gathers loosely, then draws into the ring —
+        // one continuous blend, never reversing direction on scroll-up
+        const fallY = lerp(pt.ry0, pt.ry1, rainT);
+        const fallX = lerp(pt.rx0, pt.rx1, smooth(0, 0.08, rainT));
+        let tx = lerp(fallX, whX, ringLocal);
+        let ty = lerp(fallY, whY, ringLocal);
+        let a = lerp(tpl.a * 0.5, tpl.a, Math.max(rainT * 0.4, ringLocal));
+        let s = tpl.s * (0.6 + 0.4 * Math.max(rainT, ringLocal));
+
+        // cm2 — the AI sweep dims/dissolves whales as it passes their angle
+        const hit = smooth(
+          (whaleBaseAngle(pt.whaleIdx) - AI_ENTRY) / AI_SWEEP - 0.04,
+          (whaleBaseAngle(pt.whaleIdx) - AI_ENTRY) / AI_SWEEP + 0.08,
+          cm2
+        );
+        a *= 1 - 0.66 * hit;
+        s *= 1 - 0.4 * hit;
+
+        // cm3 — full dispersal into the distributed field
+        if (cm3 > 0.001) {
+          const j = Math.sin(t * 0.6 + pt.dph) * 3;
+          tx = lerp(tx, pt.dcx + j, cm3);
+          ty = lerp(ty, pt.dcy, cm3);
+          a = lerp(a, 0.18 + 0.18 * ((pt.tplIdx % 5) / 5), cm3);
+          s = lerp(s, 1.1 + (pt.tplIdx % 3) * 0.25, cm3);
+        }
+
+        pt.x += (tx - pt.x) * follow;
+        pt.y += (ty - pt.y) * follow;
+        plot(pt.x, pt.y, Math.max(0.6, s), Math.max(0, a));
+      }
+
+      // inter-whale vote streams — full strength once the ring forms, thinned
+      // by cm1 to "barely a trickle", gone by the time cm2 begins
+      const streamAmt = smooth(0.85, 1, ringLocal) * lerp(1, 0.08, cm1) * (1 - smooth(0, 1, cm2));
+      if (streamAmt > 0.003) {
+        for (let wi = 0; wi < WHALE_COUNT; wi++) {
+          const a0 = whaleBaseAngle(wi) + ringA;
+          const a1 = whaleBaseAngle(wi + 1) + ringA;
+          for (let cl = 0; cl < 3; cl++) {
+            const phase = cl / 3;
+            const frac = ((t * 0.5 + wi * 0.21 + phase) % 1 + 1) % 1;
+            for (let d = 0; d < 4; d++) {
+              const j = ((d * 0.618034) % 1 - 0.5) * 0.03;
+              const ft = clamp01(frac + j);
+              const ang = lerp(a0, a1, ft);
+              const rr = Rw * 0.86;
+              const sx = ringX + Math.cos(ang) * rr;
+              const sy = ringY + Math.sin(ang) * rr * RING_SQUASH;
+              plot(sx, sy, 1.6, streamAmt * 0.55);
+            }
+          }
+        }
+      }
+
+      // AI counterweight — enters from outside the ring, sweeps across it
+      const aiVis = smooth(0.567, 0.61, p) * (1 - smooth(0.7, 0.83, p));
+      if (aiVis > 0.003) {
+        const aiT = cm2;
+        const aiAng = AI_ENTRY + AI_SWEEP * aiT;
+        const aiRad = lerp(Rw * 1.55, Rw * 0.12, smooth(0, 1, aiT));
+        const aiX = ringX + Math.cos(aiAng) * aiRad;
+        const aiY = ringY + Math.sin(aiAng) * aiRad * RING_SQUASH;
+        const spin = t * 1.4;
+        const cA = Math.cos(spin), sA = Math.sin(spin);
+        const aiScale = Rw * 0.13;
+        for (let i = 0; i < aiParts.length; i++) {
+          const ap = aiParts[i];
+          const rx = ap.lx * cA - ap.ly * sA, ry = ap.lx * sA + ap.ly * cA;
+          const tx = aiX + rx * aiScale, ty = aiY + ry * aiScale;
+          ap.x += (tx - ap.x) * follow;
+          ap.y += (ty - ap.y) * follow;
+          plot(ap.x, ap.y, 1.8, aiVis * 0.8);
+        }
+      }
+
+      bctx.globalAlpha = 1;
+      fctx.globalAlpha = 1;
+    };
+
+    let t = 0;
+    const draw = () => {
+      t += 0.012;
+      step(progress(), 0.15, t);
+      if (alive && onScreen) raf = requestAnimationFrame(draw);
+    };
+
+    if (still) {
+      // settle straight into the distributed field, one static paint (back
+      // canvas only — no ring, no text-occlusion drama in reduced motion)
+      for (let k = 0; k < 40; k++) step(1, 0.35, k * 0.012);
+      step(1, 1, 1);
+    } else {
+      raf = requestAnimationFrame(draw);
+    }
+
+    const onResize = () => {
+      resize();
+      seed();
+      if (still) step(1, 1, 1);
+    };
+    window.addEventListener("resize", onResize);
+
+    const io = still
+      ? null
+      : new IntersectionObserver(
+          ([e]) => {
+            onScreen = e.isIntersecting;
+            if (onScreen && alive) raf = requestAnimationFrame(draw);
+          },
+          { threshold: 0 }
+        );
+    io?.observe(section ?? host);
+
+    return () => {
+      alive = false;
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", onResize);
+      io?.disconnect();
+    };
+  }, [still]);
+
+  return (
+    <>
+      <canvas ref={backRef} className="absolute inset-0 h-full w-full" aria-hidden />
+      <canvas ref={frontRef} className="absolute inset-0 z-20 h-full w-full" aria-hidden />
+    </>
+  );
 }
