@@ -42,7 +42,11 @@ import {
 } from "./brutal";
 
 const PORTRAIT_SRC = "/hero-portrait.png";
-const INK_HEX = 0x0a0a0a;
+const INK_HEX = 0x2563eb;
+
+// The hero intentionally loads part-way through the disintegration sequence.
+// 0.48 means roughly the lower half has already started breaking apart.
+const INITIAL_DISINTEGRATION = 0.12;
 
 const clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
@@ -154,7 +158,9 @@ function sampleParticles(aw: number, ah: number, lum: Float32Array, score: Float
       const s = score[p];
       if (s < 0.05) continue;
       const l = lum[p];
-      const density = clamp01(s * (0.32 + (1 - l) * 0.7));
+      // Keep the cloud lighter and airier so the pre-disintegrated state feels
+      // organic rather than like a dense field of noise.
+      const density = clamp01(s * (0.26 + (1 - l) * 0.58));
       if (Math.random() > density) continue;
       pts.push({ nx: x / aw, ny: y / ah, lum: l });
     }
@@ -292,7 +298,21 @@ export function PortraitDisintegration() {
       sctx.clearRect(0, 0, vw, vh);
       sctx.save();
       sctx.beginPath();
-      sctx.rect(box.boxX, box.boxY, box.boxW, box.boxH * (1 - bottomClipPct));
+      // Use a subtly irregular edge instead of a perfectly straight cut.
+      // The variation is deterministic, so it stays visually stable between
+      // frames while the particle layer supplies the actual falling/dissolving.
+      const edgeY = box.boxY + box.boxH * (1 - bottomClipPct);
+      const steps = Math.max(12, Math.ceil(box.boxW / 28));
+      sctx.moveTo(box.boxX, box.boxY);
+      sctx.lineTo(box.boxX, edgeY);
+      for (let i = 0; i <= steps; i++) {
+        const px = box.boxX + (i / steps) * box.boxW;
+        const wave = Math.sin(i * 2.17) * 7 + Math.sin(i * 0.73 + 1.4) * 4;
+        const py = edgeY + wave * (bottomClipPct > 0.05 ? Math.min(1, bottomClipPct * 1.8) : 0);
+        sctx.lineTo(px, py);
+      }
+      sctx.lineTo(box.boxX + box.boxW, box.boxY);
+      sctx.closePath();
       sctx.clip();
       sctx.drawImage(img, box.boxX, box.boxY, box.boxW, box.boxH);
       sctx.globalCompositeOperation = "destination-in";
@@ -475,7 +495,10 @@ export function PortraitDisintegration() {
       t += 0.01;
       renderer.autoClear = true;
       if (ready && positions && alphas && sizes && points && geometry) {
-        const totalVh = window.scrollY / vh;
+        // Start the animation as if the user has already scrolled into the
+        // hero. Further scrolling continues naturally from this state.
+        const initialOffsetVh = Math.max(0.05, disintEndVh - heroTopVh) * INITIAL_DISINTEGRATION;
+        const totalVh = window.scrollY / vh + heroTopVh + initialOffsetVh;
         const sweepFrac = clamp01((totalVh - heroTopVh) / Math.max(0.05, disintEndVh - heroTopVh - (disintEndVh - heroTopVh) * 0.08));
         paintStill(sweepFrac);
 

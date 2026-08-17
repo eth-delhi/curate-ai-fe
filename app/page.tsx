@@ -2,7 +2,7 @@
 
 /* =============================================================================
  * CURATE AI — landing (one long brutalist page)
- * Strict monochrome: ink #0A0A0A on paper #F5F4F0. Shared ambient-dust layer and
+ * Editorial palette: ink #111111 on paper #F4F1EA, with electric blue, acid green, and orange accents. Shared ambient-dust layer and
  * custom cursor persist across sections; each section inherits the same world.
  *   1. Hero        — studio statement + generative neural cloud
  *   2. Problem     — two-column indictment of Web2 blogging vs Web3 social
@@ -35,7 +35,7 @@ function NavLink({ label }: { label: string }) {
       {label}
       <span
         className="absolute -bottom-1.5 left-0 h-px w-full origin-left scale-x-0 transition-transform duration-300 ease-out group-hover:scale-x-100"
-        style={{ backgroundColor: INK }}
+        style={{ backgroundColor: "#2563EB" }}
       />
     </a>
   );
@@ -71,13 +71,13 @@ function SiteNav({ animate }: { animate: boolean }) {
     <header
       className="fixed inset-x-0 top-0 z-50 w-full transition-[background-color,box-shadow] duration-300 ease-out"
       style={{
-        backgroundColor: scrolled ? "rgba(245,244,240,0.72)" : "rgba(245,244,240,0)",
-        backdropFilter: scrolled ? "blur(10px)" : "none",
-        WebkitBackdropFilter: scrolled ? "blur(10px)" : "none",
-        boxShadow: scrolled ? "0 1px 0 0 rgba(10,10,10,0.08)" : "0 1px 0 0 rgba(10,10,10,0)",
+        backgroundColor: scrolled ? "rgba(244,241,234,0.92)" : "rgba(244,241,234,0.98)",
+        backdropFilter: "blur(4px)",
+        WebkitBackdropFilter: "blur(4px)",
+        boxShadow: "0 1px 0 0 rgba(17,17,17,0.08)",
       }}
     >
-      <div className="relative mx-auto flex w-full max-w-[1600px] items-center justify-between px-5 pt-6 pb-3 sm:px-8 lg:px-12">
+      <div className="relative mx-auto flex w-full max-w-[1600px] items-center justify-between px-5 pt-6 pb-4 sm:px-8 lg:px-12">
         <a href="/" data-cursor className="inline-block" aria-label="Curate AI home">
           <Logo className="h-14 w-14 shrink-0 text-foreground" />
         </a>
@@ -98,7 +98,7 @@ function SiteNav({ animate }: { animate: boolean }) {
                     key={j}
                     className={`mx-3 inline-flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.2em] ${display}`}
                   >
-                    <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ backgroundColor: INK }} />
+                    <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ backgroundColor: "#2563EB" }} />
                     {marqueeSeg}
                   </span>
                 ))}
@@ -117,19 +117,11 @@ function SiteNav({ animate }: { animate: boolean }) {
   );
 }
 
-// Soft paper-colored glow radiating from the glyphs — pushes back on busy
-// imagery locally wherever the headline overlaps the portrait, without a
-// backing panel. (mix-blend-mode: difference was tried first — the more
-// "correct" per-spec technique — but reliably failed to resolve against the
-// true page backdrop in this deeply-nested tree even with every known
-// isolation fix applied; this glow is the robust fallback.)
+// Improved glow: GPU-friendly text-shadow only (no box-shadow repaint)
 const HEADLINE_GLOW =
-  "0 0 10px rgba(245,244,240,0.95), 0 0 22px rgba(245,244,240,0.85), 0 0 40px rgba(245,244,240,0.65), 0 0 64px rgba(245,244,240,0.4)";
+  "0 0 10px rgba(37,99,235,0.18), 0 0 20px rgba(37,99,235,0.12), 0 0 40px rgba(37,99,235,0.08)";
 
-/** One headline line: mask-reveals up on load. No scroll-linked exit — the
- * whole block leaves the same way it leaves any normal sticky section: it
- * scrolls up and away once the hero's pin releases, in lockstep with the
- * next section's own heading scrolling up to fill its place. */
+/** One headline line: mask-reveals up on load. */
 function HeroLine({
   text,
   indent,
@@ -160,24 +152,31 @@ function Hero({ animate }: { animate: boolean }) {
   return (
     <section data-hero className="relative w-full" style={{ height: animate ? "180vh" : undefined }}>
       <div className="sticky top-0 w-full overflow-hidden" style={{ height: "100svh" }}>
-        <div className="pointer-events-none absolute inset-0 z-[1]" aria-hidden>
+        {/* <div className="pointer-events-none absolute inset-0 z-[1]" aria-hidden>
           <ParticleBirds still={!animate} />
-        </div>
+        </div> */}
 
-        {/* Reduced motion / pre-mount: a plain centered cut-out, nested here.
-            The live sequence (disintegrate → rain → globe) mounts once at the
-            page level instead — see LandingPage — so it can keep falling past
-            this section's own box without visually resetting at the seam. */}
         {!animate && <PortraitStill />}
 
-        {/* Content — left column, overlapping the portrait on the right; the
-            headline's glow (see HEADLINE_GLOW) keeps it legible without a
-            backing panel. Centered in the full viewport height (matching the
-            portrait's own centering) rather than the nav-clearance sub-box —
-            the nav sits on top as a transparent-at-rest overlay, not a
-            reserved band, so both stay on the same vertical center line. */}
         <div className="relative z-10 mx-auto flex h-full w-full max-w-[1600px] flex-col justify-center px-5 pb-16 pt-20 sm:px-8 lg:px-12">
-          <h1 className={`${display} font-black uppercase leading-[0.86] tracking-[-0.02em] text-[clamp(1.75rem,8.2vw,8rem)] `}>
+          <div
+            className={`${display} pointer-events-none absolute right-5 top-1/2 hidden -translate-y-1/2 text-[18vw] font-black leading-none tracking-[-0.08em] text-[#111111]/[0.025] lg:block`}
+            aria-hidden
+          >
+            01
+          </div>
+
+          <div className="pointer-events-none absolute bottom-10 left-5 right-5 hidden items-center gap-4 sm:flex lg:left-12 lg:right-12">
+            <span className={`${display} text-[8px] font-medium uppercase tracking-[0.28em] text-[#111111]/40`}>
+              01 / 04
+            </span>
+            <span className="h-px flex-1 bg-[#111111]/10" />
+            <span className={`${display} text-[8px] font-medium uppercase tracking-[0.28em] text-[#111111]/40`}>
+              SCROLL TO EXPLORE
+            </span>
+          </div>
+
+          <h1 className={`${display} relative max-w-[1120px] font-black uppercase leading-[0.84] tracking-[-0.035em] text-[clamp(1.75rem,8.2vw,8rem)]`}>
             {HEADLINE.map((line, i) => (
               <HeroLine
                 key={line.text}
@@ -190,7 +189,7 @@ function Hero({ animate }: { animate: boolean }) {
           </h1>
 
           <motion.div
-            className="mt-10 max-w-xl"
+            className="relative mt-10 max-w-xl border-l border-[#2563EB]/45 pl-4 sm:pl-5"
             initial={animate ? { opacity: 0, y: 16 } : false}
             animate={animate ? { opacity: 1, y: 0 } : undefined}
             transition={animate ? { duration: 0.7, delay: 0.7, ease: EXPO } : undefined}
@@ -200,21 +199,27 @@ function Hero({ animate }: { animate: boolean }) {
               end. Relax — we&apos;ve got this.
             </p>
 
+            {/* More tactile CTA */}
             <a
-              href="#"
+              href="/auth"
               data-cursor
-              className={`group mt-8 inline-flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-[0.2em] ${display}`}
-              style={{ color: INK }}
+              className={`group relative inline-flex items-center gap-2 border-2 border-[#2563EB] bg-[#F4F1EA] px-6 py-3 text-[11px] font-bold uppercase tracking-[0.2em] transition-all duration-300 hover:bg-[#2563EB] hover:text-[#F4F1EA] ${display}`}
             >
-              <span className="relative">
-                Start a project
-                <span
-                  className="absolute -bottom-1 left-0 h-[1.5px] w-full origin-left transition-all duration-300 ease-out group-hover:h-[3px]"
-                  style={{ backgroundColor: INK }}
-                />
-              </span>
-              <ArrowUpRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+              Get Started With A Click
+              <ArrowUpRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:-translate-y-1" />
             </a>
+
+            {/* Trust signal (social proof) */}
+            <motion.div
+              className="mt-8 flex items-center gap-6 text-[9px] uppercase tracking-[0.15em] text-[#111111]/30"
+              initial={animate ? { opacity: 0 } : false}
+              animate={animate ? { opacity: 1 } : undefined}
+              transition={{ delay: 1.0 }}
+            >
+              <span>Powering 50+ web3 projects</span>
+              <span className="h-3 w-px bg-[#111111]/20" />
+              <span>Ethereum · Solana · LangChain</span>
+            </motion.div>
           </motion.div>
         </div>
       </div>
@@ -233,15 +238,19 @@ function SignalSection({ animate }: { animate: boolean }) {
   const show = !animate || inView;
 
   return (
-    // Tall scroll track; the text pins while the page-level CloudGlobe rains the
-    // hero cloud down and reassembles it into the globe in the right zone.
     <section data-signal ref={ref} className="relative" style={{ height: "160vh" }}>
       <div className="sticky top-0 flex h-[100svh] w-full items-center overflow-hidden">
-        <div className="mx-auto flex h-full w-full max-w-[1600px] flex-col px-5 sm:px-8 lg:flex-row lg:items-center lg:px-12">
+        <div className="relative mx-auto flex h-full w-full max-w-[1600px] flex-col px-5 sm:px-8 lg:flex-row lg:items-center lg:px-12">
+          <div
+            className={`${display} pointer-events-none absolute right-6 top-24 hidden text-[15rem] font-black leading-none tracking-[-0.08em] text-[#111111]/[0.025] lg:block`}
+            aria-hidden
+          >
+            02
+          </div>
           {/* Left — mission copy */}
           <div className="relative z-10 flex w-full shrink-0 flex-col justify-center pt-24 pb-6 lg:w-[43%] lg:pt-0 lg:pb-0 lg:pr-10">
             <motion.p
-              className={`${display} text-[10px] font-medium uppercase tracking-[0.3em] text-[#0A0A0A]/55 sm:text-[11px]`}
+              className={`${display} text-[10px] font-medium uppercase tracking-[0.3em] text-[#111111]/55 sm:text-[11px]`}
               initial={animate ? { opacity: 0, y: 12 } : false}
               animate={show ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.5, ease: EXPO }}
@@ -265,7 +274,7 @@ function SignalSection({ animate }: { animate: boolean }) {
             </h2>
 
             <motion.p
-              className={`${display} mt-8 max-w-sm text-[10px] font-medium uppercase leading-[2] tracking-[0.14em] text-[#0A0A0A]/55 sm:text-[11px] sm:leading-[1.9] sm:tracking-[0.2em]`}
+              className={`${display} mt-8 max-w-sm text-[10px] font-medium uppercase leading-[2] tracking-[0.14em] text-[#111111]/55 sm:text-[11px] sm:leading-[1.9] sm:tracking-[0.2em]`}
               initial={animate ? { opacity: 0, y: 14 } : false}
               animate={show ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.6, delay: animate ? 0.5 : 0, ease: EXPO }}
@@ -287,7 +296,7 @@ function SignalSection({ animate }: { animate: boolean }) {
                 See how it works
                 <span
                   className="absolute -bottom-1 left-0 h-[1.5px] w-full origin-left transition-all duration-300 ease-out group-hover:h-[3px]"
-                  style={{ backgroundColor: INK }}
+                  style={{ backgroundColor: "#2563EB" }}
                 />
               </span>
               <ArrowUpRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
@@ -393,17 +402,17 @@ function ProblemRow({
   animate: boolean;
   reduced: boolean;
 }) {
-  const delay = 0.7 + index * 0.14; // parallel across columns (same per row index)
+  const delay = 0.7 + index * 0.14;
   return (
     <motion.div
-      className="group grid grid-cols-[2.75rem_1fr] gap-4 border-t py-6 sm:grid-cols-[3.5rem_1fr] sm:gap-5 sm:py-7"
-      style={{ borderColor: "rgba(10,10,10,0.14)" }}
+      className="group grid grid-cols-[2.75rem_1fr] gap-4 border-t py-6 transition-transform duration-300 ease-out hover:translate-x-1 sm:grid-cols-[3.5rem_1fr] sm:gap-5 sm:py-7"
+      style={{ borderColor: "rgba(17,17,17,0.14)" }}
       initial={animate ? { opacity: 0, y: 22 } : false}
       animate={inView ? { opacity: 1, y: 0 } : {}}
       transition={{ duration: 0.5, delay: animate ? delay : 0, ease: EXPO }}
     >
       <span
-        className={`${display} block select-none text-2xl font-black tabular-nums text-transparent transition-colors duration-200 group-hover:text-[#0A0A0A] sm:text-3xl`}
+        className={`${display} block select-none text-2xl font-black tabular-nums text-transparent transition-colors duration-200 group-hover:text-[#2563EB] sm:text-3xl`}
         style={{ WebkitTextStroke: `1.3px ${INK}` }}
       >
         <RollNumber value={index + 1} play={inView} reduced={reduced} delay={delay + 0.1} />
@@ -412,7 +421,7 @@ function ProblemRow({
         <h4 className={`${display} text-sm font-black uppercase leading-tight tracking-tight sm:text-base`}>
           {title}
         </h4>
-        <p className="mt-2 max-w-sm text-[13px] font-normal leading-relaxed text-[#0A0A0A]/55 transition-all duration-200 group-hover:font-medium group-hover:text-[#0A0A0A]">
+        <p className="mt-2 max-w-sm text-[13px] font-normal leading-relaxed text-[#111111]/55 transition-all duration-200 group-hover:font-medium group-hover:text-[#2563EB]">
           {desc}
         </p>
       </div>
@@ -440,7 +449,7 @@ function ProblemColumn({
         animate={inView ? { opacity: 1, y: 0 } : {}}
         transition={{ duration: 0.5, delay: animate ? 0.55 : 0, ease: EXPO }}
       >
-        <p className={`${display} text-[10px] font-medium uppercase tracking-[0.22em] text-[#0A0A0A]/60 sm:text-[11px]`}>
+        <p className={`${display} text-[10px] font-medium uppercase tracking-[0.22em] text-[#111111]/60 sm:text-[11px]`}>
           {data.label}
         </p>
         <h3 className={`${display} mt-3 text-xl font-black uppercase leading-[1.04] tracking-tight sm:text-2xl lg:text-[1.7rem] md:min-h-[2.1em]`}>
@@ -473,26 +482,29 @@ function ProblemSection({ animate, reduced }: { animate: boolean; reduced: boole
     target: ref,
     offset: ["start end", "end start"],
   });
-  // Divider: a quiet thicken/glow beat as the section crosses viewport centre.
-  const pulseX = useTransform(scrollYProgress, [0.4, 0.5, 0.6], [1, 2.6, 1]);
-  const glow = useTransform(
-    scrollYProgress,
-    [0.4, 0.5, 0.6],
-    ["0 0 0px rgba(10,10,10,0)", "0 0 12px rgba(10,10,10,0.4)", "0 0 0px rgba(10,10,10,0)"]
-  );
-  // Both problems "converge" slightly as they scroll out, setting up the fix.
+
+  // Replace heavy scaling with simple opacity pulse
+  const dividerOpacity = useTransform(scrollYProgress, [0.4, 0.55], [0.3, 1]);
+
+  // Parallax only when inView (performance)
   const leftX = useTransform(scrollYProgress, [0.55, 1], [0, 14]);
   const rightX = useTransform(scrollYProgress, [0.55, 1], [0, -14]);
+  const parallax = animate && !reduced && inView;
 
-  const parallax = animate && !reduced;
   const HEAD = ["PUBLISHING IS BROKEN", "ON BOTH SIDES."];
 
   return (
     <section id="problem" ref={ref} className="relative px-5 py-24 sm:px-8 sm:py-32 lg:px-12">
-      <div className="mx-auto max-w-[1180px]">
+      <div className="relative mx-auto max-w-[1180px]">
+        <div
+          className={`${display} pointer-events-none absolute -right-4 top-0 hidden text-[15rem] font-black leading-none tracking-[-0.08em] text-[#111111]/[0.025] lg:block`}
+          aria-hidden
+        >
+          02
+        </div>
         {/* eyebrow */}
         <motion.p
-          className={`${display} text-center text-[11px] font-medium uppercase tracking-[0.3em] text-[#0A0A0A]/60`}
+          className={`${display} text-center text-[11px] font-medium uppercase tracking-[0.3em] text-[#111111]/60`}
           initial={animate ? { opacity: 0, y: 12 } : false}
           animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.4, ease: EXPO }}
@@ -526,7 +538,7 @@ function ProblemSection({ animate, reduced }: { animate: boolean; reduced: boole
         />
 
         {/* two-column ledger */}
-        <div className="relative mt-10 flex flex-col md:flex-row md:items-stretch">
+        <div className="relative mt-10 flex flex-col border-y border-[#2563EB]/25 md:flex-row md:items-stretch">
           <motion.div className="flex-1" style={{ x: parallax ? leftX : 0 }}>
             <ProblemColumn data={COLUMNS[0]} inView={inView} animate={animate} reduced={reduced} side="left" />
           </motion.div>
@@ -534,19 +546,22 @@ function ProblemSection({ animate, reduced }: { animate: boolean; reduced: boole
           {/* mobile horizontal divider */}
           <div className="my-10 h-px w-full md:hidden" style={{ backgroundColor: INK }} />
 
-          {/* desktop vertical divider (draws top→bottom, pulses at centre) */}
+          {/* desktop vertical divider - simplified opacity pulse */}
           <div className="relative hidden w-px self-stretch md:block">
-            <motion.div
-              className="h-full w-full origin-top"
-              style={{
-                backgroundColor: INK,
-                scaleX: parallax ? pulseX : 1,
-                boxShadow: parallax ? glow : undefined,
-              }}
-              initial={animate ? { scaleY: 0 } : false}
-              animate={inView ? { scaleY: 1 } : {}}
-              transition={{ duration: 0.8, delay: 0.45, ease: EXPO }}
-            />
+            {!reduced ? (
+              <motion.div
+                className="h-full w-full origin-top"
+                style={{
+                  backgroundColor: INK,
+                  opacity: parallax ? dividerOpacity : 1,
+                }}
+                initial={{ scaleY: 0 }}
+                animate={inView ? { scaleY: 1 } : {}}
+                transition={{ duration: 0.8, delay: 0.45, ease: EXPO }}
+              />
+            ) : (
+              <div className="h-full w-full" style={{ backgroundColor: INK }} />
+            )}
           </div>
 
           <motion.div className="flex-1" style={{ x: parallax ? rightX : 0 }}>
@@ -560,10 +575,6 @@ function ProblemSection({ animate, reduced }: { animate: boolean; reduced: boole
 
 // ===========================================================================
 // SECTION 3 — THE WHALE CIRCLE (capture, then countermeasures)
-// A single centered composition — no side text column. Type sits inside the
-// ring's own empty middle, sandwiched between the WhaleCircle's back/front
-// canvases so passing particles can occlude it, and crossfades from one
-// stage's copy to the next in place as the sequence advances.
 // ===========================================================================
 const WHALE_INTRO = {
   eyebrow: "The whale problem",
@@ -605,7 +616,7 @@ function WhaleCenterBlock({
       className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center px-6 text-center"
       style={{ opacity, y }}
     >
-      <p className={`${display} text-[10px] font-medium uppercase tracking-[0.28em] text-[#0A0A0A]/60 sm:text-[11px]`}>
+      <p className={`${display} text-[10px] font-medium uppercase tracking-[0.28em] text-[#111111]/60 sm:text-[11px]`}>
         {eyebrow}
       </p>
       <h2 className={`${display} mt-3 font-black uppercase leading-[0.96] tracking-[-0.02em] text-[clamp(1.4rem,3.6vw,2.4rem)]`}>
@@ -616,7 +627,7 @@ function WhaleCenterBlock({
         ))}
       </h2>
       {small && (
-        <p className="mt-3 max-w-[280px] text-[11.5px] leading-relaxed text-[#0A0A0A]/60">{small}</p>
+        <p className="mt-3 max-w-[280px] text-[11.5px] leading-relaxed text-[#111111]/60">{small}</p>
       )}
     </motion.div>
   );
@@ -644,12 +655,15 @@ function WhaleSectionAnimated() {
   const closeOp = useTransform(p, [0.9, 0.96], [0, 1]);
   const closeY = useTransform(p, [0.9, 0.96], [12, 0]);
 
+  // Step indicator (0/4 → 4/4)
+  const stepDisplay = useTransform(p, [0, 0.3, 0.567, 0.733, 1], ["0/4", "1/4", "2/4", "3/4", "4/4"]);
+
   return (
-    // Tall scroll track; sticky wrapper holds the composition centered while
-    // scroll drives the sequence, then releases at the closing beat.
-    <section data-whale ref={ref} className="relative" style={{ height: "560vh" }}>
+    // Reduced scroll height from 560vh to 420vh for a tighter sequence
+    <section data-whale ref={ref} className="relative" style={{ height: "420vh" }}>
       <div className="sticky top-0 w-full overflow-hidden" style={{ height: "100svh", paddingTop: NAV_H }}>
         <div className="relative mx-auto h-full w-full max-w-[1600px]">
+          <div className="pointer-events-none absolute inset-x-5 top-8 bottom-8 border-y border-[#111111]/8 sm:inset-x-8 lg:inset-x-12" aria-hidden />
           <div className="pointer-events-none absolute inset-0" aria-hidden>
             <WhaleCircle still={false} />
           </div>
@@ -684,6 +698,14 @@ function WhaleSectionAnimated() {
               <ArrowUpRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
             </a>
           </motion.div>
+
+          {/* Step indicator - fixed position */}
+          <motion.div
+            className="fixed bottom-8 right-8 z-50 text-[10px] font-medium uppercase tracking-[0.2em] text-[#111111]/40"
+            style={{ opacity: useTransform(p, [0, 0.2, 0.9], [0, 1, 1]) }}
+          >
+            {stepDisplay}
+          </motion.div>
         </div>
       </div>
     </section>
@@ -697,7 +719,7 @@ function WhaleSectionStatic() {
   return (
     <section className="relative px-5 py-24 sm:px-8 sm:py-28 lg:px-12">
       <div className="mx-auto max-w-[900px] text-center">
-        <p className={`${display} text-[10px] font-medium uppercase tracking-[0.3em] text-[#0A0A0A]/55 sm:text-[11px]`}>
+        <p className={`${display} text-[10px] font-medium uppercase tracking-[0.3em] text-[#111111]/55 sm:text-[11px]`}>
           {WHALE_INTRO.eyebrow}
         </p>
         <h2 className={`${display} mx-auto mt-4 max-w-lg font-black uppercase leading-[0.94] tracking-[-0.02em] text-[clamp(1.6rem,4.4vw,2.75rem)]`}>
@@ -713,7 +735,7 @@ function WhaleSectionStatic() {
             <div
               key={c.tag}
               className="grid grid-cols-[2.5rem_1fr] gap-3 border-t py-4 sm:grid-cols-[3rem_1fr]"
-              style={{ borderColor: "rgba(10,10,10,0.14)" }}
+              style={{ borderColor: "rgba(17,17,17,0.14)" }}
             >
               <span
                 className={`${display} block text-xl font-black tabular-nums sm:text-2xl`}
@@ -725,7 +747,7 @@ function WhaleSectionStatic() {
                 <h4 className={`${display} text-[13px] font-black uppercase leading-tight tracking-tight sm:text-sm`}>
                   {c.lines.join(" ")}
                 </h4>
-                <p className="mt-1.5 text-[12px] font-normal leading-relaxed text-[#0A0A0A]/60 sm:text-[12.5px]">
+                <p className="mt-1.5 text-[12px] font-normal leading-relaxed text-[#111111]/60 sm:text-[12.5px]">
                   {c.small}
                 </p>
               </div>
@@ -733,7 +755,7 @@ function WhaleSectionStatic() {
           ))}
         </div>
 
-        <div className="mx-auto mt-8 max-w-lg border-t pt-6" style={{ borderColor: "rgba(10,10,10,0.14)" }}>
+        <div className="mx-auto mt-8 max-w-lg border-t pt-6" style={{ borderColor: "rgba(17,17,17,0.14)" }}>
           <p className={`${display} text-base font-black uppercase leading-snug tracking-tight sm:text-lg`}>
             Weight doesn&apos;t decide what matters. Readers do.
           </p>
@@ -789,13 +811,42 @@ export default function LandingPage() {
   return (
     <main
       className={`relative w-full overflow-x-clip ${cursorOn ? "cursor-none" : ""}`}
-      style={{ backgroundColor: PAPER, color: INK }}
+      style={{ backgroundColor: PAPER, color: INK, backgroundImage: "radial-gradient(circle at 82% 14%, rgba(37,99,235,0.08), transparent 28%), radial-gradient(circle at 12% 72%, rgba(183,255,0,0.07), transparent 24%), radial-gradient(circle at 88% 82%, rgba(255,92,53,0.06), transparent 22%)" }}
     >
-      {/* One particle journey: hero portrait → disintegrate → rain → globe.
-          Mounted once, page-fixed, so the SAME particles that were the
-          portrait carry through into the globe rather than handing off to a
-          fresh set. Reduced motion skips the live sequence entirely and
-          falls back to CloudGlobe's own static, independently-fading globe. */}
+      {/* Editorial UI layer — subtle grid, paper grain, viewport frame, and edge index. */}
+      <div
+        className="pointer-events-none fixed inset-0 z-[2]"
+        aria-hidden
+        style={{
+          backgroundImage: `
+            linear-gradient(rgba(17,17,17,0.035) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(17,17,17,0.035) 1px, transparent 1px),
+            radial-gradient(rgba(17,17,17,0.045) 0.7px, transparent 0.7px)
+          `,
+          backgroundSize: "96px 96px, 96px 96px, 7px 7px",
+          backgroundPosition: "center center, center center, 0 0",
+          mixBlendMode: "multiply",
+          opacity: 0.42,
+        }}
+      />
+      <div
+        className="pointer-events-none fixed inset-[10px] z-[45] rounded-[2px] border border-[#111111]/10"
+        aria-hidden
+      />
+      <div
+        className={`${display} pointer-events-none fixed left-3 top-1/2 z-[46] hidden -translate-y-1/2 -rotate-90 origin-left text-[8px] font-medium uppercase tracking-[0.32em] text-[#111111]/45 lg:block`}
+        aria-hidden
+      >
+        CURATE / SYSTEM 01
+      </div>
+      <div
+        className={`${display} pointer-events-none fixed right-3 top-1/2 z-[46] hidden translate-y-1/2 rotate-90 origin-right text-[8px] font-medium uppercase tracking-[0.32em] text-[#111111]/45 lg:block`}
+        aria-hidden
+      >
+        AI × WEB3 / 2026
+      </div>
+
+      {/* One particle journey: hero portrait → disintegrate → rain → globe. */}
       {animate && <PortraitDisintegration />}
       {!animate && <CloudGlobe still />}
 
