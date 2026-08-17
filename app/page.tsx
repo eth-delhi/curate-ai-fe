@@ -18,11 +18,11 @@ import {
   EXPO,
   display,
   CustomCursor,
-  NeuralCloud,
-  ParticleBirds,
   CloudGlobe,
   WhaleCircle,
+  ParticleBirds
 } from "@/components/brutal";
+import { PortraitDisintegration, PortraitStill } from "@/components/portrait-particles";
 import { Logo } from "@/components/ui/Logo";
 
 function NavLink({ label }: { label: string }) {
@@ -49,7 +49,7 @@ const HEADLINE = [
   { text: "WE CURATE", indent: 0 },
   { text: "INTELLIGENCE.", indent: 0.55 },
   { text: "MACHINES DO", indent: 0 },
-  { text: "THE REST.", indent: 0 },
+  { text: "THE REST.", indent: 0, underline: true },
 ];
 
 // Nav height (logo + top/bottom padding) that the hero's own centering math
@@ -69,7 +69,7 @@ function SiteNav({ animate }: { animate: boolean }) {
 
   return (
     <header
-      className="sticky top-0 z-50 w-full transition-[background-color,box-shadow] duration-300 ease-out"
+      className="fixed inset-x-0 top-0 z-50 w-full transition-[background-color,box-shadow] duration-300 ease-out"
       style={{
         backgroundColor: scrolled ? "rgba(245,244,240,0.72)" : "rgba(245,244,240,0)",
         backdropFilter: scrolled ? "blur(10px)" : "none",
@@ -117,80 +117,107 @@ function SiteNav({ animate }: { animate: boolean }) {
   );
 }
 
-function Hero({ animate }: { animate: boolean }) {
-  const { scrollY } = useScroll();
-  const headY = useTransform(scrollY, [0, 700], [0, -70]);
+// Soft paper-colored glow radiating from the glyphs — pushes back on busy
+// imagery locally wherever the headline overlaps the portrait, without a
+// backing panel. (mix-blend-mode: difference was tried first — the more
+// "correct" per-spec technique — but reliably failed to resolve against the
+// true page backdrop in this deeply-nested tree even with every known
+// isolation fix applied; this glow is the robust fallback.)
+const HEADLINE_GLOW =
+  "0 0 10px rgba(245,244,240,0.95), 0 0 22px rgba(245,244,240,0.85), 0 0 40px rgba(245,244,240,0.65), 0 0 64px rgba(245,244,240,0.4)";
 
+/** One headline line: mask-reveals up on load. No scroll-linked exit — the
+ * whole block leaves the same way it leaves any normal sticky section: it
+ * scrolls up and away once the hero's pin releases, in lockstep with the
+ * next section's own heading scrolling up to fill its place. */
+function HeroLine({
+  text,
+  indent,
+  animate,
+  loadDelay,
+}: {
+  text: string;
+  indent: number;
+  animate: boolean;
+  loadDelay: number;
+}) {
   return (
-    <section
-      data-hero
-      className="relative w-full overflow-hidden"
-      style={{ minHeight: `calc(100svh - ${NAV_H}px)` }}
-    >
-      {/* Focal cloud. When animating, the page-level CloudGlobe renders the cloud
-          here (it later rains down into the section-two globe). Under reduced
-          motion CloudGlobe shows only the globe, so keep a static cloud here. */}
-      {!animate && (
-        <div className="pointer-events-none absolute inset-y-0 right-0 z-0 w-[92%] sm:w-[74%] lg:w-[62%]">
-          <NeuralCloud still />
-        </div>
-      )}
-
-      {/* Scroll-scrubbed flock — rests as ambient dust at the baseline, coheres
-          into pigeons and lifts through the cloud as the hero scrolls away */}
-      <div className="pointer-events-none absolute inset-0 z-[1]" aria-hidden>
-        <ParticleBirds still={!animate} />
-      </div>
-
-      {/* Content */}
-      <motion.div
-        className="relative z-10 mx-auto flex w-full max-w-[1600px] flex-col justify-center px-5 pb-16 pt-10 sm:px-8 lg:px-12"
-        style={{ y: animate ? headY : 0, minHeight: `calc(100svh - ${NAV_H}px)` }}
+    <span className="block overflow-hidden pr-2 text-[INK]">
+      <motion.span
+        className="block"
+        style={{ paddingLeft: `${indent}em`, textShadow: HEADLINE_GLOW, color: INK }}
+        initial={animate ? { y: "112%" } : false}
+        animate={animate ? { y: "0%" } : undefined}
+        transition={animate ? { duration: 0.8, ease: EXPO, delay: loadDelay } : undefined}
       >
-        <h1 className={`${display} font-black uppercase leading-[0.86] tracking-[-0.02em] text-[clamp(1.75rem,8.2vw,8rem)]`}>
-          {HEADLINE.map((line, i) => (
-            <span key={line.text} className="block overflow-hidden pr-2">
-              <motion.span
-                className="block will-change-transform"
-                style={{ paddingLeft: `${line.indent}em` }}
-                initial={animate ? { y: "112%" } : false}
-                animate={animate ? { y: "0%" } : undefined}
-                transition={animate ? { duration: 0.8, ease: EXPO, delay: 0.12 + i * 0.12 } : undefined}
-              >
-                {line.text}
-              </motion.span>
-            </span>
-          ))}
-        </h1>
+        {text}
+      </motion.span>
+    </span>
+  );
+}
 
-        <motion.div
-          className="mt-10 max-w-xl"
-          initial={animate ? { opacity: 0, y: 16 } : false}
-          animate={animate ? { opacity: 1, y: 0 } : undefined}
-          transition={animate ? { duration: 0.7, delay: 0.7, ease: EXPO } : undefined}
-        >
-          <p className={`${display} max-w-xs text-[10px] font-medium uppercase leading-[2] tracking-[0.14em] sm:max-w-md sm:text-[11px] sm:leading-[1.9] sm:tracking-[0.24em]`}>
-            AI agents + blockchain infra + full-stack product. We build it end to
-            end. Relax — we&apos;ve got this.
-          </p>
+function Hero({ animate }: { animate: boolean }) {
+  return (
+    <section data-hero className="relative w-full" style={{ height: animate ? "180vh" : undefined }}>
+      <div className="sticky top-0 w-full overflow-hidden" style={{ height: "100svh" }}>
+        <div className="pointer-events-none absolute inset-0 z-[1]" aria-hidden>
+          <ParticleBirds still={!animate} />
+        </div>
 
-          <a
-            href="#"
-            data-cursor
-            className={`group mt-8 inline-flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-[0.2em] ${display}`}
-            style={{ color: INK }}
-          >
-            <span className="relative">
-              Start a project
-              <span
-                className="absolute -bottom-1 left-0 h-[1.5px] w-full origin-left transition-all duration-300 ease-out group-hover:h-[3px]"
-                style={{ backgroundColor: INK }}
+        {/* Reduced motion / pre-mount: a plain centered cut-out, nested here.
+            The live sequence (disintegrate → rain → globe) mounts once at the
+            page level instead — see LandingPage — so it can keep falling past
+            this section's own box without visually resetting at the seam. */}
+        {!animate && <PortraitStill />}
+
+        {/* Content — left column, overlapping the portrait on the right; the
+            headline's glow (see HEADLINE_GLOW) keeps it legible without a
+            backing panel. Centered in the full viewport height (matching the
+            portrait's own centering) rather than the nav-clearance sub-box —
+            the nav sits on top as a transparent-at-rest overlay, not a
+            reserved band, so both stay on the same vertical center line. */}
+        <div className="relative z-10 mx-auto flex h-full w-full max-w-[1600px] flex-col justify-center px-5 pb-16 pt-20 sm:px-8 lg:px-12">
+          <h1 className={`${display} font-black uppercase leading-[0.86] tracking-[-0.02em] text-[clamp(1.75rem,8.2vw,8rem)] `}>
+            {HEADLINE.map((line, i) => (
+              <HeroLine
+                key={line.text}
+                text={line.text}
+                indent={line.indent}
+                animate={animate}
+                loadDelay={0.12 + i * 0.12}
               />
-            </span>
-            <ArrowUpRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-          </a>
-        </motion.div>
-      </motion.div>
+            ))}
+          </h1>
+
+          <motion.div
+            className="mt-10 max-w-xl"
+            initial={animate ? { opacity: 0, y: 16 } : false}
+            animate={animate ? { opacity: 1, y: 0 } : undefined}
+            transition={animate ? { duration: 0.7, delay: 0.7, ease: EXPO } : undefined}
+          >
+            <p className={`${display} max-w-xs text-[10px] font-medium uppercase leading-[2] tracking-[0.14em] sm:max-w-md sm:text-[11px] sm:leading-[1.9] sm:tracking-[0.24em]`}>
+              AI agents + blockchain infra + full-stack product. We build it end to
+              end. Relax — we&apos;ve got this.
+            </p>
+
+            <a
+              href="#"
+              data-cursor
+              className={`group mt-8 inline-flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-[0.2em] ${display}`}
+              style={{ color: INK }}
+            >
+              <span className="relative">
+                Start a project
+                <span
+                  className="absolute -bottom-1 left-0 h-[1.5px] w-full origin-left transition-all duration-300 ease-out group-hover:h-[3px]"
+                  style={{ backgroundColor: INK }}
+                />
+              </span>
+              <ArrowUpRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+            </a>
+          </motion.div>
+        </div>
+      </div>
     </section>
   );
 }
@@ -764,8 +791,13 @@ export default function LandingPage() {
       className={`relative w-full overflow-x-clip ${cursorOn ? "cursor-none" : ""}`}
       style={{ backgroundColor: PAPER, color: INK }}
     >
-      {/* One particle journey: hero cloud → rain → section-two globe (fixed layer) */}
-      <CloudGlobe still={!animate} />
+      {/* One particle journey: hero portrait → disintegrate → rain → globe.
+          Mounted once, page-fixed, so the SAME particles that were the
+          portrait carry through into the globe rather than handing off to a
+          fresh set. Reduced motion skips the live sequence entirely and
+          falls back to CloudGlobe's own static, independently-fading globe. */}
+      {animate && <PortraitDisintegration />}
+      {!animate && <CloudGlobe still />}
 
       <div className="relative z-10">
         <SiteNav animate={animate} />

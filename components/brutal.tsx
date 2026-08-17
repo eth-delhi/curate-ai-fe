@@ -15,6 +15,17 @@ export const PAPER = "#F5F4F0";
 export const EXPO = [0.16, 1, 0.3, 1] as const;
 export const display = "font-[family-name:var(--font-archivo)]";
 
+// Every section's content sits in a centered max-w-[1600px] container (see
+// SiteNav/Hero/SignalSection). Canvas anchors that used raw viewport-width
+// fractions bled off past the nav/text on wide/ultrawide screens once vw grew
+// past 1600 — this maps a 0..1 fraction onto that same centered container
+// instead, so canvas elements never drift past where the text actually ends.
+export function containerX(vw: number, frac: number) {
+  const w = Math.min(vw, 1600);
+  const left = (vw - w) / 2;
+  return left + w * frac;
+}
+
 // ---------------------------------------------------------------------------
 // Ambient dust — one fixed layer for the whole page, so the specks drift
 // uninterrupted across every section instead of restarting.
@@ -370,6 +381,11 @@ export function ParticleBirds({ still }: { still: boolean }) {
     if (!canvas || !host) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
+    // Progress tracks the OUTER pinned hero section, not this canvas's own
+    // (sticky, scroll-frozen) immediate parent — otherwise, once the hero
+    // became a tall scroll-scrubbed track, this would never see its host's
+    // top move and would appear frozen.
+    const section = (host.closest("[data-hero]") as HTMLElement | null) ?? host;
 
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     let w = 0;
@@ -419,9 +435,9 @@ export function ParticleBirds({ still }: { still: boolean }) {
     resize();
     seed();
 
-    // scroll progress 0..1 from the hero box crossing the viewport
+    // scroll progress 0..1 from the outer hero section crossing the viewport
     const progress = () => {
-      const r = host.getBoundingClientRect();
+      const r = section.getBoundingClientRect();
       return clamp01(-r.top / (r.height * 0.9 || 1));
     };
 
@@ -553,7 +569,7 @@ function inPoly(x: number, y: number, poly: number[][]) {
   return inside;
 }
 
-type GlobePt = { ux: number; uy: number; uz: number; cont: boolean; ga: number; gs: number };
+export type GlobePt = { ux: number; uy: number; uz: number; cont: boolean; ga: number; gs: number };
 function makeGlobePt(lat: number, lng: number, cont: boolean): GlobePt {
   const la = (lat * Math.PI) / 180, lo = (lng * Math.PI) / 180;
   const cl = Math.cos(la);
@@ -566,7 +582,7 @@ function makeGlobePt(lat: number, lng: number, cont: boolean): GlobePt {
     gs: cont ? 1.5 + Math.random() * 0.5 : 1.1 + Math.random() * 0.3,
   };
 }
-function buildGlobePts(N: number): GlobePt[] {
+export function buildGlobePts(N: number): GlobePt[] {
   const isLand = (lat: number, lng: number) => CONTINENTS.some((pl) => inPoly(lng, lat, pl));
   const pts: GlobePt[] = [];
   const landTarget = Math.round(N * 0.6);
@@ -597,12 +613,12 @@ function buildGlobePts(N: number): GlobePt[] {
 // the globe has fully formed (gated on scroll progress), never during the
 // rain/formation stages.
 // ---------------------------------------------------------------------------
-function vec3(lat: number, lng: number) {
+export function vec3(lat: number, lng: number) {
   const la = (lat * Math.PI) / 180, lo = (lng * Math.PI) / 180;
   const cl = Math.cos(la);
   return { x: cl * Math.sin(lo), y: Math.sin(la), z: cl * Math.cos(lo) };
 }
-function slerp3(a: { x: number; y: number; z: number }, b: { x: number; y: number; z: number }, t: number) {
+export function slerp3(a: { x: number; y: number; z: number }, b: { x: number; y: number; z: number }, t: number) {
   const dot = Math.min(1, Math.max(-1, a.x * b.x + a.y * b.y + a.z * b.z));
   const omega = Math.acos(dot);
   if (omega < 1e-6) return a;
@@ -612,29 +628,29 @@ function slerp3(a: { x: number; y: number; z: number }, b: { x: number; y: numbe
   return { x: a.x * wa + b.x * wb, y: a.y * wa + b.y * wb, z: a.z * wa + b.z * wb };
 }
 // Real hub coordinates, chosen to land inside the CONTINENTS masses above.
-const ARC_HUBS = {
+export const ARC_HUBS = {
   ny: vec3(40.7, -74),
   london: vec3(51.5, -0.1),
   beijing: vec3(39.9, 116.4),
   saopaulo: vec3(-23.5, -46.6),
   lagos: vec3(6.5, 3.4),
 };
-const ARC_ROUTES = [
+export const ARC_ROUTES = [
   [ARC_HUBS.ny, ARC_HUBS.london],
   [ARC_HUBS.london, ARC_HUBS.beijing],
   [ARC_HUBS.saopaulo, ARC_HUBS.lagos],
 ] as const;
-const ARC_LIFT = 0.16; // arcs bulge gently outside the globe's radius, like a flight path
-function arcPoint(route: readonly [{ x: number; y: number; z: number }, { x: number; y: number; z: number }], t: number) {
+export const ARC_LIFT = 0.16; // arcs bulge gently outside the globe's radius, like a flight path
+export function arcPoint(route: readonly [{ x: number; y: number; z: number }, { x: number; y: number; z: number }], t: number) {
   const p = slerp3(route[0], route[1], t);
   const lift = 1 + ARC_LIFT * Math.sin(Math.PI * t);
   return { x: p.x * lift, y: p.y * lift, z: p.z * lift };
 }
-const ARC_ROUTE_SAMPLES = 40;
-const ARC_CLUSTERS = 4; // simultaneous data-transfer bursts in flight per route
-const ARC_CLUSTER_DOTS = 6; // dots bunched into each burst
-const ARC_CLUSTER_SPREAD = 0.02; // how tightly a burst's dots bunch (route fraction) — cluster, not a trail
-const ARC_SPEED = 0.34; // fraction of the route travelled per t-unit — fast, visible transfer
+export const ARC_ROUTE_SAMPLES = 40;
+export const ARC_CLUSTERS = 4; // simultaneous data-transfer bursts in flight per route
+export const ARC_CLUSTER_DOTS = 6; // dots bunched into each burst
+export const ARC_CLUSTER_SPREAD = 0.02; // how tightly a burst's dots bunch (route fraction) — cluster, not a trail
+export const ARC_SPEED = 0.34; // fraction of the route travelled per t-unit — fast, visible transfer
 
 export function CloudGlobe({ still }: { still: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -652,19 +668,19 @@ export function CloudGlobe({ still }: { still: boolean }) {
     const N = lowPower ? 1050 : 1700;
     const SPIN = (Math.PI * 2) / 40; // rad per second — one idle turn / 40s
     const TILT = 0.34;
-    const mouse = { x: 0, y: 0, tx: 0, ty: 0 };
 
-    // Viewport-relative anchors: the cloud sits where hero-one's focal cloud was,
-    // the globe forms in section-two's right zone. Same x on desktop so the cloud
-    // rains straight down into the globe.
-    let cloudX = 0, cloudY = 0, Rc = 0, globeX = 0, globeY = 0, Rg = 0;
+    // The hero's own portrait now provides the "cloud" (it disintegrates into
+    // rain on its own WebGL layer); this canvas only ever receives falling
+    // rain and forms it into the globe — no resting cloud shape here anymore.
+    // rainSrcX/Y anchor the top of that incoming rain column; kept roughly
+    // under where the hero portrait sits so the fall reads as one column.
+    let rainSrcX = 0, rainSrcY = 0, Rc = 0, globeX = 0, globeY = 0, Rg = 0;
     const layout = () => {
       const mob = vw < 640;
-      // cloud sits above the globe so the rain only ever falls (never rises) in
-      cloudX = vw * (mob ? 0.55 : 0.68);
-      cloudY = vh * (mob ? 0.42 : 0.42);
+      rainSrcX = containerX(vw, mob ? 0.55 : 0.68);
+      rainSrcY = -vh * 0.15; // just above the viewport — rain is always "already falling"
       Rc = Math.min(vw, vh) * (mob ? 0.32 : 0.28);
-      globeX = vw * (mob ? 0.5 : 0.68);
+      globeX = containerX(vw, mob ? 0.5 : 0.68);
       globeY = vh * (mob ? 0.62 : 0.58);
       Rg = (mob ? vw * 0.33 : vh * 0.3);
     };
@@ -693,16 +709,22 @@ export function CloudGlobe({ still }: { still: boolean }) {
       layout();
     };
 
+    // Widest a particle's entry point sits above rainSrcY — used both to seed
+    // the stagger and (below) to size the fall rate so even the highest
+    // starting particle comfortably completes its fall in time.
+    const ABOVE_SPREAD = () => vh * 0.35 + Rc * 0.4;
+
     const seed = () => {
       if (!globePts) globePts = buildGlobePts(N);
+      const above = ABOVE_SPREAD();
       parts = globePts.map((g) => {
         const nr = Math.pow(Math.random(), 1.3);
         const ang = Math.random() * Math.PI * 2;
-        const rr = nr * Rc * (1 + 0.2 * Math.sin(ang * 3));
-        const cx = cloudX + Math.cos(ang) * rr;
-        // bias cloud height by eventual globe latitude, so each dot falls (never
-        // rises) into place and the globe assembles cleanly top-down
-        const cy = cloudY + Math.sin(ang) * rr * 0.5 - g.uy * Rc * 0.55;
+        const rr = Math.random() * Rc * 0.9;
+        const cx = rainSrcX + Math.cos(ang) * rr;
+        // staggered entry height above the viewport, biased by eventual globe
+        // latitude so it still falls in a roughly straight column
+        const cy = rainSrcY - Math.random() * above - g.uy * Rc * 0.4;
         return {
           ...g,
           cx, cy,
@@ -718,24 +740,33 @@ export function CloudGlobe({ still }: { still: boolean }) {
     resize();
     seed();
 
-    // Page-scroll → sequence progress + layer opacity (all in viewport heights).
-    // Cloud holds through the hero, then rains + globes as section two scrolls.
-    const scrollP = () => clamp01(window.scrollY / (1.3 * vh));
-    const liveOpacity = () => 1 - clamp01((window.scrollY - 1.55 * vh) / (0.45 * vh));
-    // Reduced-motion: globe only, fading in over section two (no cloud/rain here —
-    // the hero keeps its static NeuralCloud in that mode).
+    // Progress is relative to the HERO's own rendered height (not a hardcoded
+    // vh multiple) so this stays in sync regardless of how tall the portrait
+    // sequence's scroll track ends up being. The globe section's own timing
+    // (in viewport heights) is unchanged, just measured from where the hero
+    // actually ends rather than from the top of the page.
+    const heroOffset = () => {
+      const heroEl = document.querySelector("[data-hero]") as HTMLElement | null;
+      return heroEl?.offsetHeight ?? vh;
+    };
+    const effectiveScrollY = () => Math.max(0, window.scrollY - heroOffset());
+    const scrollP = () => clamp01(effectiveScrollY() / (1.3 * vh));
+    const liveOpacity = () => 1 - clamp01((effectiveScrollY() - 1.55 * vh) / (0.45 * vh));
+    // Reduced-motion: globe only, fading in over section two (no rain here —
+    // the hero keeps its own static masked portrait in that mode).
     const stillOpacity = () =>
-      clamp01((window.scrollY - 0.7 * vh) / (0.5 * vh)) -
-      clamp01((window.scrollY - 1.6 * vh) / (0.4 * vh));
+      clamp01((effectiveScrollY() - 0.7 * vh) / (0.5 * vh)) -
+      clamp01((effectiveScrollY() - 1.6 * vh) / (0.4 * vh));
 
     const step = (p: number, follow: number, spinA: number, t: number) => {
       ctx.clearRect(0, 0, vw, vh);
       ctx.fillStyle = INK;
       const cosA = Math.cos(spinA), sinA = Math.sin(spinA);
       const cosP = Math.cos(TILT), sinP = Math.sin(TILT);
-      mouse.x += (mouse.tx - mouse.x) * 0.06;
-      mouse.y += (mouse.ty - mouse.y) * 0.06;
-      const fallRate = (globeY + Rg - cloudY) / 0.66; // px of fall per unit progress
+      // fall rate sized off the worst case (highest entry point) so every
+      // particle, regardless of its staggered start, comfortably completes
+      // its fall well within the progress range
+      const fallRate = (globeY + Rg - rainSrcY + ABOVE_SPREAD()) / 0.5;
       const cap = vh * 0.12; // px window over which a landed dot gathers into the sphere
       for (let i = 0; i < parts.length; i++) {
         const pt = parts[i];
@@ -747,14 +778,11 @@ export function CloudGlobe({ still }: { still: boolean }) {
         const gx = globeX + x1 * Rg;
         const gy = globeY - y2 * Rg;
         const front = z2 * 0.5 + 0.5; // 0 back → 1 front
-        // constant-rate fall from the cloud; swirl + parallax fade as it detaches
+        // constant-rate fall; a small sideways rain-jitter, not a cloud swirl
         const fallP = Math.max(0, p - pt.fs);
         const fallen = fallP * fallRate;
-        const cw = 1 - clamp01(fallP / 0.12);
-        const fx = Math.sin(pt.cy * 0.008 + t + pt.ph) + Math.cos(pt.cx * 0.006 - t * 0.8);
-        const fy = Math.cos(pt.cx * 0.008 - t + pt.ph) + Math.sin(pt.cy * 0.006 + t * 0.9);
-        const cxs = pt.cx + (fx * 6 - mouse.x * 0.015) * cw;
-        const cys = pt.cy + (fy * 6) * cw;
+        const cxs = pt.cx + Math.sin(pt.cy * 0.02 + t * 1.4 + pt.ph) * 1.6;
+        const cys = pt.cy;
         // rain streams straight down, clamped so it never falls past its globe row
         const need = Math.max(1, gy - cys);
         const rainX = cxs + (gx - cxs) * 0.14 * clamp01(fallen / need);
@@ -840,17 +868,14 @@ export function CloudGlobe({ still }: { still: boolean }) {
 
     start();
     const onScroll = () => start();
-    const onMove = (e: MouseEvent) => { mouse.tx = e.clientX - cloudX; mouse.ty = e.clientY - cloudY; };
     const onResize = () => { resize(); seed(); };
     window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("mousemove", onMove, { passive: true });
     window.addEventListener("resize", onResize);
 
     return () => {
       alive = false;
       cancelAnimationFrame(raf);
       window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("mousemove", onMove);
       window.removeEventListener("resize", onResize);
     };
   }, [still]);
